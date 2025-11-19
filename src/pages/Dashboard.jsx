@@ -55,7 +55,7 @@ export default function Dashboard() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('Total Savings')}</CardTitle>
-                        <DollarSign className="h-4 w-4 text-secondary" />
+                        <DollarSign className="h-6 w-6 text-secondary" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-gray-900 dark:text-white">€ {stats.totalSavings.toFixed(2)}</div>
@@ -65,7 +65,7 @@ export default function Dashboard() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('Shipments Made')}</CardTitle>
-                        <Package className="h-4 w-4 text-primary" />
+                        <Package className="h-6 w-6 text-primary" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalShipments}</div>
@@ -75,7 +75,7 @@ export default function Dashboard() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('Favorite Carrier')}</CardTitle>
-                        <Truck className="h-4 w-4 text-blue-500" />
+                        <Truck className="h-6 w-6 text-blue-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.favoriteCarrier}</div>

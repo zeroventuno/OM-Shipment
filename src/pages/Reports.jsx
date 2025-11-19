@@ -127,7 +127,7 @@ export default function Reports() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Total Savings')}</CardTitle>
-                        <DollarSign className="h-4 w-4 text-green-500" />
+                        <DollarSign className="h-6 w-6 text-green-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">€ {stats.totalSavings.toFixed(2)}</div>
@@ -136,7 +136,7 @@ export default function Reports() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Total Profit')}</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-blue-500" />
+                        <TrendingUp className="h-6 w-6 text-blue-500" />
                     </CardHeader>
                     <CardContent>
                         <div className={`text-2xl font-bold ${stats.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -147,7 +147,7 @@ export default function Reports() {
                 <Card className="bg-purple-50 border-purple-100">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-700">{t('Best Customer (Profit)')}</CardTitle>
-                        <User className="h-4 w-4 text-purple-600" />
+                        <User className="h-6 w-6 text-purple-600" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-lg font-bold truncate text-purple-900" title={stats.bestCustomer}>{stats.bestCustomer}</div>
@@ -158,7 +158,7 @@ export default function Reports() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Current Month Savings')}</CardTitle>
-                        <DollarSign className="h-4 w-4 text-green-500" />
+                        <DollarSign className="h-6 w-6 text-green-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">€ {stats.monthSavings.toFixed(2)}</div>
@@ -167,7 +167,7 @@ export default function Reports() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Current Month Profit')}</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-blue-500" />
+                        <TrendingUp className="h-6 w-6 text-blue-500" />
                     </CardHeader>
                     <CardContent>
                         <div className={`text-2xl font-bold ${stats.monthProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -178,7 +178,7 @@ export default function Reports() {
                 <Card className="bg-purple-50 border-purple-100">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-700">{t('Worst Customer (Loss)')}</CardTitle>
-                        <TrendingDown className="h-4 w-4 text-red-500" />
+                        <TrendingDown className="h-6 w-6 text-red-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-lg font-bold truncate text-purple-900" title={stats.worstCustomer}>{stats.worstCustomer}</div>
