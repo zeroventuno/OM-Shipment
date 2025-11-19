@@ -4,6 +4,8 @@ import { LayoutDashboard, PlusCircle, FileBarChart, Bike } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useTranslation } from 'react-i18next';
 
+// Officine Mattio Shipment System v1.0
+
 const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', to: '/dashboard' },
     { icon: PlusCircle, label: 'New Shipment', to: '/new-shipment' },
