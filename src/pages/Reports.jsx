@@ -215,51 +215,46 @@ export default function Reports() {
             </div>
 
             {/* Customer Filter */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>{t('Customer Filter')}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white/60 backdrop-blur-sm border border-gray-200 rounded-lg p-4 shadow-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                            {t('Filter Type')}
+                        </label>
+                        <select
+                            className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 text-sm focus:ring-2 focus:ring-primary"
+                            value={customerFilter}
+                            onChange={(e) => {
+                                setCustomerFilter(e.target.value);
+                                if (e.target.value !== 'specific') setSelectedCustomer('');
+                            }}
+                        >
+                            <option value="all">{t('All Customers')}</option>
+                            <option value="specific">{t('Specific Customer')}</option>
+                            <option value="top5">{t('Top 5 Most Profitable')}</option>
+                            <option value="bottom5">{t('Bottom 5 Least Profitable')}</option>
+                        </select>
+                    </div>
+
+                    {customerFilter === 'specific' && (
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                {t('Filter Type')}
+                            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                                {t('Select Customer')}
                             </label>
                             <select
-                                className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm focus:ring-2 focus:ring-primary"
-                                value={customerFilter}
-                                onChange={(e) => {
-                                    setCustomerFilter(e.target.value);
-                                    if (e.target.value !== 'specific') setSelectedCustomer('');
-                                }}
+                                className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 text-sm focus:ring-2 focus:ring-primary"
+                                value={selectedCustomer}
+                                onChange={(e) => setSelectedCustomer(e.target.value)}
                             >
-                                <option value="all">{t('All Customers')}</option>
-                                <option value="specific">{t('Specific Customer')}</option>
-                                <option value="top5">{t('Top 5 Most Profitable')}</option>
-                                <option value="bottom5">{t('Bottom 5 Least Profitable')}</option>
+                                <option value="">{t('Choose a customer')}</option>
+                                {customers.map(customer => (
+                                    <option key={customer} value={customer}>{customer}</option>
+                                ))}
                             </select>
                         </div>
-
-                        {customerFilter === 'specific' && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    {t('Select Customer')}
-                                </label>
-                                <select
-                                    className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm focus:ring-2 focus:ring-primary"
-                                    value={selectedCustomer}
-                                    onChange={(e) => setSelectedCustomer(e.target.value)}
-                                >
-                                    <option value="">{t('Choose a customer')}</option>
-                                    {customers.map(customer => (
-                                        <option key={customer} value={customer}>{customer}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
+                    )}
+                </div>
+            </div>
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
