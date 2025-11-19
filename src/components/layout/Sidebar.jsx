@@ -20,8 +20,7 @@ export function Sidebar() {
     return (
         <aside className="fixed inset-y-0 left-0 z-10 w-64 bg-surface border-r border-gray-200 flex flex-col transition-colors duration-200">
             <div className="h-16 flex items-center px-6 border-b border-gray-200">
-                <Bike className="h-8 w-8 text-primary mr-2" />
-                <span className="text-xl font-bold text-gray-800">BikeShip</span>
+                <img src="/logo.png" alt="Officine Mattio" className="h-10 w-auto" />
             </div>
 
             <nav className="flex-1 px-4 py-6 space-y-2">
