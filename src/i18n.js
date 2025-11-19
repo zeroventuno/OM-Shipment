@@ -77,7 +77,19 @@ const resources = {
             "Width (cm)": "Largura (cm)",
             "Height (cm)": "Altura (cm)",
             "Length (cm)": "Comprimento (cm)",
-            "Calculate Quotes": "Calcular Cotações"
+            "Calculate Quotes": "Calcular Cotações",
+            "Customer Filter": "Filtro de Clientes",
+            "Filter Type": "Tipo de Filtro",
+            "All Customers": "Todos os Clientes",
+            "Specific Customer": "Cliente Específico",
+            "Top 5 Most Profitable": "Top 5 Mais Lucrativos",
+            "Bottom 5 Least Profitable": "5 Menos Lucrativos",
+            "Select Customer": "Selecionar Cliente",
+            "Choose a customer": "Escolha um cliente",
+            "Export": "Exportar",
+            "Export Excel": "Exportar Excel",
+            "Print": "Imprimir",
+            "No shipments found": "Nenhum envio encontrado"
         }
     },
     it: {
@@ -156,7 +168,19 @@ const resources = {
             "Width (cm)": "Larghezza (cm)",
             "Height (cm)": "Altezza (cm)",
             "Length (cm)": "Lunghezza (cm)",
-            "Calculate Quotes": "Calcola Preventivi"
+            "Calculate Quotes": "Calcola Preventivi",
+            "Customer Filter": "Filtro Clienti",
+            "Filter Type": "Tipo di Filtro",
+            "All Customers": "Tutti i Clienti",
+            "Specific Customer": "Cliente Specifico",
+            "Top 5 Most Profitable": "Top 5 Più Redditizi",
+            "Bottom 5 Least Profitable": "5 Meno Redditizi",
+            "Select Customer": "Seleziona Cliente",
+            "Choose a customer": "Scegli un cliente",
+            "Export": "Esporta",
+            "Export Excel": "Esporta Excel",
+            "Print": "Stampa",
+            "No shipments found": "Nessuna spedizione trovata"
         }
     }
 };
