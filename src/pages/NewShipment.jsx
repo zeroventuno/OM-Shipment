@@ -139,15 +139,28 @@ export default function NewShipment() {
         let shipmentData;
 
         if (isEditing && !analysis) {
-            // Editing without changing quotes - keep existing data
+            // Editing without changing quotes - keep existing data but recalculate profit
             console.log('Editing without analysis, loading existing shipment...');
             const existingShipment = await storageService.getShipment(id);
             console.log('Existing shipment:', existingShipment);
+
+            // Recalculate profit based on new customer payment
+            const selectedQuotePrice = parseFloat(existingShipment.selectedQuote.price);
+            const customerPayment = parseFloat(formData.customerPayment);
+            const newProfit = customerPayment - selectedQuotePrice;
+
+            // Recalculate savings (difference between selected and worst quote)
+            const allPrices = existingShipment.allQuotes.map(q => parseFloat(q.price)).filter(p => !isNaN(p));
+            const worstPrice = Math.max(...allPrices);
+            const newSavings = worstPrice - selectedQuotePrice;
+
             shipmentData = {
                 ...existingShipment,
-                ...formData, // Update only the form fields
+                ...formData, // Update form fields
+                profit: newProfit,
+                savings: newSavings
             };
-            console.log('Updated shipment data:', shipmentData);
+            console.log('Updated shipment data with recalculated profit:', shipmentData);
         } else {
             // New shipment or editing with new quotes
             console.log('Creating new or updating with new quotes');
