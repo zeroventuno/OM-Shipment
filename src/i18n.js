@@ -90,7 +90,8 @@ const resources = {
             "Export Excel": "Exportar Excel",
             "Print": "Imprimir",
             "No shipments found": "Nenhum envio encontrado",
-            "Save Changes": "Salvar Alterações"
+            "Save Changes": "Salvar Alterações",
+            "Please add at least one quote": "Por favor, adicione pelo menos uma cotação"
         }
     },
     it: {
@@ -182,7 +183,8 @@ const resources = {
             "Export Excel": "Esporta Excel",
             "Print": "Stampa",
             "No shipments found": "Nessuna spedizione trovata",
-            "Save Changes": "Salva Modifiche"
+            "Save Changes": "Salva Modifiche",
+            "Please add at least one quote": "Aggiungi almeno un preventivo"
         }
     }
 };

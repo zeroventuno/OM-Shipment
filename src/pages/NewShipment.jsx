@@ -127,15 +127,32 @@ export default function NewShipment() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!analysis) return;
 
-        const shipmentData = {
-            ...formData,
-            selectedQuote: analysis.selected,
-            profit: parseFloat(formData.customerPayment) - parseFloat(analysis.selected.price),
-            savings: analysis.savings,
-            allQuotes: quotes
-        };
+        // When creating new shipment, analysis is required
+        if (!isEditing && !analysis) {
+            alert(t('Please add at least one quote'));
+            return;
+        }
+
+        let shipmentData;
+
+        if (isEditing && !analysis) {
+            // Editing without changing quotes - keep existing data
+            const existingShipment = await storageService.getShipment(id);
+            shipmentData = {
+                ...existingShipment,
+                ...formData, // Update only the form fields
+            };
+        } else {
+            // New shipment or editing with new quotes
+            shipmentData = {
+                ...formData,
+                selectedQuote: analysis.selected,
+                profit: parseFloat(formData.customerPayment) - parseFloat(analysis.selected.price),
+                savings: analysis.savings,
+                allQuotes: quotes
+            };
+        }
 
         if (id) {
             await storageService.updateShipment({ ...shipmentData, id });
