@@ -126,7 +126,9 @@ export default function NewShipment() {
     }, [quotes, selectedQuoteId]);
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
+
+        console.log('handleSubmit called', { isEditing, hasAnalysis: !!analysis });
 
         // When creating new shipment, analysis is required
         if (!isEditing && !analysis) {
@@ -138,13 +140,17 @@ export default function NewShipment() {
 
         if (isEditing && !analysis) {
             // Editing without changing quotes - keep existing data
+            console.log('Editing without analysis, loading existing shipment...');
             const existingShipment = await storageService.getShipment(id);
+            console.log('Existing shipment:', existingShipment);
             shipmentData = {
                 ...existingShipment,
                 ...formData, // Update only the form fields
             };
+            console.log('Updated shipment data:', shipmentData);
         } else {
             // New shipment or editing with new quotes
+            console.log('Creating new or updating with new quotes');
             shipmentData = {
                 ...formData,
                 selectedQuote: analysis.selected,
@@ -155,11 +161,14 @@ export default function NewShipment() {
         }
 
         if (id) {
+            console.log('Updating shipment with id:', id);
             await storageService.updateShipment({ ...shipmentData, id });
         } else {
+            console.log('Saving new shipment');
             await storageService.saveShipment(shipmentData);
         }
 
+        console.log('Navigating to dashboard...');
         navigate('/dashboard');
     };
 
@@ -174,23 +183,24 @@ export default function NewShipment() {
                         {isEditing ? t('Update Shipment Data') : t('Compare Prices')}
                     </p>
                 </div>
-                {isEditing && (
-                    <Button
-                        onClick={handleSubmit}
-                        className="shadow-lg"
-                        size="lg"
-                    >
-                        <Save className="mr-2 h-5 w-5" /> {t('Save Changes')}
-                    </Button>
-                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Column: Form */}
                 <div className="lg:col-span-2 space-y-6">
                     <Card>
-                        <CardHeader>
+                        <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle>{t('Order Data')}</CardTitle>
+                            {isEditing && (
+                                <Button
+                                    onClick={handleSubmit}
+                                    variant="outlined"
+                                    size="sm"
+                                    type="button"
+                                >
+                                    <Save className="h-4 w-4 mr-2" /> {t('Save')}
+                                </Button>
+                            )}
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

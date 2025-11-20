@@ -91,7 +91,8 @@ const resources = {
             "Print": "Imprimir",
             "No shipments found": "Nenhum envio encontrado",
             "Save Changes": "Salvar Alterações",
-            "Please add at least one quote": "Por favor, adicione pelo menos uma cotação"
+            "Please add at least one quote": "Por favor, adicione pelo menos uma cotação",
+            "Save": "Salvar"
         }
     },
     it: {
@@ -184,7 +185,8 @@ const resources = {
             "Print": "Stampa",
             "No shipments found": "Nessuna spedizione trovata",
             "Save Changes": "Salva Modifiche",
-            "Please add at least one quote": "Aggiungi almeno un preventivo"
+            "Please add at least one quote": "Aggiungi almeno un preventivo",
+            "Save": "Salva"
         }
     }
 };
