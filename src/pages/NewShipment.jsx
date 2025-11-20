@@ -157,7 +157,9 @@ export default function NewShipment() {
 
                 // Recalculate savings (difference between selected and worst quote)
                 let newSavings = existingShipment.savings || 0;
-                if (existingShipment.allQuotes && existingShipment.allQuotes.length > 0) {
+
+                // Only recalculate savings if allQuotes exists
+                if (existingShipment.allQuotes && Array.isArray(existingShipment.allQuotes) && existingShipment.allQuotes.length > 0) {
                     const allPrices = existingShipment.allQuotes
                         .map(q => parseFloat(q.price))
                         .filter(p => !isNaN(p) && p > 0);
