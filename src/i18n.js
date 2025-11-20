@@ -89,7 +89,8 @@ const resources = {
             "Export": "Exportar",
             "Export Excel": "Exportar Excel",
             "Print": "Imprimir",
-            "No shipments found": "Nenhum envio encontrado"
+            "No shipments found": "Nenhum envio encontrado",
+            "Save Changes": "Salvar Alterações"
         }
     },
     it: {
@@ -180,7 +181,8 @@ const resources = {
             "Export": "Esporta",
             "Export Excel": "Esporta Excel",
             "Print": "Stampa",
-            "No shipments found": "Nessuna spedizione trovata"
+            "No shipments found": "Nessuna spedizione trovata",
+            "Save Changes": "Salva Modifiche"
         }
     }
 };

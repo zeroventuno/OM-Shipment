@@ -157,6 +157,15 @@ export default function NewShipment() {
                         {isEditing ? t('Update Shipment Data') : t('Compare Prices')}
                     </p>
                 </div>
+                {isEditing && (
+                    <Button
+                        onClick={handleSubmit}
+                        className="shadow-lg"
+                        size="lg"
+                    >
+                        <Save className="mr-2 h-5 w-5" /> {t('Save Changes')}
+                    </Button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
