@@ -141,26 +141,44 @@ export default function NewShipment() {
         if (isEditing && !analysis) {
             // Editing without changing quotes - keep existing data but recalculate profit
             console.log('Editing without analysis, loading existing shipment...');
-            const existingShipment = await storageService.getShipment(id);
-            console.log('Existing shipment:', existingShipment);
+            try {
+                const existingShipment = await storageService.getShipment(id);
+                console.log('Existing shipment:', existingShipment);
 
-            // Recalculate profit based on new customer payment
-            const selectedQuotePrice = parseFloat(existingShipment.selectedQuote.price);
-            const customerPayment = parseFloat(formData.customerPayment);
-            const newProfit = customerPayment - selectedQuotePrice;
+                if (!existingShipment) {
+                    alert('Erro: Envio não encontrado');
+                    return;
+                }
 
-            // Recalculate savings (difference between selected and worst quote)
-            const allPrices = existingShipment.allQuotes.map(q => parseFloat(q.price)).filter(p => !isNaN(p));
-            const worstPrice = Math.max(...allPrices);
-            const newSavings = worstPrice - selectedQuotePrice;
+                // Recalculate profit based on new customer payment
+                const selectedQuotePrice = parseFloat(existingShipment.selectedQuote?.price || 0);
+                const customerPayment = parseFloat(formData.customerPayment || 0);
+                const newProfit = customerPayment - selectedQuotePrice;
 
-            shipmentData = {
-                ...existingShipment,
-                ...formData, // Update form fields
-                profit: newProfit,
-                savings: newSavings
-            };
-            console.log('Updated shipment data with recalculated profit:', shipmentData);
+                // Recalculate savings (difference between selected and worst quote)
+                let newSavings = existingShipment.savings || 0;
+                if (existingShipment.allQuotes && existingShipment.allQuotes.length > 0) {
+                    const allPrices = existingShipment.allQuotes
+                        .map(q => parseFloat(q.price))
+                        .filter(p => !isNaN(p) && p > 0);
+                    if (allPrices.length > 0) {
+                        const worstPrice = Math.max(...allPrices);
+                        newSavings = worstPrice - selectedQuotePrice;
+                    }
+                }
+
+                shipmentData = {
+                    ...existingShipment,
+                    ...formData, // Update form fields
+                    profit: newProfit,
+                    savings: newSavings
+                };
+                console.log('Updated shipment data with recalculated profit:', shipmentData);
+            } catch (error) {
+                console.error('Error loading existing shipment:', error);
+                alert('Erro ao carregar dados do envio: ' + error.message);
+                return;
+            }
         } else {
             // New shipment or editing with new quotes
             console.log('Creating new or updating with new quotes');
