@@ -42,6 +42,8 @@ export default function NewShipment() {
 
     const [selectedQuoteId, setSelectedQuoteId] = useState(null);
 
+    const [isLoading, setIsLoading] = useState(false);
+
     // Load data for editing
     useEffect(() => {
         const loadData = async () => {
@@ -130,23 +132,47 @@ export default function NewShipment() {
 
         console.log('handleSubmit called', { isEditing, hasAnalysis: !!analysis });
 
+        // Validate required fields
+        if (!formData.orderId || formData.orderId.trim() === '') {
+            alert(t('Please enter an Order Number'));
+            return;
+        }
+
+        if (!formData.customerName || formData.customerName.trim() === '') {
+            alert(t('Please enter a Customer Name'));
+            return;
+        }
+
+        if (!formData.destinationCountry) {
+            alert(t('Please select a Destination Country'));
+            return;
+        }
+
+        if (!formData.customerPayment || parseFloat(formData.customerPayment) <= 0) {
+            alert(t('Please enter a valid Customer Payment amount'));
+            return;
+        }
+
         // When creating new shipment, analysis is required
         if (!isEditing && !analysis) {
             alert(t('Please add at least one quote'));
             return;
         }
 
-        let shipmentData;
+        setIsLoading(true);
 
-        if (isEditing && !analysis) {
-            // Editing without changing quotes - keep existing data but recalculate profit
-            console.log('Editing without analysis, loading existing shipment...');
-            try {
+        try {
+            let shipmentData;
+
+            if (isEditing && !analysis) {
+                // Editing without changing quotes - keep existing data but recalculate profit
+                console.log('Editing without analysis, loading existing shipment...');
                 const existingShipment = await storageService.getShipment(id);
                 console.log('Existing shipment:', existingShipment);
 
                 if (!existingShipment) {
                     alert('Erro: Envio não encontrado');
+                    setIsLoading(false);
                     return;
                 }
 
@@ -176,33 +202,36 @@ export default function NewShipment() {
                     savings: newSavings
                 };
                 console.log('Updated shipment data with recalculated profit:', shipmentData);
-            } catch (error) {
-                console.error('Error loading existing shipment:', error);
-                alert('Erro ao carregar dados do envio: ' + error.message);
-                return;
+            } else {
+                // New shipment or editing with new quotes
+                console.log('Creating new or updating with new quotes');
+                shipmentData = {
+                    ...formData,
+                    selectedQuote: analysis.selected,
+                    profit: parseFloat(formData.customerPayment) - parseFloat(analysis.selected.price),
+                    savings: analysis.savings,
+                    allQuotes: quotes
+                };
             }
-        } else {
-            // New shipment or editing with new quotes
-            console.log('Creating new or updating with new quotes');
-            shipmentData = {
-                ...formData,
-                selectedQuote: analysis.selected,
-                profit: parseFloat(formData.customerPayment) - parseFloat(analysis.selected.price),
-                savings: analysis.savings,
-                allQuotes: quotes
-            };
-        }
 
-        if (id) {
-            console.log('Updating shipment with id:', id);
-            await storageService.updateShipment({ ...shipmentData, id });
-        } else {
-            console.log('Saving new shipment');
-            await storageService.saveShipment(shipmentData);
-        }
+            if (id) {
+                console.log('Updating shipment with id:', id);
+                await storageService.updateShipment({ ...shipmentData, id });
+                alert(t('Shipment updated successfully!'));
+            } else {
+                console.log('Saving new shipment');
+                await storageService.saveShipment(shipmentData);
+                alert(t('Shipment registered successfully!'));
+            }
 
-        console.log('Navigating to dashboard...');
-        navigate('/dashboard');
+            console.log('Navigating to dashboard...');
+            navigate('/dashboard');
+        } catch (error) {
+            console.error('Error submitting form:', error);
+            alert(`Erro ao salvar: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -393,8 +422,10 @@ export default function NewShipment() {
                                         onClick={handleSubmit}
                                         className="w-full bg-white text-primary hover:bg-gray-100 mt-4 font-bold shadow-lg"
                                         size="lg"
+                                        disabled={isLoading}
                                     >
-                                        <Save className="mr-2 h-5 w-5" /> {isEditing ? t('Update Shipment') : t('Register Shipment')}
+                                        <Save className="mr-2 h-5 w-5" />
+                                        {isLoading ? t('Saving...') : (isEditing ? t('Update Shipment') : t('Register Shipment'))}
                                     </Button>
                                 </div>
                             ) : (

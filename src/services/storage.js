@@ -54,6 +54,7 @@ export const storageService = {
 
             if (error) {
                 console.error('❌ Supabase save error:', error);
+                alert(`Erro ao salvar no Supabase: ${error.message}\n\nTentando salvar localmente...`);
                 console.log('⚠️ Falling back to LocalStorage');
             } else {
                 console.log('✅ Saved to Supabase successfully!');
@@ -87,10 +88,16 @@ export const storageService = {
 
     updateShipment: async (shipment) => {
         if (supabase) {
-            await supabase
+            const { error } = await supabase
                 .from('shipments')
                 .update(mapToDb({ ...shipment, updatedAt: new Date().toISOString() }))
                 .eq('id', shipment.id);
+            
+            if (error) {
+                console.error('❌ Supabase update error:', error);
+                alert(`Erro ao atualizar no Supabase: ${error.message}`);
+                throw error;
+            }
             return;
         }
 
@@ -191,6 +198,7 @@ const mapToDb = (s) => ({
     status: s.status,
     tracking_code: s.trackingCode,
     selected_quote: s.selectedQuote,
+    all_quotes: s.allQuotes,
     profit: s.profit,
     savings: s.savings
 });
@@ -206,6 +214,7 @@ const mapFromDb = (s) => ({
     status: s.status,
     trackingCode: s.tracking_code,
     selectedQuote: s.selected_quote,
+    allQuotes: s.all_quotes,
     profit: s.profit,
     savings: s.savings
 });

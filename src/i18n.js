@@ -92,7 +92,14 @@ const resources = {
             "No shipments found": "Nenhum envio encontrado",
             "Save Changes": "Salvar Alterações",
             "Please add at least one quote": "Por favor, adicione pelo menos uma cotação",
-            "Save": "Salvar"
+            "Save": "Salvar",
+            "Please enter an Order Number": "Por favor, insira o Número da Ordem",
+            "Please enter a Customer Name": "Por favor, insira o Nome do Cliente",
+            "Please select a Destination Country": "Por favor, selecione o País de Destino",
+            "Please enter a valid Customer Payment amount": "Por favor, insira um valor válido para Pagamento do Cliente",
+            "Shipment updated successfully!": "Envio atualizado com sucesso!",
+            "Shipment registered successfully!": "Envio registrado com sucesso!",
+            "Saving...": "Salvando..."
         }
     },
     it: {
@@ -186,7 +193,14 @@ const resources = {
             "No shipments found": "Nessuna spedizione trovata",
             "Save Changes": "Salva Modifiche",
             "Please add at least one quote": "Aggiungi almeno un preventivo",
-            "Save": "Salva"
+            "Save": "Salva",
+            "Please enter an Order Number": "Inserisci il Numero dell'Ordine",
+            "Please enter a Customer Name": "Inserisci il Nome del Cliente",
+            "Please select a Destination Country": "Seleziona il Paese di Destinazione",
+            "Please enter a valid Customer Payment amount": "Inserisci un importo valido per il Pagamento del Cliente",
+            "Shipment updated successfully!": "Spedizione aggiornata con successo!",
+            "Shipment registered successfully!": "Spedizione registrata con successo!",
+            "Saving...": "Salvataggio..."
         }
     }
 };
@@ -195,7 +209,7 @@ i18n
     .use(initReactI18next)
     .init({
         resources,
-        lng: "pt",
+        lng: "it",
         interpolation: {
             escapeValue: false
         }
