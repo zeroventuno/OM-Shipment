@@ -11,11 +11,30 @@ import { useTranslation } from 'react-i18next';
 const PORTALS = ['MBE', 'My Parcel', 'My DHL', 'BRT'];
 const ALL_CARRIERS = ['TNT', 'Fedex', 'DHL', 'BRT', 'SDA', 'UPS'];
 const COUNTRIES = [
-    "Alemanha", "Argentina", "Austrália", "Áustria", "Bélgica", "Brasil", "Canadá", "Chile", "China",
-    "Colômbia", "Coreia do Sul", "Dinamarca", "Espanha", "Estados Unidos", "Finlândia", "França",
-    "Grécia", "Holanda", "Índia", "Irlanda", "Israel", "Itália", "Japão", "México", "Noruega",
-    "Nova Zelândia", "Peru", "Polônia", "Portugal", "Reino Unido", "Rússia", "Suécia", "Suíça",
-    "Turquia", "Uruguai"
+    "África do Sul", "Alemanha", "Andorra", "Angola", "Arábia Saudita", "Argélia", "Argentina",
+    "Armênia", "Austrália", "Áustria", "Azerbaijão", "Bahamas", "Bangladesh", "Barbados",
+    "Barein", "Bélgica", "Belize", "Bielorrússia", "Bolívia", "Bósnia e Herzegovina", "Brasil",
+    "Brunei", "Bulgária", "Cabo Verde", "Camboja", "Camarões", "Canadá", "Catar", "Cazaquistão",
+    "Chile", "China", "Chipre", "Cingapura", "Colômbia", "Coreia do Norte", "Coreia do Sul",
+    "Costa do Marfim", "Costa Rica", "Croácia", "Cuba", "Dinamarca", "Dominica", "Egito",
+    "El Salvador", "Emirados Árabes Unidos", "Equador", "Eslováquia", "Eslovênia", "Espanha",
+    "Estados Unidos", "Estônia", "Etiópia", "Fiji", "Filipinas", "Finlândia", "França", "Gabão",
+    "Gana", "Geórgia", "Gibraltar", "Grécia", "Groenlândia", "Guadalupe", "Guam", "Guatemala",
+    "Guiana", "Guiana Francesa", "Haiti", "Holanda", "Honduras", "Hong Kong", "Hungria", "Iêmen",
+    "Ilhas Cayman", "Ilhas Fiji", "Ilhas Maurício", "Índia", "Indonésia", "Irã", "Iraque",
+    "Irlanda", "Islândia", "Israel", "Itália", "Jamaica", "Japão", "Jordânia", "Kosovo", "Kuwait",
+    "Laos", "Letônia", "Líbano", "Líbia", "Liechtenstein", "Lituânia", "Luxemburgo", "Macau",
+    "Macedônia do Norte", "Madagascar", "Malásia", "Malawi", "Maldivas", "Mali", "Malta",
+    "Marrocos", "Martinica", "Maurícia", "México", "Mianmar", "Moçambique", "Mônaco", "Mongólia",
+    "Montenegro", "Namíbia", "Nepal", "Nicarágua", "Nigéria", "Noruega", "Nova Caledônia",
+    "Nova Zelândia", "Omã", "Panamá", "Paquistão", "Paraguai", "Peru", "Polinésia Francesa",
+    "Polônia", "Porto Rico", "Portugal", "Quênia", "Quirguistão", "Reino Unido",
+    "República Checa", "República Democrática do Congo", "República Dominicana", "Reunião",
+    "Romênia", "Ruanda", "Rússia", "Samoa", "San Marino", "Senegal", "Sérvia", "Seychelles",
+    "Singapura", "Síria", "Sri Lanka", "Suazilândia", "Sudão", "Suécia", "Suíça", "Suriname",
+    "Tailândia", "Taiwan", "Tanzânia", "Timor-Leste", "Togo", "Trinidad e Tobago", "Tunísia",
+    "Turcomenistão", "Turquia", "Ucrânia", "Uganda", "Uruguai", "Uzbequistão", "Vaticano",
+    "Venezuela", "Vietnã", "Zâmbia", "Zimbábue"
 ];
 
 export default function NewShipment() {
