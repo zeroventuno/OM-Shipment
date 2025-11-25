@@ -148,7 +148,7 @@ export default function NewShipment() {
             return;
         }
 
-        if (!formData.customerPayment || parseFloat(formData.customerPayment) <= 0) {
+        if (formData.customerPayment === '' || formData.customerPayment === null || formData.customerPayment === undefined || parseFloat(formData.customerPayment) < 0 || isNaN(parseFloat(formData.customerPayment))) {
             alert(t('Please enter a valid Customer Payment amount'));
             return;
         }
