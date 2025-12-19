@@ -52,9 +52,10 @@ export default function NewShipment() {
     });
 
     const [quotes, setQuotes] = useState([
-        { id: 1, portal: PORTALS[0], carrier: ALL_CARRIERS[0], price: '' },
-        { id: 2, portal: PORTALS[1], carrier: ALL_CARRIERS[0], price: '' },
-        { id: 3, portal: PORTALS[2], carrier: ALL_CARRIERS[0], price: '' }
+        { id: 1, portal: PORTALS[0], carrier: ALL_CARRIERS[0], price: '' }, // MBE - TNT
+        { id: 2, portal: PORTALS[1], carrier: ALL_CARRIERS[0], price: '' }, // My Parcel - TNT
+        { id: 3, portal: PORTALS[2], carrier: 'DHL', price: '' },           // My DHL - DHL
+        { id: 4, portal: PORTALS[3], carrier: 'BRT', price: '' }            // BRT - BRT
     ]);
 
     const [suggestedPortal, setSuggestedPortal] = useState(null);
