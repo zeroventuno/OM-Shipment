@@ -5,6 +5,7 @@ const STORAGE_KEY = 'bikeship_data_v1';
 // Debug: Log storage mode on load
 const debugStorage = () => {
     const config = {
+        mode: import.meta.env.MODE,
         supabaseConfigured: !!supabase,
         supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
         supabaseKeyExists: !!import.meta.env.VITE_SUPABASE_ANON_KEY
