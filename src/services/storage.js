@@ -3,37 +3,60 @@ import { supabase } from './supabaseClient';
 const STORAGE_KEY = 'bikeship_data_v1';
 
 // Debug: Log storage mode on load
-console.log('🔍 STORAGE DEBUG:', {
-    supabaseConfigured: !!supabase,
-    supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
-    supabaseKeyExists: !!import.meta.env.VITE_SUPABASE_ANON_KEY
-});
+const debugStorage = () => {
+    const config = {
+        supabaseConfigured: !!supabase,
+        supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+        supabaseKeyExists: !!import.meta.env.VITE_SUPABASE_ANON_KEY
+    };
+    console.log('🔍 STORAGE DEBUG:', config);
+    return config;
+};
+
+debugStorage();
 
 export const storageService = {
     getShipments: async () => {
         if (supabase) {
             console.log('📡 Fetching from SUPABASE...');
-            const { data, error } = await supabase
-                .from('shipments')
-                .select('*')
-                .order('created_at', { ascending: false });
+            try {
+                const { data, error, status, statusText } = await supabase
+                    .from('shipments')
+                    .select('*')
+                    .order('created_at', { ascending: false });
 
-            if (error) {
-                console.error('❌ Supabase fetch error:', error);
+                if (error) {
+                    console.error('❌ Supabase fetch error:', {
+                        code: error.code,
+                        message: error.message,
+                        details: error.details,
+                        hint: error.hint,
+                        status,
+                        statusText
+                    });
+                    console.log('⚠️ Falling back to LocalStorage');
+                } else {
+                    console.log('✅ Fetched from Supabase:', data?.length, 'shipments');
+                    return data.map(mapFromDb);
+                }
+            } catch (err) {
+                console.error('💥 Unexpected error fetching from Supabase:', err);
                 console.log('⚠️ Falling back to LocalStorage');
-            } else {
-                console.log('✅ Fetched from Supabase:', data?.length, 'shipments');
-                return data.map(mapFromDb);
             }
         } else {
             console.log('💾 Using LocalStorage (Supabase not configured)');
         }
 
         // Fallback to LocalStorage
-        const data = localStorage.getItem(STORAGE_KEY);
-        const parsed = data ? JSON.parse(data) : [];
-        console.log('💾 LocalStorage has', parsed.length, 'shipments');
-        return parsed;
+        try {
+            const data = localStorage.getItem(STORAGE_KEY);
+            const parsed = data ? JSON.parse(data) : [];
+            console.log('💾 LocalStorage has', parsed.length, 'shipments');
+            return parsed;
+        } catch (err) {
+            console.error('❌ LocalStorage read error:', err);
+            return [];
+        }
     },
 
     saveShipment: async (shipment) => {
@@ -92,7 +115,7 @@ export const storageService = {
                 .from('shipments')
                 .update(mapToDb({ ...shipment, updatedAt: new Date().toISOString() }))
                 .eq('id', shipment.id);
-            
+
             if (error) {
                 console.error('❌ Supabase update error:', error);
                 alert(`Erro ao atualizar no Supabase: ${error.message}`);
@@ -183,6 +206,18 @@ export const storageService = {
             favoriteCarrierPercentage: favoriteCarrier ? Math.round((favoriteCarrier[1] / totalShipments) * 100) : 0,
             recentShipments: shipments.slice(0, 5)
         };
+    },
+
+    getConnectionStatus: async () => {
+        if (!supabase) return { status: 'disconnected', reason: 'Not configured' };
+
+        try {
+            const { error } = await supabase.from('shipments').select('id').limit(1);
+            if (error) return { status: 'error', message: error.message };
+            return { status: 'connected' };
+        } catch (err) {
+            return { status: 'error', message: err.message };
+        }
     }
 };
 
