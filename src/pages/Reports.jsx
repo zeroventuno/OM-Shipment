@@ -18,6 +18,40 @@ export default function Reports() {
 
     useEffect(() => {
         loadShipments();
+
+        // 17track script integration
+        const scriptId = '17track-script';
+        if (!document.getElementById(scriptId)) {
+            const script = document.createElement('script');
+            script.id = scriptId;
+            script.src = 'https://www.17track.net/externalcall.js';
+            script.async = true;
+            document.body.appendChild(script);
+        }
+
+        const handleTrackingClick = (e) => {
+            if (e.target.classList.contains('tracking-trigger')) {
+                e.preventDefault();
+                const num = e.target.getAttribute('data-num');
+                const elementId = e.target.id;
+
+                if (window.YQV5) {
+                    window.YQV5.trackSingleF1({
+                        YQ_ElementId: elementId,
+                        YQ_Num: num,
+                        YQ_Fc: "0",
+                        YQ_Lang: "it",
+                        YQ_Height: 560
+                    });
+                }
+            }
+        };
+
+        document.addEventListener('click', handleTrackingClick);
+
+        return () => {
+            document.removeEventListener('click', handleTrackingClick);
+        };
     }, []);
 
     const loadShipments = async () => {
@@ -364,6 +398,7 @@ export default function Reports() {
                                         />
                                     </th>
                                     <th className="px-6 py-3">{t('Order')}</th>
+                                    <th className="px-6 py-3">{t('Tracking')}</th>
                                     <th className="px-6 py-3">{t('Customer')}</th>
                                     <th className="px-6 py-3">{t('Country')}</th>
                                     <th className="px-6 py-3">{t('Portal/Carrier')}</th>
@@ -387,6 +422,19 @@ export default function Reports() {
                                             />
                                         </td>
                                         <td className="px-6 py-4 font-medium text-gray-900">{shipment.orderId}</td>
+                                        <td className="px-6 py-4">
+                                            {shipment.trackingCode ? (
+                                                <span
+                                                    id={`track-${shipment.trackingCode}`}
+                                                    className="tracking-trigger text-blue-600 cursor-pointer hover:underline"
+                                                    data-num={shipment.trackingCode}
+                                                >
+                                                    {shipment.trackingCode}
+                                                </span>
+                                            ) : (
+                                                '-'
+                                            )}
+                                        </td>
                                         <td className="px-6 py-4">{shipment.customerName}</td>
                                         <td className="px-6 py-4">{shipment.destinationCountry}</td>
                                         <td className="px-6 py-4">{shipment.selectedQuote.portal} / {shipment.selectedQuote.carrier}</td>
