@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Pencil, Trash2, Search, DollarSign, TrendingUp, TrendingDown, User, FileDown, Printer, Camera } from 'lucide-react';
+import { Pencil, Trash2, Search, DollarSign, TrendingUp, TrendingDown, User, FileDown, Printer, Camera, X } from 'lucide-react';
 import { storageService } from '../services/storage';
 import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
@@ -15,6 +15,8 @@ export default function Reports() {
     const [customerFilter, setCustomerFilter] = useState('all');
     const [selectedCustomer, setSelectedCustomer] = useState('');
     const [selectedItems, setSelectedItems] = useState([]);
+    const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+    const [currentPhotos, setCurrentPhotos] = useState([]);
 
     useEffect(() => {
         loadShipments();
@@ -195,8 +197,8 @@ export default function Reports() {
             [t('Order')]: s.orderId,
             [t('Customer')]: s.customerName,
             [t('Country')]: s.destinationCountry,
-            [t('Portal/Carrier')]: `${s.selectedQuote.portal} / ${s.selectedQuote.carrier}`,
-            [t('Cost')]: `€ ${s.selectedQuote.price}`,
+            [t('Portal/Carrier')]: `${s.selectedQuote?.portal} / ${s.selectedQuote?.carrier}`,
+            [t('Cost')]: `€ ${s.selectedQuote?.price}`,
             [t('Customer Payment')]: `€ ${s.customerPayment}`,
             [t('Profit')]: `€ ${s.profit?.toFixed(2)}`,
             [t('Savings')]: `€ ${s.savings?.toFixed(2)}`,
@@ -226,8 +228,8 @@ export default function Reports() {
             printWindow.document.write('<tr>');
             printWindow.document.write(`<td>${s.orderId}</td>`);
             printWindow.document.write(`<td>${s.customerName}</td>`);
-            printWindow.document.write(`<td>${s.selectedQuote.portal} / ${s.selectedQuote.carrier}</td>`);
-            printWindow.document.write(`<td>€ ${s.selectedQuote.price}</td>`);
+            printWindow.document.write(`<td>${s.selectedQuote?.portal} / ${s.selectedQuote?.carrier}</td>`);
+            printWindow.document.write(`<td>€ ${s.selectedQuote?.price}</td>`);
             printWindow.document.write(`<td>€ ${s.profit?.toFixed(2)}</td>`);
             printWindow.document.write(`<td>€ ${s.savings?.toFixed(2)}</td>`);
             printWindow.document.write('</tr>');
@@ -240,7 +242,7 @@ export default function Reports() {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">{t('Reports')}</h1>
@@ -291,7 +293,7 @@ export default function Reports() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Total Savings')}</CardTitle>
@@ -389,7 +391,7 @@ export default function Reports() {
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3">
+                                    <th className="px-3 py-3">
                                         <input
                                             type="checkbox"
                                             checked={selectedItems.length === filteredShipments.length && filteredShipments.length > 0}
@@ -397,24 +399,24 @@ export default function Reports() {
                                             className="rounded border-gray-300"
                                         />
                                     </th>
-                                    <th className="px-6 py-3">{t('Order')}</th>
-                                    <th className="px-6 py-3">{t('Tracking')}</th>
-                                    <th className="px-6 py-3 w-10">{t('Photos')}</th>
-                                    <th className="px-6 py-3">{t('Customer')}</th>
-                                    <th className="px-6 py-3">{t('Country')}</th>
-                                    <th className="px-6 py-3">{t('Portal/Carrier')}</th>
-                                    <th className="px-6 py-3">{t('Cost')}</th>
-                                    <th className="px-6 py-3">{t('Customer Payment')}</th>
-                                    <th className="px-6 py-3">{t('Profit')}</th>
-                                    <th className="px-6 py-3">{t('Savings')}</th>
-                                    <th className="px-6 py-3">{t('Date')}</th>
-                                    <th className="px-6 py-3">{t('Actions')}</th>
+                                    <th className="px-3 py-3">{t('Order')}</th>
+                                    <th className="px-3 py-3">{t('Tracking')}</th>
+                                    <th className="px-3 py-3 w-10 text-center">{t('Photos')}</th>
+                                    <th className="px-3 py-3">{t('Customer')}</th>
+                                    <th className="px-3 py-3">{t('Country')}</th>
+                                    <th className="px-3 py-3">{t('Portal/Carrier')}</th>
+                                    <th className="px-3 py-3">{t('Cost')}</th>
+                                    <th className="px-3 py-3">{t('Customer Payment')}</th>
+                                    <th className="px-3 py-3">{t('Profit')}</th>
+                                    <th className="px-3 py-3">{t('Savings')}</th>
+                                    <th className="px-3 py-3">{t('Date')}</th>
+                                    <th className="px-3 py-3">{t('Actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredShipments.map((shipment) => (
-                                    <tr key={shipment.id} className="bg-white border-b hover:bg-gray-50">
-                                        <td className="px-6 py-4">
+                                    <tr key={shipment.id} className="bg-white border-b hover:bg-gray-50 uppercase text-[11px]">
+                                        <td className="px-3 py-3">
                                             <input
                                                 type="checkbox"
                                                 checked={selectedItems.includes(shipment.id)}
@@ -422,8 +424,8 @@ export default function Reports() {
                                                 className="rounded border-gray-300"
                                             />
                                         </td>
-                                        <td className="px-6 py-4 font-medium text-gray-900">{shipment.orderId}</td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-3 py-3 font-medium text-gray-900">{shipment.orderId}</td>
+                                        <td className="px-3 py-3">
                                             {shipment.trackingCode ? (
                                                 <span
                                                     id={`track-${shipment.trackingCode}`}
@@ -436,47 +438,48 @@ export default function Reports() {
                                                 '-'
                                             )}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-3 py-3">
                                             <div className="flex justify-center">
                                                 {shipment.photoUrls && shipment.photoUrls.length > 0 ? (
-                                                    <a
-                                                        href={shipment.photoUrls[0]}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
+                                                    <button
+                                                        onClick={() => {
+                                                            setCurrentPhotos(shipment.photoUrls);
+                                                            setIsPhotoModalOpen(true);
+                                                        }}
                                                         title={`${shipment.photoUrls.length} ${t('Photos')}`}
-                                                        className="text-gray-700 hover:text-primary transition-colors"
+                                                        className="text-gray-700 hover:text-primary transition-colors p-1"
                                                     >
-                                                        <Camera className="h-5 w-5" />
-                                                    </a>
+                                                        <Camera className="h-4 w-4" />
+                                                    </button>
                                                 ) : (
-                                                    <Camera className="h-5 w-5 text-gray-200" title={t('No photos')} />
+                                                    <Camera className="h-4 w-4 text-gray-200" title={t('No photos')} />
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">{shipment.customerName}</td>
-                                        <td className="px-6 py-4">{shipment.destinationCountry}</td>
-                                        <td className="px-6 py-4">{shipment.selectedQuote.portal} / {shipment.selectedQuote.carrier}</td>
-                                        <td className="px-6 py-4">€ {shipment.selectedQuote.price}</td>
-                                        <td className="px-6 py-4">€ {shipment.customerPayment}</td>
-                                        <td className={`px-6 py-4 font-semibold ${shipment.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        <td className="px-3 py-3">{shipment.customerName}</td>
+                                        <td className="px-3 py-3">{shipment.destinationCountry}</td>
+                                        <td className="px-3 py-3">{shipment.selectedQuote?.portal} / {shipment.selectedQuote?.carrier}</td>
+                                        <td className="px-3 py-3">€ {shipment.selectedQuote?.price}</td>
+                                        <td className="px-3 py-3">€ {shipment.customerPayment}</td>
+                                        <td className={`px-3 py-3 font-semibold ${shipment.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                             € {shipment.profit?.toFixed(2)}
                                         </td>
-                                        <td className="px-6 py-4 text-green-600 font-semibold">€ {shipment.savings?.toFixed(2)}</td>
-                                        <td className="px-6 py-4">{new Date(shipment.createdAt).toLocaleDateString()}</td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-3 py-3 text-green-600 font-semibold">€ {shipment.savings?.toFixed(2)}</td>
+                                        <td className="px-3 py-3 text-nowrap">{new Date(shipment.createdAt).toLocaleDateString()}</td>
+                                        <td className="px-3 py-3">
                                             <div className="flex gap-2">
                                                 <Link to={`/new-shipment/${shipment.id}`}>
-                                                    <Button variant="ghost" size="icon">
-                                                        <Pencil className="h-4 w-4" />
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                                                        <Pencil className="h-3.5 w-3.5" />
                                                     </Button>
                                                 </Link>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => handleDelete(shipment.id)}
-                                                    className="text-red-500 hover:text-red-700"
+                                                    className="text-red-500 hover:text-red-700 h-7 w-7"
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <Trash2 className="h-3.5 w-3.5" />
                                                 </Button>
                                             </div>
                                         </td>
@@ -492,6 +495,53 @@ export default function Reports() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Photo Gallery Modal */}
+            {isPhotoModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                            <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
+                                <Camera className="h-5 w-5 text-primary" />
+                                {t('Photos')} ({currentPhotos.length})
+                            </h3>
+                            <button
+                                onClick={() => setIsPhotoModalOpen(false)}
+                                className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-500"
+                            >
+                                <X className="h-6 w-6" />
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto bg-white">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                {currentPhotos.map((url, index) => (
+                                    <a
+                                        key={index}
+                                        href={url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 hover:ring-2 hover:ring-primary transition-all shadow-sm"
+                                    >
+                                        <img
+                                            src={url}
+                                            alt={`${t('Photo')} ${index + 1}`}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                        />
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 flex items-center justify-center transition-colors">
+                                            <Search className="text-white opacity-0 group-hover:opacity-100 h-8 w-8" />
+                                        </div>
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+                            <Button onClick={() => setIsPhotoModalOpen(false)}>
+                                {t('Close')}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

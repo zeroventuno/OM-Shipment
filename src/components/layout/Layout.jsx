@@ -22,12 +22,12 @@ export default function Layout() {
         <div className="min-h-screen bg-background flex flex-col">
             <Sidebar />
             <main className="pl-64 flex-1">
-                <div className="container mx-auto p-8 relative">
+                <div className="container mx-auto p-4 relative">
                     <Outlet />
                 </div>
             </main>
             <footer className="pl-64 py-4 bg-gray-100 border-t border-gray-200">
-                <div className="container mx-auto px-8 flex justify-between items-center">
+                <div className="container mx-auto px-4 flex justify-between items-center">
                     <p className="text-sm text-gray-600">
                         Copyright © 2025 Ventuno. Tutti i diritti reservados.
                     </p>

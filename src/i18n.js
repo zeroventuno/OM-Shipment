@@ -136,7 +136,9 @@ const resources = {
             "Dettagli Tecnici": "Detalhes Técnicos",
             "Aggiornamento Processo": "Atualização do Processo",
             "Select Solution": "Selecione a Solução",
-            "Select Producer": "Selecione o Produtor"
+            "Select Producer": "Selecione o Produtor",
+            "Close": "Fechar",
+            "Photo": "Foto"
         }
     },
     it: {
@@ -274,7 +276,9 @@ const resources = {
             "Dettagli Tecnici": "Dettagli Tecnici",
             "Aggiornamento Processo": "Aggiornamento Processo",
             "Select Solution": "Seleziona Soluzione",
-            "Select Producer": "Seleziona Produttore"
+            "Select Producer": "Seleziona Produttore",
+            "Close": "Chiudi",
+            "Photo": "Foto"
         }
     }
 };
