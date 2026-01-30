@@ -5,12 +5,10 @@ import { useTranslation } from 'react-i18next';
 export default function MonthlyChart({ data }) {
     const { t } = useTranslation();
 
-    // Data expected: [{ name: 'Jan', savings: 100, profit: 50 }, ...]
-
     return (
-        <div className="h-64 w-full bg-white p-4 rounded-xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="h-80 w-full bg-white p-6 rounded-xl shadow-sm border border-gray-200 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                     <XAxis
                         dataKey="name"
@@ -26,38 +24,41 @@ export default function MonthlyChart({ data }) {
                         tickFormatter={(value) => `€${value}`}
                     />
                     <Tooltip
-                        cursor={{ fill: 'transparent' }}
-                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        cursor={{ fill: '#F3F4F6' }}
+                        contentStyle={{ borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                         formatter={(value, name) => [`€ ${Number(value).toFixed(2)}`, t(name)]}
                     />
-                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+                    <Legend
+                        verticalAlign="top"
+                        align="left"
+                        iconType="square"
+                        iconSize={12}
+                        wrapperStyle={{ paddingBottom: '20px', paddingLeft: '0px' }}
+                    />
 
-                    {/* Background Bar: Savings */}
+                    {/* Background Bar: Savings - Light Blue */}
                     <Bar
                         dataKey="savings"
                         name={t("Savings")}
-                        fill="#E5E7EB"
-                        radius={[4, 4, 0, 0]}
-                        barSize={32}
+                        fill="#BFDBFE" // blue-200
+                        radius={[2, 2, 0, 0]}
+                        barSize={40}
                     />
 
-                    {/* Foreground Bar: Profit (Overlapping) */}
-                    {/* To make it overlap, we can use a negative barGap to pull them together if they are side-by-side by default. 
-                        However, Recharts groups bars by category. 
-                        If we want strictly overlapping, using the same xAxisId usually works if we don't stack.
-                        Actually, Recharts places them side-by-side in a group.
-                        To overlap, we can use a ComposedChart or simply manipulate the barGap. 
-                        Let's try barGap={-32} to pull the second bar over the first.
-                    */}
+                    {/* Foreground Bar: Profit - Dark Blue (or Red for loss) */}
                     <Bar
                         dataKey="profit"
                         name={t("Profit")}
-                        radius={[4, 4, 0, 0]}
-                        barSize={12}
-                        barGap={-22} // Pull back to center (32/2 + 12/2 = 22)
+                        radius={[2, 2, 0, 0]}
+                        barSize={40}
+                        barGap={-40} // Completely overlap
                     >
                         {data.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#10B981' : '#EF4444'} />
+                            <Cell
+                                key={`cell-${index}`}
+                                fill={entry.profit >= 0 ? '#1D4ED8' : '#EF4444'} // blue-700 or red-500
+                                fillOpacity={0.9}
+                            />
                         ))}
                     </Bar>
                 </BarChart>
