@@ -399,6 +399,7 @@ export default function Reports() {
                                     </th>
                                     <th className="px-6 py-3">{t('Order')}</th>
                                     <th className="px-6 py-3">{t('Tracking')}</th>
+                                    <th className="px-6 py-3">{t('Photos')}</th>
                                     <th className="px-6 py-3">{t('Customer')}</th>
                                     <th className="px-6 py-3">{t('Country')}</th>
                                     <th className="px-6 py-3">{t('Portal/Carrier')}</th>
@@ -433,6 +434,25 @@ export default function Reports() {
                                                 </span>
                                             ) : (
                                                 '-'
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {shipment.photoUrls && shipment.photoUrls.length > 0 ? (
+                                                <div className="flex -space-x-2">
+                                                    {shipment.photoUrls.map((url, idx) => (
+                                                        <a
+                                                            key={idx}
+                                                            href={url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="w-8 h-8 rounded-full border-2 border-white overflow-hidden hover:z-10 transition-transform hover:scale-110"
+                                                        >
+                                                            <img src={url} alt="" className="w-full h-full object-cover" />
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-300">-</span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4">{shipment.customerName}</td>

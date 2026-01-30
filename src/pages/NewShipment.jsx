@@ -4,6 +4,7 @@ import { Plus, Trash2, Save, ArrowRight, TrendingDown, AlertCircle } from 'lucid
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
+import { PhotoUpload } from '../components/shipments/PhotoUpload';
 import { storageService } from '../services/storage';
 import { cn } from '../utils/cn';
 import { useTranslation } from 'react-i18next';
@@ -48,7 +49,8 @@ export default function NewShipment() {
         customerName: '',
         destinationCountry: '',
         customerPayment: '',
-        trackingCode: ''
+        trackingCode: '',
+        photoUrls: []
     });
 
     const [quotes, setQuotes] = useState([
@@ -75,7 +77,8 @@ export default function NewShipment() {
                         customerName: shipment.customerName || '',
                         destinationCountry: shipment.destinationCountry || '',
                         customerPayment: shipment.customerPayment,
-                        trackingCode: shipment.trackingCode || ''
+                        trackingCode: shipment.trackingCode || '',
+                        photoUrls: shipment.photoUrls || []
                     });
                     setQuotes(shipment.allQuotes || []);
                     if (shipment.selectedQuote) {
@@ -333,6 +336,13 @@ export default function NewShipment() {
                                 value={formData.trackingCode}
                                 onChange={(e) => setFormData({ ...formData, trackingCode: e.target.value })}
                             />
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-700">{t('Photos')}</label>
+                                <PhotoUpload
+                                    photos={formData.photoUrls || []}
+                                    onPhotosChange={(urls) => setFormData({ ...formData, photoUrls: urls })}
+                                />
+                            </div>
                         </CardContent>
                     </Card>
 

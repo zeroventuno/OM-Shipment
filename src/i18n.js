@@ -99,7 +99,12 @@ const resources = {
             "Please enter a valid Customer Payment amount": "Por favor, insira um valor válido para Pagamento do Cliente",
             "Shipment updated successfully!": "Envio atualizado com sucesso!",
             "Shipment registered successfully!": "Envio registrado com sucesso!",
-            "Saving...": "Salvando..."
+            "Saving...": "Salvando...",
+            "Photos": "Fotos",
+            "Upload Photos": "Carregar Fotos",
+            "Maximum 5 photos": "Máximo de 5 fotos",
+            "Click or drag to upload": "Clique ou arraste para carregar",
+            "Uploading...": "Carregando..."
         }
     },
     it: {
@@ -200,7 +205,12 @@ const resources = {
             "Please enter a valid Customer Payment amount": "Inserisci un importo valido per il Pagamento del Cliente",
             "Shipment updated successfully!": "Spedizione aggiornata con successo!",
             "Shipment registered successfully!": "Spedizione registrata con successo!",
-            "Saving...": "Salvataggio..."
+            "Saving...": "Salvataggio...",
+            "Photos": "Foto",
+            "Upload Photos": "Carica Foto",
+            "Maximum 5 photos": "Massimo 5 foto",
+            "Click or drag to upload": "Clicca o trascina per caricare",
+            "Uploading...": "Caricamento in corso..."
         }
     }
 };

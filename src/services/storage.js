@@ -219,6 +219,29 @@ export const storageService = {
         } catch (err) {
             return { status: 'error', message: err.message };
         }
+    },
+
+    uploadPhoto: async (file) => {
+        if (!supabase) throw new Error('Supabase not configured');
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        const filePath = `photos/${fileName}`;
+
+        const { data, error } = await supabase.storage
+            .from('shipment-photos')
+            .upload(filePath, file);
+
+        if (error) {
+            console.error('❌ Supabase storage upload error:', error);
+            throw error;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+            .from('shipment-photos')
+            .getPublicUrl(filePath);
+
+        return publicUrl;
     }
 };
 
@@ -236,7 +259,8 @@ const mapToDb = (s) => ({
     selected_quote: s.selectedQuote,
     all_quotes: s.allQuotes,
     profit: s.profit,
-    savings: s.savings
+    savings: s.savings,
+    photo_urls: s.photoUrls || []
 });
 
 const mapFromDb = (s) => ({
@@ -252,5 +276,6 @@ const mapFromDb = (s) => ({
     selectedQuote: s.selected_quote,
     allQuotes: s.all_quotes,
     profit: s.profit,
-    savings: s.savings
+    savings: s.savings,
+    photoUrls: s.photo_urls || []
 });
