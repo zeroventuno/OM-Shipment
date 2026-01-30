@@ -53,6 +53,8 @@ export default function NewShipment() {
         photoUrls: []
     });
 
+    const [uniqueCustomers, setUniqueCustomers] = useState([]);
+
     const [quotes, setQuotes] = useState([
         { id: 1, portal: PORTALS[0], carrier: ALL_CARRIERS[0], price: '' }, // MBE - TNT
         { id: 2, portal: PORTALS[1], carrier: ALL_CARRIERS[0], price: '' }, // My Parcel - TNT
@@ -86,6 +88,11 @@ export default function NewShipment() {
                     }
                 }
             }
+
+            // Load unique customers for autocomplete
+            const allShipments = await storageService.getShipments();
+            const customers = [...new Set(allShipments.map(s => s.customerName).filter(Boolean))].sort();
+            setUniqueCustomers(customers);
         };
         loadData();
     }, [id]);
@@ -300,7 +307,11 @@ export default function NewShipment() {
                                     placeholder={t('Customer')}
                                     value={formData.customerName}
                                     onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                                    list="customers"
                                 />
+                                <datalist id="customers">
+                                    {uniqueCustomers.map(c => <option key={c} value={c} />)}
+                                </datalist>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">

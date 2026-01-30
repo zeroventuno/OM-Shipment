@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Pencil, Trash2, Search, DollarSign, TrendingUp, TrendingDown, User, FileDown, Printer, Camera, X, Truck } from 'lucide-react';
+import { Pencil, Trash2, Search, DollarSign, TrendingUp, TrendingDown, User, FileDown, Printer, Camera, X, Truck, Wrench } from 'lucide-react';
+import MonthlyChart from '../components/MonthlyChart';
 import { storageService } from '../services/storage';
 import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
 
 export default function Reports() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [shipments, setShipments] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [customerFilter, setCustomerFilter] = useState('all');
@@ -168,6 +169,79 @@ export default function Reports() {
         };
     }, [filteredShipments]);
 
+    // Calculate monthly data for chart
+    const monthlyChartData = useMemo(() => {
+        const data = Array.from({ length: 12 }, (_, i) => {
+            const date = new Date(new Date().getFullYear(), i, 1);
+            // Capitalize first letter of month
+            const monthName = date.toLocaleDateString(i18n.language, { month: 'short' });
+            return {
+                name: monthName.charAt(0).toUpperCase() + monthName.slice(1),
+                savings: 0,
+                profit: 0
+            };
+        });
+
+        const currentYear = new Date().getFullYear();
+        filteredShipments.forEach(s => {
+            const d = new Date(s.createdAt);
+            if (d.getFullYear() === currentYear) {
+                const mIndex = d.getMonth();
+                if (data[mIndex]) {
+                    data[mIndex].savings += (s.savings || 0);
+                    data[mIndex].profit += (s.profit || 0);
+                }
+            }
+        });
+        return data;
+    }, [filteredShipments, i18n.language]);
+
+    const handleNormalizeCustomers = async () => {
+        if (!window.confirm(t('Normalize customer names? This will unify case variations.'))) return;
+
+        const grouped = {};
+        // Use current shipments or fetch fresh? Use current filtered or all. Better check all.
+        // We'll use the latest loaded shipments to be safe, or re-fetch.
+        // Since we are updating, let's just use what we have in state if it's all of them.
+        // But shipments might be filtered? No, `shipments` state has all.
+
+        let updates = 0;
+        shipments.forEach(s => {
+            if (!s.customerName) return;
+            const key = s.customerName.toLowerCase().trim();
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push(s);
+        });
+
+        for (const key in grouped) {
+            const group = grouped[key];
+            const uniqueNames = [...new Set(group.map(s => s.customerName))];
+
+            if (uniqueNames.length > 1) {
+                // Find best name (most frequent)
+                const counts = {};
+                group.forEach(s => counts[s.customerName] = (counts[s.customerName] || 0) + 1);
+                const bestName = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+
+                // Update others
+                for (const s of group) {
+                    if (s.customerName !== bestName) {
+                        const updated = { ...s, customerName: bestName };
+                        await storageService.updateShipment(updated);
+                        updates++;
+                    }
+                }
+            }
+        }
+
+        if (updates > 0) {
+            alert(`${updates} shipments updated.`);
+            loadShipments();
+        } else {
+            alert(t('No duplicate customer names found.'));
+        }
+    };
+
     const handleDelete = async (id) => {
         if (window.confirm(t('Confirm Delete'))) {
             await storageService.deleteShipment(id);
@@ -246,12 +320,19 @@ export default function Reports() {
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center animate-in fade-in slide-in-from-top-4 duration-500">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">{t('Reports')}</h1>
                     <p className="text-gray-500 mt-1">{t('Complete History')}</p>
                 </div>
+                <Button variant="ghost" onClick={handleNormalizeCustomers} title={t("Normalize Customers")}>
+                    <Wrench className="h-4 w-4 mr-2" />
+                    {t("Fix Names")}
+                </Button>
             </div>
+
+            {/* Monthly Chart */}
+            <MonthlyChart data={monthlyChartData} />
 
             {/* Customer Filter */}
             <div className="bg-white/60 backdrop-blur-sm border border-gray-200 rounded-lg p-4 shadow-sm">
@@ -296,7 +377,7 @@ export default function Reports() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Total Savings')}</CardTitle>
@@ -391,7 +472,7 @@ export default function Reports() {
                 </CardHeader>
                 <CardContent>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
+                        <table className="w-full text-sm text-center">
                             <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                                 <tr>
                                     <th className="px-3 py-3">
@@ -402,24 +483,24 @@ export default function Reports() {
                                             className="rounded border-gray-300"
                                         />
                                     </th>
-                                    <th className="px-3 py-3">{t('Order')}</th>
-                                    <th className="px-3 py-3 w-10 text-center">{t('Tracking')}</th>
-                                    <th className="px-3 py-3 w-10 text-center">{t('Photos')}</th>
-                                    <th className="px-3 py-3">{t('Customer')}</th>
-                                    <th className="px-3 py-3">{t('Country')}</th>
-                                    <th className="px-3 py-3">{t('Portal/Carrier')}</th>
-                                    <th className="px-3 py-3">{t('Cost')}</th>
-                                    <th className="px-3 py-3">{t('Customer Payment')}</th>
-                                    <th className="px-3 py-3">{t('Profit')}</th>
-                                    <th className="px-3 py-3">{t('Savings')}</th>
-                                    <th className="px-3 py-3">{t('Date')}</th>
-                                    <th className="px-3 py-3">{t('Actions')}</th>
+                                    <th className="px-2 py-2">{t('Order')}</th>
+                                    <th className="px-2 py-2 w-10 text-center">{t('Tracking')}</th>
+                                    <th className="px-2 py-2 w-10 text-center">{t('Photos')}</th>
+                                    <th className="px-2 py-2">{t('Customer')}</th>
+                                    <th className="px-2 py-2">{t('Country')}</th>
+                                    <th className="px-2 py-2">{t('Portal/Carrier')}</th>
+                                    <th className="px-2 py-2">{t('Cost')}</th>
+                                    <th className="px-2 py-2">{t('Customer Payment')}</th>
+                                    <th className="px-2 py-2">{t('Profit')}</th>
+                                    <th className="px-2 py-2">{t('Savings')}</th>
+                                    <th className="px-2 py-2">{t('Date')}</th>
+                                    <th className="px-2 py-2">{t('Actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredShipments.map((shipment) => (
-                                    <tr key={shipment.id} className="bg-white border-b hover:bg-gray-50 uppercase text-[11px]">
-                                        <td className="px-3 py-3">
+                                    <tr key={shipment.id} className="bg-white border-b hover:bg-gray-50 uppercase text-[11px] transition-colors duration-150">
+                                        <td className="px-2 py-2">
                                             <input
                                                 type="checkbox"
                                                 checked={selectedItems.includes(shipment.id)}
@@ -427,8 +508,8 @@ export default function Reports() {
                                                 className="rounded border-gray-300"
                                             />
                                         </td>
-                                        <td className="px-3 py-3 font-medium text-gray-900">{shipment.orderId}</td>
-                                        <td className="px-3 py-3">
+                                        <td className="px-2 py-2 font-medium text-gray-900">{shipment.orderId}</td>
+                                        <td className="px-2 py-2">
                                             <div className="flex justify-center">
                                                 {shipment.trackingCode ? (
                                                     <button
@@ -444,7 +525,7 @@ export default function Reports() {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-3 py-3">
+                                        <td className="px-2 py-2">
                                             <div className="flex justify-center">
                                                 {shipment.photoUrls && shipment.photoUrls.length > 0 ? (
                                                     <button
@@ -462,17 +543,17 @@ export default function Reports() {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-3 py-3">{shipment.customerName}</td>
-                                        <td className="px-3 py-3">{shipment.destinationCountry}</td>
-                                        <td className="px-3 py-3">{shipment.selectedQuote?.portal} / {shipment.selectedQuote?.carrier}</td>
-                                        <td className="px-3 py-3">€ {shipment.selectedQuote?.price}</td>
-                                        <td className="px-3 py-3">€ {shipment.customerPayment}</td>
-                                        <td className={`px-3 py-3 font-semibold ${shipment.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        <td className="px-2 py-2">{shipment.customerName}</td>
+                                        <td className="px-2 py-2">{shipment.destinationCountry}</td>
+                                        <td className="px-2 py-2">{shipment.selectedQuote?.portal} / {shipment.selectedQuote?.carrier}</td>
+                                        <td className="px-2 py-2">€ {shipment.selectedQuote?.price}</td>
+                                        <td className="px-2 py-2">€ {shipment.customerPayment}</td>
+                                        <td className={`px-2 py-2 font-semibold ${shipment.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                             € {shipment.profit?.toFixed(2)}
                                         </td>
-                                        <td className="px-3 py-3 text-green-600 font-semibold">€ {shipment.savings?.toFixed(2)}</td>
-                                        <td className="px-3 py-3 text-nowrap">{new Date(shipment.createdAt).toLocaleDateString()}</td>
-                                        <td className="px-3 py-3">
+                                        <td className="px-2 py-2 text-green-600 font-semibold">€ {shipment.savings?.toFixed(2)}</td>
+                                        <td className="px-2 py-2 text-nowrap">{new Date(shipment.createdAt).toLocaleDateString()}</td>
+                                        <td className="px-2 py-2">
                                             <div className="flex gap-2">
                                                 <Link to={`/new-shipment/${shipment.id}`}>
                                                     <Button variant="ghost" size="icon" className="h-7 w-7">
