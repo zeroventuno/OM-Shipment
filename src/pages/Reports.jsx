@@ -399,7 +399,7 @@ export default function Reports() {
                                     </th>
                                     <th className="px-6 py-3">{t('Order')}</th>
                                     <th className="px-6 py-3">{t('Tracking')}</th>
-                                    <th className="px-6 py-3">{t('Photos')}</th>
+                                    <th className="px-6 py-3 w-10">{t('Photos')}</th>
                                     <th className="px-6 py-3">{t('Customer')}</th>
                                     <th className="px-6 py-3">{t('Country')}</th>
                                     <th className="px-6 py-3">{t('Portal/Carrier')}</th>
@@ -437,23 +437,21 @@ export default function Reports() {
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
-                                            {shipment.photoUrls && shipment.photoUrls.length > 0 ? (
-                                                <div className="flex -space-x-2">
-                                                    {shipment.photoUrls.map((url, idx) => (
-                                                        <a
-                                                            key={idx}
-                                                            href={url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="w-8 h-8 rounded-full border-2 border-white overflow-hidden hover:z-10 transition-transform hover:scale-110"
-                                                        >
-                                                            <img src={url} alt="" className="w-full h-full object-cover" />
-                                                        </a>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <span className="text-gray-300">-</span>
-                                            )}
+                                            <div className="flex justify-center">
+                                                {shipment.photoUrls && shipment.photoUrls.length > 0 ? (
+                                                    <a
+                                                        href={shipment.photoUrls[0]}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        title={`${shipment.photoUrls.length} ${t('Photos')}`}
+                                                        className="text-gray-700 hover:text-primary transition-colors"
+                                                    >
+                                                        <Camera className="h-5 w-5" />
+                                                    </a>
+                                                ) : (
+                                                    <Camera className="h-5 w-5 text-gray-200" title={t('No photos')} />
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4">{shipment.customerName}</td>
                                         <td className="px-6 py-4">{shipment.destinationCountry}</td>

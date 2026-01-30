@@ -104,7 +104,8 @@ const resources = {
             "Upload Photos": "Carregar Fotos",
             "Maximum 5 photos": "Máximo de 5 fotos",
             "Click or drag to upload": "Clique ou arraste para carregar",
-            "Uploading...": "Carregando..."
+            "Uploading...": "Carregando...",
+            "No photos": "Sem fotos"
         }
     },
     it: {
@@ -210,7 +211,8 @@ const resources = {
             "Upload Photos": "Carica Foto",
             "Maximum 5 photos": "Massimo 5 foto",
             "Click or drag to upload": "Clicca o trascina per caricare",
-            "Uploading...": "Caricamento in corso..."
+            "Uploading...": "Caricamento in corso...",
+            "No photos": "Nessuna foto"
         }
     }
 };
