@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Pencil, Trash2, Search, DollarSign, TrendingUp, TrendingDown, User, FileDown, Printer, Camera, X } from 'lucide-react';
+import { Pencil, Trash2, Search, DollarSign, TrendingUp, TrendingDown, User, FileDown, Printer, Camera, X, Truck } from 'lucide-react';
 import { storageService } from '../services/storage';
 import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
@@ -32,10 +32,11 @@ export default function Reports() {
         }
 
         const handleTrackingClick = (e) => {
-            if (e.target.classList.contains('tracking-trigger')) {
+            const trigger = e.target.closest('.tracking-trigger');
+            if (trigger) {
                 e.preventDefault();
-                const num = e.target.getAttribute('data-num');
-                const elementId = e.target.id;
+                const num = trigger.getAttribute('data-num');
+                const elementId = trigger.id;
 
                 if (window.YQV5) {
                     window.YQV5.trackSingleF1({
@@ -195,6 +196,7 @@ export default function Reports() {
 
         const excelData = dataToExport.map(s => ({
             [t('Order')]: s.orderId,
+            [t('Tracking')]: s.trackingCode,
             [t('Customer')]: s.customerName,
             [t('Country')]: s.destinationCountry,
             [t('Portal/Carrier')]: `${s.selectedQuote?.portal} / ${s.selectedQuote?.carrier}`,
@@ -222,11 +224,12 @@ export default function Reports() {
         printWindow.document.write('</head><body>');
         printWindow.document.write('<h1>Relatório de Envios - Officine Mattio</h1>');
         printWindow.document.write('<table><thead><tr>');
-        printWindow.document.write(`<th>${t('Order')}</th><th>${t('Customer')}</th><th>${t('Portal/Carrier')}</th><th>${t('Cost')}</th><th>${t('Profit')}</th><th>${t('Savings')}</th></tr></thead><tbody>`);
+        printWindow.document.write(`<th>${t('Order')}</th><th>${t('Tracking')}</th><th>${t('Customer')}</th><th>${t('Portal/Carrier')}</th><th>${t('Cost')}</th><th>${t('Profit')}</th><th>${t('Savings')}</th></tr></thead><tbody>`);
 
         dataToExport.forEach(s => {
             printWindow.document.write('<tr>');
             printWindow.document.write(`<td>${s.orderId}</td>`);
+            printWindow.document.write(`<td>${s.trackingCode || '-'}</td>`);
             printWindow.document.write(`<td>${s.customerName}</td>`);
             printWindow.document.write(`<td>${s.selectedQuote?.portal} / ${s.selectedQuote?.carrier}</td>`);
             printWindow.document.write(`<td>€ ${s.selectedQuote?.price}</td>`);
@@ -400,7 +403,7 @@ export default function Reports() {
                                         />
                                     </th>
                                     <th className="px-3 py-3">{t('Order')}</th>
-                                    <th className="px-3 py-3">{t('Tracking')}</th>
+                                    <th className="px-3 py-3 w-10 text-center">{t('Tracking')}</th>
                                     <th className="px-3 py-3 w-10 text-center">{t('Photos')}</th>
                                     <th className="px-3 py-3">{t('Customer')}</th>
                                     <th className="px-3 py-3">{t('Country')}</th>
@@ -426,17 +429,20 @@ export default function Reports() {
                                         </td>
                                         <td className="px-3 py-3 font-medium text-gray-900">{shipment.orderId}</td>
                                         <td className="px-3 py-3">
-                                            {shipment.trackingCode ? (
-                                                <span
-                                                    id={`track-${shipment.trackingCode}`}
-                                                    className="tracking-trigger text-blue-600 cursor-pointer hover:underline"
-                                                    data-num={shipment.trackingCode}
-                                                >
-                                                    {shipment.trackingCode}
-                                                </span>
-                                            ) : (
-                                                '-'
-                                            )}
+                                            <div className="flex justify-center">
+                                                {shipment.trackingCode ? (
+                                                    <button
+                                                        id={`track-${shipment.id}`}
+                                                        className="tracking-trigger text-blue-600 hover:text-blue-800 transition-colors p-1"
+                                                        data-num={shipment.trackingCode}
+                                                        title={shipment.trackingCode}
+                                                    >
+                                                        <Truck className="h-4 w-4" />
+                                                    </button>
+                                                ) : (
+                                                    <Truck className="h-4 w-4 text-gray-200" title={t('No tracking')} />
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-3 py-3">
                                             <div className="flex justify-center">

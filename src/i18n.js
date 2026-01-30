@@ -138,7 +138,8 @@ const resources = {
             "Select Solution": "Selecione a Solução",
             "Select Producer": "Selecione o Produtor",
             "Close": "Fechar",
-            "Photo": "Foto"
+            "Photo": "Foto",
+            "No tracking": "Sem rastreio"
         }
     },
     it: {
@@ -278,7 +279,8 @@ const resources = {
             "Select Solution": "Seleziona Soluzione",
             "Select Producer": "Seleziona Produttore",
             "Close": "Chiudi",
-            "Photo": "Foto"
+            "Photo": "Foto",
+            "No tracking": "Senza tracciamento"
         }
     }
 };
