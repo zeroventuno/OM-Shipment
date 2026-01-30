@@ -10,7 +10,6 @@ const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', to: '/dashboard' },
     { icon: PlusCircle, label: 'New Shipment', to: '/new-shipment' },
     { icon: FileBarChart, label: 'Reports', to: '/reports' },
-    { icon: Bike, label: 'Warranties', to: '/warranties' },
 ];
 
 export function Sidebar() {
