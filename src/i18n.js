@@ -145,7 +145,8 @@ const resources = {
             "Frame Kit": "Kit Quadro",
             "Components": "Componentes",
             "Warranty": "Garantia",
-            "Clothing/Accessories": "Roupas ou Acessórios"
+            "Clothing/Accessories": "Roupas ou Acessórios",
+            "Uncategorized": "Sem Categoria"
         }
     },
     it: {
@@ -292,7 +293,8 @@ const resources = {
             "Frame Kit": "Kit Telaio",
             "Components": "Componenti",
             "Warranty": "Garanzia",
-            "Clothing/Accessories": "Abbigliamento o Accessori"
+            "Clothing/Accessories": "Abbigliamento o Accessori",
+            "Uncategorized": "Non Categorizzato"
         }
     }
 };

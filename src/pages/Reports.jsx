@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Pencil, Trash2, Search, DollarSign, TrendingUp, TrendingDown, User, FileDown, Printer, Camera, X, Truck, Wrench } from 'lucide-react';
+import { Pencil, Trash2, Search, DollarSign, TrendingUp, TrendingDown, User, FileDown, Printer, Camera, X, Truck, Wrench, Menu } from 'lucide-react';
 import MonthlyChart from '../components/MonthlyChart';
 import { storageService } from '../services/storage';
 import { useTranslation } from 'react-i18next';
@@ -492,6 +492,7 @@ export default function Reports() {
                                     <th className="px-2 py-2">{t('Order')}</th>
                                     <th className="px-2 py-2 w-10 text-center">{t('Tracking')}</th>
                                     <th className="px-2 py-2 w-10 text-center">{t('Photos')}</th>
+                                    <th className="px-2 py-2 w-10 text-center">{t('Order Type')}</th>
                                     <th className="px-2 py-2">{t('Customer')}</th>
                                     <th className="px-2 py-2">{t('Country')}</th>
                                     <th className="px-2 py-2">{t('Portal/Carrier')}</th>
@@ -547,6 +548,21 @@ export default function Reports() {
                                                 ) : (
                                                     <Camera className="h-4 w-4 text-gray-200" title={t('No photos')} />
                                                 )}
+                                            </div>
+                                        </td>
+                                        <td className="px-2 py-2">
+                                            <div className="flex justify-center">
+                                                <Link to={`/new-shipment/${shipment.id}`}>
+                                                    <div
+                                                        className={`p-1 rounded-full border transition-colors ${shipment.orderType
+                                                                ? 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-300'
+                                                                : 'border-gray-200 bg-gray-50 text-gray-300 hover:bg-gray-100 hover:border-gray-300'
+                                                            }`}
+                                                        title={shipment.orderType ? t(shipment.orderType) : t('Uncategorized')}
+                                                    >
+                                                        <Menu className="h-3 w-3" />
+                                                    </div>
+                                                </Link>
                                             </div>
                                         </td>
                                         <td className="px-2 py-2">{shipment.customerName}</td>
