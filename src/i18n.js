@@ -139,7 +139,13 @@ const resources = {
             "Select Producer": "Selecione o Produtor",
             "Close": "Fechar",
             "Photo": "Foto",
-            "No tracking": "Sem rastreio"
+            "No tracking": "Sem rastreio",
+            "Order Type": "Tipo de Ordem",
+            "Bicycle": "Bicicleta",
+            "Frame Kit": "Kit Quadro",
+            "Components": "Componentes",
+            "Warranty": "Garantia",
+            "Clothing/Accessories": "Roupas ou Acessórios"
         }
     },
     it: {
@@ -280,7 +286,13 @@ const resources = {
             "Select Producer": "Seleziona Produttore",
             "Close": "Chiudi",
             "Photo": "Foto",
-            "No tracking": "Senza tracciamento"
+            "No tracking": "Senza tracciamento",
+            "Order Type": "Tipo di Ordine",
+            "Bicycle": "Bicicletta",
+            "Frame Kit": "Kit Telaio",
+            "Components": "Componenti",
+            "Warranty": "Garanzia",
+            "Clothing/Accessories": "Abbigliamento o Accessori"
         }
     }
 };

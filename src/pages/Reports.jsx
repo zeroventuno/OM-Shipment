@@ -178,7 +178,9 @@ export default function Reports() {
             return {
                 name: monthName.charAt(0).toUpperCase() + monthName.slice(1),
                 savings: 0,
-                profit: 0
+                profit: 0,
+                totalCount: 0,
+                types: {}
             };
         });
 
@@ -190,6 +192,10 @@ export default function Reports() {
                 if (data[mIndex]) {
                     data[mIndex].savings += (s.savings || 0);
                     data[mIndex].profit += (s.profit || 0);
+                    data[mIndex].totalCount += 1;
+
+                    const type = s.orderType || 'Other';
+                    data[mIndex].types[type] = (data[mIndex].types[type] || 0) + 1;
                 }
             }
         });

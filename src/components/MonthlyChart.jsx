@@ -26,7 +26,39 @@ export default function MonthlyChart({ data }) {
                     <Tooltip
                         cursor={{ fill: '#F3F4F6' }}
                         contentStyle={{ borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value, name) => [`€ ${Number(value).toFixed(2)}`, t(name)]}
+                        labelStyle={{ fontWeight: 'bold', color: '#111827', marginBottom: '4px' }}
+                        content={({ active, payload, label }) => {
+                            if (active && payload && payload.length) {
+                                const data = payload[0].payload;
+                                return (
+                                    <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+                                        <p className="font-bold text-gray-900 mb-2">{label}</p>
+                                        <div className="space-y-1 text-sm">
+                                            <p className="text-gray-600 flex items-center">
+                                                <span className="inline-block w-3 h-3 rounded-sm bg-blue-200 mr-2"></span>
+                                                {t("Savings")}: <span className="font-medium ml-1">€ {data.savings.toFixed(2)}</span>
+                                            </p>
+                                            <p className="text-gray-600 flex items-center">
+                                                <span className={`inline-block w-3 h-3 rounded-sm mr-2 ${data.profit >= 0 ? 'bg-blue-700' : 'bg-red-500'}`}></span>
+                                                {t("Profit")}: <span className={`font-medium ml-1 ${data.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>€ {data.profit.toFixed(2)}</span>
+                                            </p>
+                                            <div className="my-2 border-t border-gray-100"></div>
+                                            <p className="text-gray-700 font-medium">📦 {t("Total Shipments")}: {data.totalCount}</p>
+                                            {Object.entries(data.types || {}).length > 0 && (
+                                                <div className="mt-1 pl-2 border-l-2 border-gray-100">
+                                                    {Object.entries(data.types).map(([type, count]) => (
+                                                        <p key={type} className="text-xs text-gray-500">
+                                                            {t(type)}: {count}
+                                                        </p>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            }
+                            return null;
+                        }}
                     />
                     <Legend
                         verticalAlign="top"

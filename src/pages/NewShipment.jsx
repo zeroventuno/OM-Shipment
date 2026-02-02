@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 
 const PORTALS = ['MBE', 'My Parcel', 'My DHL', 'BRT'];
 const ALL_CARRIERS = ['TNT', 'Fedex', 'DHL', 'BRT', 'SDA', 'UPS'];
+const ORDER_TYPES = ['Bicycle', 'Frame Kit', 'Components', 'Warranty', 'Clothing/Accessories'];
 const COUNTRIES = [
     "África do Sul", "Alemanha", "Andorra", "Angola", "Arábia Saudita", "Argélia", "Argentina",
     "Armênia", "Austrália", "Áustria", "Azerbaijão", "Bahamas", "Bangladesh", "Barbados",
@@ -46,6 +47,7 @@ export default function NewShipment() {
 
     const [formData, setFormData] = useState({
         orderId: '',
+        orderType: '',
         customerName: '',
         destinationCountry: '',
         customerPayment: '',
@@ -76,6 +78,7 @@ export default function NewShipment() {
                 if (shipment) {
                     setFormData({
                         orderId: shipment.orderId,
+                        orderType: shipment.orderType || '',
                         customerName: shipment.customerName || '',
                         destinationCountry: shipment.destinationCountry || '',
                         customerPayment: shipment.customerPayment,
@@ -302,6 +305,19 @@ export default function NewShipment() {
                                     value={formData.orderId}
                                     onChange={(e) => setFormData({ ...formData, orderId: e.target.value })}
                                 />
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('Order Type')}</label>
+                                    <select
+                                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                                        value={formData.orderType}
+                                        onChange={(e) => setFormData({ ...formData, orderType: e.target.value })}
+                                    >
+                                        <option value="">{t('Select...')}</option>
+                                        {ORDER_TYPES.map(type => (
+                                            <option key={type} value={type}>{t(type)}</option>
+                                        ))}
+                                    </select>
+                                </div>
                                 <Input
                                     label={t('Customer')}
                                     placeholder={t('Customer')}
