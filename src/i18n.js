@@ -146,6 +146,7 @@ const resources = {
             "Components": "Componentes",
             "Warranty": "Garantia",
             "Clothing/Accessories": "Roupas ou Acessórios",
+            "Gift": "Brinde",
             "Uncategorized": "Sem Categoria"
         }
     },
@@ -294,6 +295,7 @@ const resources = {
             "Components": "Componenti",
             "Warranty": "Garanzia",
             "Clothing/Accessories": "Abbigliamento o Accessori",
+            "Gift": "Omaggio",
             "Uncategorized": "Non Categorizzato"
         }
     }
