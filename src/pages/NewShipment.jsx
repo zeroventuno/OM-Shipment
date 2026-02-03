@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 
 const PORTALS = ['MBE', 'My Parcel', 'My DHL', 'BRT'];
 const ALL_CARRIERS = ['TNT', 'Fedex', 'DHL', 'BRT', 'SDA', 'UPS'];
-const ORDER_TYPES = ['Bicycle', 'Frame Kit', 'Components', 'Warranty', 'Clothing/Accessories', 'Gift'];
+const ORDER_TYPES = ['Bicycle', 'Frame Kit', 'Components', 'Warranty', 'Clothing/Accessories', 'Gift', 'Rental', 'Other'];
 const COUNTRIES = [
     "África do Sul", "Alemanha", "Andorra", "Angola", "Arábia Saudita", "Argélia", "Argentina",
     "Armênia", "Austrália", "Áustria", "Azerbaijão", "Bahamas", "Bangladesh", "Barbados",
