@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.83.0",
+    "browser-image-compression": "^2.0.2",
     "clsx": "^2.1.0",
     "d3-scale": "^4.0.2",
+    "heic2any": "^0.0.4",
     "i18next": "^25.6.3",
     "lucide-react": "^0.344.0",
     "react": "^18.2.0",

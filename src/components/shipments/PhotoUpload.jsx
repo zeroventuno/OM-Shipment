@@ -3,6 +3,8 @@ import { Camera, X, Loader2, Image as ImageIcon } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { storageService } from '../../services/storage';
 import { useTranslation } from 'react-i18next';
+import heic2any from 'heic2any';
+import imageCompression from 'browser-image-compression';
 
 export function PhotoUpload({ photos = [], onPhotosChange }) {
     const { t } = useTranslation();
@@ -21,7 +23,42 @@ export function PhotoUpload({ photos = [], onPhotosChange }) {
         const newUrls = [...photos];
 
         try {
-            for (const file of files) {
+            for (let file of files) {
+                // Convert HEIC to JPG if necessary
+                if (file.name.toLowerCase().endsWith('.heic')) {
+                    try {
+                        const blob = await heic2any({
+                            blob: file,
+                            toType: 'image/jpeg',
+                            quality: 0.8
+                        });
+                        const convertedFile = new File(
+                            [blob],
+                            file.name.replace(/\.heic$/i, '.jpg'),
+                            { type: 'image/jpeg' }
+                        );
+                        file = convertedFile;
+                    } catch (conversionError) {
+                        console.error('HEIC conversion failed:', conversionError);
+                        alert('Failed to convert HEIC image.');
+                        continue;
+                    }
+                }
+
+                // Compress image
+                try {
+                    const options = {
+                        maxSizeMB: 1,
+                        maxWidthOrHeight: 1920,
+                        useWebWorker: true,
+                    };
+                    const compressedFile = await imageCompression(file, options);
+                    file = compressedFile;
+                } catch (compressionError) {
+                    console.error('Image compression failed:', compressionError);
+                    // Proceed with original (or converted) file if compression fails
+                }
+
                 const url = await storageService.uploadPhoto(file);
                 newUrls.push(url);
             }
@@ -66,7 +103,7 @@ export function PhotoUpload({ photos = [], onPhotosChange }) {
                         <input
                             type="file"
                             className="hidden"
-                            accept="image/*"
+                            accept="image/*,.heic,.HEIC"
                             multiple
                             onChange={handleFileChange}
                             disabled={uploading}
