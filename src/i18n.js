@@ -154,7 +154,8 @@ const resources = {
             "Customer Cost/Pickup": "Envio a custo do cliente ou retirou em mãos",
             "Customer Cost/Pickup Mode": "Modo: Custo do Cliente",
             "No portal costs required": "Sem custos de portais",
-            "Only quantity will be tracked": "Apenas a quantidade será registrada"
+            "Only quantity will be tracked": "Apenas a quantidade será registrada",
+            "Shipment/Pickup": "Envio/Retirada"
         }
     },
     it: {

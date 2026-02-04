@@ -398,15 +398,15 @@ export default function NewShipment() {
                                     onChange={(e) => setFormData({ ...formData, trackingCode: e.target.value })}
                                 />
                                 <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">&nbsp;</label>
-                                    <label className="flex items-center h-10 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-pointer hover:bg-gray-100">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('Shipment/Pickup')}</label>
+                                    <label className="flex items-center h-10 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors">
                                         <input
                                             type="checkbox"
                                             checked={formData.customerCostPickup}
                                             onChange={(e) => setFormData({ ...formData, customerCostPickup: e.target.checked })}
                                             className="mr-2 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                         />
-                                        <span className="text-sm text-gray-700">{t('Customer Cost/Pickup')}</span>
+                                        <span className="text-sm text-gray-700 truncate">{t('Customer Cost/Pickup')}</span>
                                     </label>
                                 </div>
                             </div>
