@@ -149,7 +149,8 @@ const resources = {
             "Gift": "Brinde",
             "Rental": "Aluguel",
             "Other": "Outros",
-            "Uncategorized": "Sem Categoria"
+            "Uncategorized": "Sem Categoria",
+            "Quantity (Bicycles/Frames)": "Quantidade (Bicicletas/Quadros)"
         }
     },
     it: {
@@ -300,7 +301,8 @@ const resources = {
             "Gift": "Omaggio",
             "Rental": "Noleggio",
             "Other": "Altro",
-            "Uncategorized": "Non Categorizzato"
+            "Uncategorized": "Non Categorizzato",
+            "Quantity (Bicycles/Frames)": "Quantità (Biciclette/Telai)"
         }
     }
 };

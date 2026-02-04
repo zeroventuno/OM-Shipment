@@ -49,6 +49,7 @@ export default function NewShipment() {
         orderId: '',
         orderType: '',
         customerName: '',
+        quantity: 1,
         destinationCountry: '',
         customerPayment: '',
         trackingCode: '',
@@ -80,6 +81,7 @@ export default function NewShipment() {
                         orderId: shipment.orderId,
                         orderType: shipment.orderType || '',
                         customerName: shipment.customerName || '',
+                        quantity: shipment.quantity || 1,
                         destinationCountry: shipment.destinationCountry || '',
                         customerPayment: shipment.customerPayment,
                         trackingCode: shipment.trackingCode || '',
@@ -328,6 +330,17 @@ export default function NewShipment() {
                                 <datalist id="customers">
                                     {uniqueCustomers.map(c => <option key={c} value={c} />)}
                                 </datalist>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('Quantity (Bicycles/Frames)')}</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="20"
+                                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                                        value={formData.quantity}
+                                        onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
+                                    />
+                                </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">

@@ -192,10 +192,15 @@ export default function Reports() {
                 if (data[mIndex]) {
                     data[mIndex].savings += (s.savings || 0);
                     data[mIndex].profit += (s.profit || 0);
-                    data[mIndex].totalCount += 1;
+
+                    const quantity = (s.orderType === 'Bicycle' || s.orderType === 'Frame Kit')
+                        ? (s.quantity || 1)
+                        : 1;
+
+                    data[mIndex].totalCount += quantity;
 
                     const type = s.orderType || 'Other';
-                    data[mIndex].types[type] = (data[mIndex].types[type] || 0) + 1;
+                    data[mIndex].types[type] = (data[mIndex].types[type] || 0) + quantity;
                 }
             }
         });
@@ -555,8 +560,8 @@ export default function Reports() {
                                                 <Link to={`/new-shipment/${shipment.id}`}>
                                                     <div
                                                         className={`p-1 rounded-full border transition-colors ${shipment.orderType
-                                                                ? 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-300'
-                                                                : 'border-gray-200 bg-gray-50 text-gray-300 hover:bg-gray-100 hover:border-gray-300'
+                                                            ? 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-300'
+                                                            : 'border-gray-200 bg-gray-50 text-gray-300 hover:bg-gray-100 hover:border-gray-300'
                                                             }`}
                                                         title={shipment.orderType ? t(shipment.orderType) : t('Uncategorized')}
                                                     >
