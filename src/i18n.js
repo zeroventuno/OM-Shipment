@@ -150,7 +150,11 @@ const resources = {
             "Rental": "Aluguel",
             "Other": "Outros",
             "Uncategorized": "Sem Categoria",
-            "Quantity (Bicycles/Frames)": "Quantidade (Bicicletas/Quadros)"
+            "Quantity (Bicycles/Frames)": "Quantidade (Bicicletas/Quadros)",
+            "Customer Cost/Pickup": "Envio a custo do cliente ou retirou em mãos",
+            "Customer Cost/Pickup Mode": "Modo: Custo do Cliente",
+            "No portal costs required": "Sem custos de portais",
+            "Only quantity will be tracked": "Apenas a quantidade será registrada"
         }
     },
     it: {
@@ -302,7 +306,11 @@ const resources = {
             "Rental": "Noleggio",
             "Other": "Altro",
             "Uncategorized": "Non Categorizzato",
-            "Quantity (Bicycles/Frames)": "Quantità (Biciclette/Telai)"
+            "Quantity (Bicycles/Frames)": "Quantità (Biciclette/Telai)",
+            "Customer Cost/Pickup": "Spedizione a carico del cliente o ritirato di persona",
+            "Customer Cost/Pickup Mode": "Modalità: A Carico Cliente",
+            "No portal costs required": "Nessun costo portale richiesto",
+            "Only quantity will be tracked": "Sarà registrata solo la quantità"
         }
     }
 };

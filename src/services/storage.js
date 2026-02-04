@@ -264,7 +264,8 @@ const mapToDb = (s) => ({
     all_quotes: s.allQuotes,
     profit: s.profit,
     savings: s.savings,
-    photo_urls: s.photoUrls || []
+    photo_urls: s.photoUrls || [],
+    customer_cost_pickup: s.customerCostPickup || false
 });
 
 const mapFromDb = (s) => ({
@@ -285,5 +286,6 @@ const mapFromDb = (s) => ({
     allQuotes: s.all_quotes,
     profit: s.profit,
     savings: s.savings,
-    photoUrls: s.photo_urls || []
+    photoUrls: s.photo_urls || [],
+    customerCostPickup: s.customer_cost_pickup || false
 });

@@ -53,7 +53,8 @@ export default function NewShipment() {
         destinationCountry: '',
         customerPayment: '',
         trackingCode: '',
-        photoUrls: []
+        photoUrls: [],
+        customerCostPickup: false
     });
 
     const [uniqueCustomers, setUniqueCustomers] = useState([]);
@@ -85,7 +86,8 @@ export default function NewShipment() {
                         destinationCountry: shipment.destinationCountry || '',
                         customerPayment: shipment.customerPayment,
                         trackingCode: shipment.trackingCode || '',
-                        photoUrls: shipment.photoUrls || []
+                        photoUrls: shipment.photoUrls || [],
+                        customerCostPickup: shipment.customerCostPickup || false
                     });
                     setQuotes(shipment.allQuotes || []);
                     if (shipment.selectedQuote) {
@@ -183,13 +185,16 @@ export default function NewShipment() {
             return;
         }
 
-        if (formData.customerPayment === '' || formData.customerPayment === null || formData.customerPayment === undefined || parseFloat(formData.customerPayment) < 0 || isNaN(parseFloat(formData.customerPayment))) {
-            alert(t('Please enter a valid Customer Payment amount'));
-            return;
+        // Customer payment validation (skip if customer cost pickup is checked)
+        if (!formData.customerCostPickup) {
+            if (formData.customerPayment === '' || formData.customerPayment === null || formData.customerPayment === undefined || parseFloat(formData.customerPayment) < 0 || isNaN(parseFloat(formData.customerPayment))) {
+                alert(t('Please enter a valid Customer Payment amount'));
+                return;
+            }
         }
 
-        // When creating new shipment, analysis is required
-        if (!isEditing && !analysis) {
+        // When creating new shipment, analysis is required (unless customer cost pickup)
+        if (!isEditing && !analysis && !formData.customerCostPickup) {
             alert(t('Please add at least one quote'));
             return;
         }
@@ -240,13 +245,25 @@ export default function NewShipment() {
             } else {
                 // New shipment or editing with new quotes
                 console.log('Creating new or updating with new quotes');
-                shipmentData = {
-                    ...formData,
-                    selectedQuote: analysis.selected,
-                    profit: parseFloat(formData.customerPayment) - parseFloat(analysis.selected.price),
-                    savings: analysis.savings,
-                    allQuotes: quotes
-                };
+
+                // If customer cost pickup, set costs to zero
+                if (formData.customerCostPickup) {
+                    shipmentData = {
+                        ...formData,
+                        selectedQuote: null,
+                        profit: 0,
+                        savings: 0,
+                        allQuotes: []
+                    };
+                } else {
+                    shipmentData = {
+                        ...formData,
+                        selectedQuote: analysis.selected,
+                        profit: parseFloat(formData.customerPayment) - parseFloat(analysis.selected.price),
+                        savings: analysis.savings,
+                        allQuotes: quotes
+                    };
+                }
             }
 
             if (id) {
@@ -362,20 +379,37 @@ export default function NewShipment() {
                                         </div>
                                     )}
                                 </div>
-                                <Input
-                                    label={`${t('Customer Payment')} (€)`}
-                                    type="number"
-                                    placeholder="0.00"
-                                    value={formData.customerPayment}
-                                    onChange={(e) => setFormData({ ...formData, customerPayment: e.target.value })}
-                                />
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{`${t('Customer Payment')} (€)`}</label>
+                                    <input
+                                        type="number"
+                                        placeholder="0.00"
+                                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={formData.customerPayment}
+                                        onChange={(e) => setFormData({ ...formData, customerPayment: e.target.value })}
+                                    />
+                                </div>
                             </div>
-                            <Input
-                                label={`${t('Tracking Code')} (Opcional)`}
-                                placeholder={t('Tracking Code')}
-                                value={formData.trackingCode}
-                                onChange={(e) => setFormData({ ...formData, trackingCode: e.target.value })}
-                            />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Input
+                                    label={`${t('Tracking Code')} (Opcional)`}
+                                    placeholder={t('Tracking Code')}
+                                    value={formData.trackingCode}
+                                    onChange={(e) => setFormData({ ...formData, trackingCode: e.target.value })}
+                                />
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">&nbsp;</label>
+                                    <label className="flex items-center h-10 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-pointer hover:bg-gray-100">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.customerCostPickup}
+                                            onChange={(e) => setFormData({ ...formData, customerCostPickup: e.target.checked })}
+                                            className="mr-2 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                        />
+                                        <span className="text-sm text-gray-700">{t('Customer Cost/Pickup')}</span>
+                                    </label>
+                                </div>
+                            </div>
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-700">{t('Photos')}</label>
                                 <PhotoUpload
@@ -486,6 +520,24 @@ export default function NewShipment() {
                                         <p className="text-xs text-primary-100 mt-2">
                                             {t('Compared to worst')} (€ {parseFloat(analysis.worst.price).toFixed(2)})
                                         </p>
+                                    </div>
+
+                                    <Button
+                                        onClick={handleSubmit}
+                                        className="w-full bg-white text-primary hover:bg-gray-100 mt-4 font-bold shadow-lg"
+                                        size="lg"
+                                        disabled={isLoading}
+                                    >
+                                        <Save className="mr-2 h-5 w-5" />
+                                        {isLoading ? t('Saving...') : (isEditing ? t('Update Shipment') : t('Register Shipment'))}
+                                    </Button>
+                                </div>
+                            ) : formData.customerCostPickup ? (
+                                <div className="space-y-6">
+                                    <div className="text-center py-4">
+                                        <p className="text-primary-100 text-sm mb-2">{t('Customer Cost/Pickup Mode')}</p>
+                                        <p className="text-white text-lg font-semibold">{t('No portal costs required')}</p>
+                                        <p className="text-primary-100 text-xs mt-2">{t('Only quantity will be tracked')}</p>
                                     </div>
 
                                     <Button
