@@ -311,7 +311,8 @@ const resources = {
             "Customer Cost/Pickup": "Spedizione a carico del cliente o ritirato di persona",
             "Customer Cost/Pickup Mode": "Modalità: A Carico Cliente",
             "No portal costs required": "Nessun costo portale richiesto",
-            "Only quantity will be tracked": "Sarà registrata solo la quantità"
+            "Only quantity will be tracked": "Sarà registrata solo la quantità",
+            "Shipment/Pickup": "Spedizione/Ritiro"
         }
     }
 };
