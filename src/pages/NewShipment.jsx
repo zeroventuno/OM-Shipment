@@ -238,6 +238,7 @@ export default function NewShipment() {
                 shipmentData = {
                     ...existingShipment,
                     ...formData, // Update form fields
+                    customerPayment: parseFloat(formData.customerPayment) || 0,
                     profit: newProfit,
                     savings: newSavings
                 };
@@ -250,6 +251,7 @@ export default function NewShipment() {
                 if (formData.customerCostPickup) {
                     shipmentData = {
                         ...formData,
+                        customerPayment: parseFloat(formData.customerPayment) || 0,
                         selectedQuote: null,
                         profit: 0,
                         savings: 0,
@@ -258,6 +260,7 @@ export default function NewShipment() {
                 } else {
                     shipmentData = {
                         ...formData,
+                        customerPayment: parseFloat(formData.customerPayment) || 0,
                         selectedQuote: analysis.selected,
                         profit: parseFloat(formData.customerPayment) - parseFloat(analysis.selected.price),
                         savings: analysis.savings,
