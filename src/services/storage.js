@@ -176,8 +176,10 @@ export const storageService = {
         if (countryShipments.length === 0) return null;
 
         const portalCounts = countryShipments.reduce((acc, curr) => {
-            const portal = curr.selectedQuote.portal;
-            acc[portal] = (acc[portal] || 0) + 1;
+            if (curr.selectedQuote && curr.selectedQuote.portal) {
+                const portal = curr.selectedQuote.portal;
+                acc[portal] = (acc[portal] || 0) + 1;
+            }
             return acc;
         }, {});
 
@@ -192,8 +194,10 @@ export const storageService = {
         const pendingShipments = shipments.filter(s => s.status !== 'Delivered').length;
 
         const carrierCounts = shipments.reduce((acc, curr) => {
-            const carrier = curr.selectedQuote.carrier;
-            acc[carrier] = (acc[carrier] || 0) + 1;
+            if (curr.selectedQuote && curr.selectedQuote.carrier) {
+                const carrier = curr.selectedQuote.carrier;
+                acc[carrier] = (acc[carrier] || 0) + 1;
+            }
             return acc;
         }, {});
 

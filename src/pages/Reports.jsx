@@ -284,8 +284,8 @@ export default function Reports() {
             [t('Tracking')]: s.trackingCode,
             [t('Customer')]: s.customerName,
             [t('Country')]: s.destinationCountry,
-            [t('Portal/Carrier')]: `${s.selectedQuote?.portal} / ${s.selectedQuote?.carrier}`,
-            [t('Cost')]: `€ ${s.selectedQuote?.price}`,
+            [t('Portal/Carrier')]: s.selectedQuote ? `${s.selectedQuote.portal} / ${s.selectedQuote.carrier}` : t('Customer Cost/Pickup'),
+            [t('Cost')]: s.selectedQuote ? `€ ${s.selectedQuote.price}` : '€ 0.00',
             [t('Customer Payment')]: `€ ${s.customerPayment}`,
             [t('Profit')]: `€ ${s.profit?.toFixed(2)}`,
             [t('Savings')]: `€ ${s.savings?.toFixed(2)}`,
@@ -316,8 +316,8 @@ export default function Reports() {
             printWindow.document.write(`<td>${s.orderId}</td>`);
             printWindow.document.write(`<td>${s.trackingCode || '-'}</td>`);
             printWindow.document.write(`<td>${s.customerName}</td>`);
-            printWindow.document.write(`<td>${s.selectedQuote?.portal} / ${s.selectedQuote?.carrier}</td>`);
-            printWindow.document.write(`<td>€ ${s.selectedQuote?.price}</td>`);
+            printWindow.document.write(`<td>${s.selectedQuote ? `${s.selectedQuote.portal} / ${s.selectedQuote.carrier}` : t('Customer Cost/Pickup')}</td>`);
+            printWindow.document.write(`<td>€ ${s.selectedQuote ? s.selectedQuote.price : '0.00'}</td>`);
             printWindow.document.write(`<td>€ ${s.profit?.toFixed(2)}</td>`);
             printWindow.document.write(`<td>€ ${s.savings?.toFixed(2)}</td>`);
             printWindow.document.write('</tr>');
@@ -572,8 +572,8 @@ export default function Reports() {
                                         </td>
                                         <td className="px-2 py-2">{shipment.customerName}</td>
                                         <td className="px-2 py-2">{shipment.destinationCountry}</td>
-                                        <td className="px-2 py-2">{shipment.selectedQuote?.portal} / {shipment.selectedQuote?.carrier}</td>
-                                        <td className="px-2 py-2">€ {shipment.selectedQuote?.price}</td>
+                                        <td className="px-2 py-2">{shipment.selectedQuote ? `${shipment.selectedQuote.portal} / ${shipment.selectedQuote.carrier}` : t('Customer Cost/Pickup')}</td>
+                                        <td className="px-2 py-2">€ {shipment.selectedQuote ? shipment.selectedQuote.price : '0.00'}</td>
                                         <td className="px-2 py-2">€ {shipment.customerPayment}</td>
                                         <td className={`px-2 py-2 font-semibold ${shipment.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                             € {shipment.profit?.toFixed(2)}

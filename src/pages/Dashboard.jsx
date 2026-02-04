@@ -116,11 +116,11 @@ export default function Dashboard() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col">
-                                                    <span className="font-medium">{shipment.selectedQuote.portal}</span>
-                                                    <span className="text-xs text-gray-500 dark:text-gray-400">{shipment.selectedQuote.carrier}</span>
+                                                    <span className="font-medium">{shipment.selectedQuote?.portal || t('Customer Cost/Pickup')}</span>
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400">{shipment.selectedQuote?.carrier || '-'}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">€ {parseFloat(shipment.selectedQuote.price).toFixed(2)}</td>
+                                            <td className="px-6 py-4">€ {shipment.selectedQuote ? parseFloat(shipment.selectedQuote.price).toFixed(2) : '0.00'}</td>
                                             <td className="px-6 py-4 text-green-600 font-medium">
                                                 € {shipment.savings.toFixed(2)}
                                             </td>
