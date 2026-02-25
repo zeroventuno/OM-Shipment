@@ -201,6 +201,51 @@ export const storageService = {
             return acc;
         }, {});
 
+        // New stats: Portal/Carrier combinations
+        const combinationCountsMap = shipments.reduce((acc, curr) => {
+            if (curr.selectedQuote && curr.selectedQuote.portal && curr.selectedQuote.carrier) {
+                const combo = `${curr.selectedQuote.portal} / ${curr.selectedQuote.carrier}`;
+                acc[combo] = (acc[combo] || 0) + 1;
+            }
+            return acc;
+        }, {});
+
+        const combinationData = Object.entries(combinationCountsMap)
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value);
+
+        // Helper to check if shipment is a bike
+        const isBike = (shipment) => {
+            const type = shipment.orderType;
+            return type === 'Bicycle' || type === 'Frame Kit';
+        };
+
+        const bikeShipments = shipments.filter(isBike);
+
+        // New stats: Monthly bicycle shipments (Filtered by Bike)
+        const monthlyDataMap = bikeShipments.reduce((acc, curr) => {
+            if (curr.createdAt) {
+                const date = new Date(curr.createdAt);
+                const monthYear = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+                const quantity = curr.quantity || 1;
+                acc[monthYear] = (acc[monthYear] || 0) + quantity;
+            }
+            return acc;
+        }, {});
+
+        // Sort monthly data chronologically
+        const monthlyData = Object.entries(monthlyDataMap)
+            .map(([month, count]) => ({ month, count }))
+            .sort((a, b) => {
+                const dateA = new Date(a.month);
+                const dateB = new Date(b.month);
+                return dateA - dateB;
+            });
+
+        const totalBikes = bikeShipments.reduce((acc, curr) => acc + (curr.quantity || 1), 0);
+        const monthsCount = Object.keys(monthlyDataMap).length || 1;
+        const avgBikesPerMonth = totalBikes / monthsCount;
+
         const favoriteCarrier = Object.entries(carrierCounts).sort((a, b) => b[1] - a[1])[0];
 
         return {
@@ -209,6 +254,10 @@ export const storageService = {
             pendingShipments,
             favoriteCarrier: favoriteCarrier ? favoriteCarrier[0] : '-',
             favoriteCarrierPercentage: favoriteCarrier ? Math.round((favoriteCarrier[1] / totalShipments) * 100) : 0,
+            combinationData,
+            monthlyData,
+            totalBikes,
+            avgBikesPerMonth,
             recentShipments: shipments.slice(0, 5)
         };
     },
