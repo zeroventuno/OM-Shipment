@@ -1,4 +1,3 @@
-import React from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, Cell, CartesianGrid } from 'recharts';
 import { useTranslation } from 'react-i18next';
 

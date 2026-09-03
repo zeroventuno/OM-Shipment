@@ -1,12 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Plus, Trash2, Save, ArrowRight, TrendingDown, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Save, TrendingDown, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { PhotoUpload } from '../components/shipments/PhotoUpload';
 import { storageService } from '../services/storage';
-import { cn } from '../utils/cn';
 import { useTranslation } from 'react-i18next';
 
 const PORTALS = ['MBE', 'My Parcel', 'My DHL', 'BRT'];
@@ -72,34 +71,41 @@ export default function NewShipment() {
 
     const [isLoading, setIsLoading] = useState(false);
 
+    const [loadError, setLoadError] = useState('');
+
     // Load data for editing
     useEffect(() => {
         const loadData = async () => {
-            if (id) {
-                const shipment = await storageService.getShipment(id);
-                if (shipment) {
-                    setFormData({
-                        orderId: shipment.orderId,
-                        orderType: shipment.orderType || '',
-                        customerName: shipment.customerName || '',
-                        quantity: shipment.quantity || 1,
-                        destinationCountry: shipment.destinationCountry || '',
-                        customerPayment: shipment.customerPayment,
-                        trackingCode: shipment.trackingCode || '',
-                        photoUrls: shipment.photoUrls || [],
-                        customerCostPickup: shipment.customerCostPickup || false
-                    });
-                    setQuotes(shipment.allQuotes || []);
-                    if (shipment.selectedQuote) {
-                        setSelectedQuoteId(shipment.selectedQuote.id);
+            try {
+                if (id) {
+                    const shipment = await storageService.getShipment(id);
+                    if (shipment) {
+                        setFormData({
+                            orderId: shipment.orderId,
+                            orderType: shipment.orderType || '',
+                            customerName: shipment.customerName || '',
+                            quantity: shipment.quantity || 1,
+                            destinationCountry: shipment.destinationCountry || '',
+                            customerPayment: shipment.customerPayment,
+                            trackingCode: shipment.trackingCode || '',
+                            photoUrls: shipment.photoUrls || [],
+                            customerCostPickup: shipment.customerCostPickup || false
+                        });
+                        setQuotes(shipment.allQuotes || []);
+                        if (shipment.selectedQuote) {
+                            setSelectedQuoteId(shipment.selectedQuote.id);
+                        }
                     }
                 }
-            }
 
-            // Load unique customers for autocomplete
-            const allShipments = await storageService.getShipments();
-            const customers = [...new Set(allShipments.map(s => s.customerName).filter(Boolean))].sort();
-            setUniqueCustomers(customers);
+                // Load unique customers for autocomplete
+                const allShipments = await storageService.getShipments();
+                const customers = [...new Set(allShipments.map(s => s.customerName).filter(Boolean))].sort();
+                setUniqueCustomers(customers);
+            } catch (err) {
+                console.error('Failed to load shipment data:', err);
+                setLoadError(err.message || 'Unexpected error');
+            }
         };
         loadData();
     }, [id]);
@@ -107,9 +113,13 @@ export default function NewShipment() {
     // Smart suggestion logic
     useEffect(() => {
         const checkSuggestion = async () => {
-            if (formData.destinationCountry && !id) {
+            if (!formData.destinationCountry || id) return;
+            try {
                 const suggestion = await storageService.getSuggestedPortal(formData.destinationCountry);
                 setSuggestedPortal(suggestion);
+            } catch (err) {
+                // Sugestão é opcional: falhar aqui não deve travar o formulário.
+                console.error('Failed to load portal suggestion:', err);
             }
         };
         checkSuggestion();
@@ -301,6 +311,13 @@ export default function NewShipment() {
                     </p>
                 </div>
             </div>
+
+            {loadError && (
+                <div className="flex items-start gap-2 text-sm text-error bg-error/10 border border-error/20 rounded-md p-3">
+                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>{t('Could not load data')}: {t(loadError)}</span>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Column: Form */}

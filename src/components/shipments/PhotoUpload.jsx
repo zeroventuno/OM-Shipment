@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Camera, X, Loader2, Image as ImageIcon } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { useState } from 'react';
+import { Camera, X, Loader2 } from 'lucide-react';
 import { storageService } from '../../services/storage';
 import { useTranslation } from 'react-i18next';
-import heic2any from 'heic2any';
-import imageCompression from 'browser-image-compression';
+
+// heic2any (~1,3 MB) e browser-image-compression só são necessários quando o
+// usuário escolhe um arquivo, então entram por import dinâmico e ficam fora do
+// bundle inicial.
 
 export function PhotoUpload({ photos = [], onPhotosChange }) {
     const { t } = useTranslation();
@@ -27,6 +28,7 @@ export function PhotoUpload({ photos = [], onPhotosChange }) {
                 // Convert HEIC to JPG if necessary
                 if (file.name.toLowerCase().endsWith('.heic')) {
                     try {
+                        const { default: heic2any } = await import('heic2any');
                         const blob = await heic2any({
                             blob: file,
                             toType: 'image/jpeg',
@@ -47,6 +49,7 @@ export function PhotoUpload({ photos = [], onPhotosChange }) {
 
                 // Compress image
                 try {
+                    const { default: imageCompression } = await import('browser-image-compression');
                     const options = {
                         maxSizeMB: 1,
                         maxWidthOrHeight: 1920,

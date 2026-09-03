@@ -143,7 +143,6 @@ const resources = {
             "Order Type": "Tipo de Ordem",
             "Bicycle": "Bicicleta",
             "Frame Kit": "Kit Quadro",
-            "Components": "Componentes",
             "Warranty": "Garantia",
             "Clothing/Accessories": "Roupas ou Acessórios",
             "Gift": "Brinde",
@@ -155,7 +154,39 @@ const resources = {
             "Customer Cost/Pickup Mode": "Modo: Custo do Cliente",
             "No portal costs required": "Sem custos de portais",
             "Only quantity will be tracked": "Apenas a quantidade será registrada",
-            "Shipment/Pickup": "Envio/Retirada"
+            "Shipment/Pickup": "Envio/Retirada",
+
+            // Autenticação
+            "Shipment Management": "Gestão de Envios",
+            "Sign in to continue": "Entre para continuar",
+            "Recover your password": "Recupere sua senha",
+            "Email": "E-mail",
+            "Password": "Senha",
+            "Sign In": "Entrar",
+            "Sign Out": "Sair",
+            "Sign out of the system?": "Sair do sistema?",
+            "Forgot your password?": "Esqueceu sua senha?",
+            "Send reset link": "Enviar link de recuperação",
+            "Back to sign in": "Voltar ao login",
+            "If this email is registered, a reset link has been sent.": "Se este e-mail estiver cadastrado, um link de recuperação foi enviado.",
+            "Set a new password": "Defina uma nova senha",
+            "New password": "Nova senha",
+            "Confirm new password": "Confirme a nova senha",
+            "Update password": "Atualizar senha",
+            "Password updated. Redirecting...": "Senha atualizada. Redirecionando...",
+            "Password must be at least 8 characters": "A senha precisa ter no mínimo 8 caracteres",
+            "Passwords do not match": "As senhas não conferem",
+            "This reset link is invalid or has expired.": "Este link de recuperação é inválido ou expirou.",
+            "Invalid email or password": "E-mail ou senha inválidos",
+            "Email not confirmed": "E-mail ainda não confirmado",
+            "Too many attempts. Try again later.": "Muitas tentativas. Tente novamente mais tarde.",
+            "Supabase is not configured. Check the environment variables.": "O Supabase não está configurado. Verifique as variáveis de ambiente.",
+
+            // Gerais
+            "Unexpected error": "Erro inesperado",
+            "Could not load data": "Não foi possível carregar os dados",
+            "Open menu": "Abrir menu",
+            "All rights reserved.": "Todos os direitos reservados."
         }
     },
     it: {
@@ -273,7 +304,6 @@ const resources = {
             "Bike Size": "Taglia",
             "Problem": "Problema",
             "Paint Details": "Dettagli Verniciatura",
-            "Components": "Componenti Montati",
             "Solution": "Soluzione",
             "Producer": "Produttore",
             "New Serial Number": "Nuovo Numero di Serie",
@@ -312,7 +342,39 @@ const resources = {
             "Customer Cost/Pickup Mode": "Modalità: A Carico Cliente",
             "No portal costs required": "Nessun costo portale richiesto",
             "Only quantity will be tracked": "Sarà registrata solo la quantità",
-            "Shipment/Pickup": "Spedizione/Ritiro"
+            "Shipment/Pickup": "Spedizione/Ritiro",
+
+            // Autenticazione
+            "Shipment Management": "Gestione Spedizioni",
+            "Sign in to continue": "Accedi per continuare",
+            "Recover your password": "Recupera la tua password",
+            "Email": "E-mail",
+            "Password": "Password",
+            "Sign In": "Accedi",
+            "Sign Out": "Esci",
+            "Sign out of the system?": "Uscire dal sistema?",
+            "Forgot your password?": "Password dimenticata?",
+            "Send reset link": "Invia link di recupero",
+            "Back to sign in": "Torna all'accesso",
+            "If this email is registered, a reset link has been sent.": "Se questa e-mail è registrata, è stato inviato un link di recupero.",
+            "Set a new password": "Imposta una nuova password",
+            "New password": "Nuova password",
+            "Confirm new password": "Conferma la nuova password",
+            "Update password": "Aggiorna password",
+            "Password updated. Redirecting...": "Password aggiornata. Reindirizzamento...",
+            "Password must be at least 8 characters": "La password deve avere almeno 8 caratteri",
+            "Passwords do not match": "Le password non coincidono",
+            "This reset link is invalid or has expired.": "Questo link di recupero non è valido o è scaduto.",
+            "Invalid email or password": "E-mail o password non validi",
+            "Email not confirmed": "E-mail non ancora confermata",
+            "Too many attempts. Try again later.": "Troppi tentativi. Riprova più tardi.",
+            "Supabase is not configured. Check the environment variables.": "Supabase non è configurato. Controlla le variabili d'ambiente.",
+
+            // Generali
+            "Unexpected error": "Errore imprevisto",
+            "Could not load data": "Impossibile caricare i dati",
+            "Open menu": "Apri menu",
+            "All rights reserved.": "Tutti i diritti riservati."
         }
     }
 };

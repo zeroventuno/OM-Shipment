@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, Package, DollarSign, ArrowRight, Truck, Pencil, Bike, Calendar } from 'lucide-react';
+import { Package, DollarSign, ArrowRight, Truck, Pencil, Bike, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { storageService } from '../services/storage';
@@ -29,17 +29,34 @@ export default function Dashboard() {
         avgBikesPerMonth: 0
     });
     const [trackingUpdates, setTrackingUpdates] = useState({});
+    const [error, setError] = useState('');
 
     useEffect(() => {
         const loadData = async () => {
-            const data = await storageService.getStats();
+            let data;
+            try {
+                data = await storageService.getStats();
+            } catch (err) {
+                console.error('Failed to load stats:', err);
+                setError(err.message || 'Unexpected error');
+                return;
+            }
             setStats(data);
 
-            // Simulate checking tracking for recent shipments
+            // Consulta o rastreio dos envios recentes e grava a mudança de status,
+            // senão o envio ficaria "Pending" para sempre no banco.
             data.recentShipments.forEach(async (shipment) => {
-                if (shipment.trackingCode && shipment.status !== 'Delivered') {
-                    const update = await trackingService.getTrackingStatus(shipment.trackingCode);
-                    setTrackingUpdates(prev => ({ ...prev, [shipment.id]: update }));
+                if (!shipment.trackingCode || shipment.status === 'Delivered') return;
+
+                const update = await trackingService.getTrackingStatus(shipment.trackingCode);
+                setTrackingUpdates(prev => ({ ...prev, [shipment.id]: update }));
+
+                if (update.status !== shipment.status) {
+                    try {
+                        await storageService.updateStatus(shipment.id, update.status);
+                    } catch (err) {
+                        console.error('Failed to persist tracking status:', err);
+                    }
                 }
             });
         };
@@ -50,8 +67,8 @@ export default function Dashboard() {
         <div className="space-y-8 pb-8">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('Dashboard')}</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">{t('Dashboard Overview')}</p>
+                    <h1 className="text-3xl font-bold text-gray-900">{t('Dashboard')}</h1>
+                    <p className="text-gray-500 mt-1">{t('Dashboard Overview')}</p>
                 </div>
                 <Link to="/new-shipment">
                     <Button className="shadow-lg">
@@ -60,47 +77,54 @@ export default function Dashboard() {
                 </Link>
             </div>
 
+            {error && (
+                <div className="flex items-start gap-2 text-sm text-error bg-error/10 border border-error/20 rounded-md p-3">
+                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>{t('Could not load data')}: {t(error)}</span>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('Total Savings')}</CardTitle>
+                        <CardTitle className="text-sm font-medium text-gray-500">{t('Total Savings')}</CardTitle>
                         <DollarSign className="h-6 w-6 text-emerald-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white">€ {stats.totalSavings.toFixed(2)}</div>
+                        <div className="text-2xl font-bold text-gray-900">€ {stats.totalSavings.toFixed(2)}</div>
                         <p className="text-xs text-secondary mt-1 font-medium">{t('Efficient shipping')}</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('Shipments')}</CardTitle>
+                        <CardTitle className="text-sm font-medium text-gray-500">{t('Shipments')}</CardTitle>
                         <Package className="h-6 w-6 text-primary" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalShipments}</div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{stats.pendingShipments} {t('Pending')}</p>
+                        <div className="text-2xl font-bold text-gray-900">{stats.totalShipments}</div>
+                        <p className="text-xs text-gray-500 mt-1">{stats.pendingShipments} {t('Pending')}</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('Total Bikes')}</CardTitle>
+                        <CardTitle className="text-sm font-medium text-gray-500">{t('Total Bikes')}</CardTitle>
                         <Bike className="h-6 w-6 text-indigo-500" />
                     </CardHeader>
                     <CardContent className="flex flex-col">
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalBikes || 0}</div>
-                        <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <div className="text-2xl font-bold text-gray-900">{stats.totalBikes || 0}</div>
+                        <div className="flex items-center text-xs text-gray-500 mt-1">
                             <span className="font-medium mr-1">{stats.avgBikesPerMonth?.toFixed(1) || 0}</span> {t('Bikes / month average')}
                         </div>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('Best Option')}</CardTitle>
+                        <CardTitle className="text-sm font-medium text-gray-500">{t('Best Option')}</CardTitle>
                         <Truck className="h-6 w-6 text-blue-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.favoriteCarrier}</div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{stats.favoriteCarrierPercentage}% {t('usage')}</p>
+                        <div className="text-2xl font-bold text-gray-900">{stats.favoriteCarrier}</div>
+                        <p className="text-xs text-gray-500 mt-1">{stats.favoriteCarrierPercentage}% {t('usage')}</p>
                     </CardContent>
                 </Card>
             </div>
@@ -135,8 +159,8 @@ export default function Dashboard() {
                                         layout="vertical"
                                         verticalAlign="middle"
                                         align="right"
-                                        formatter={(value, entry, index) => (
-                                            <span className="text-gray-700 dark:text-gray-300 text-sm">
+                                        formatter={(value, entry) => (
+                                            <span className="text-gray-700 text-sm">
                                                 {value}: <span className="font-bold">{entry.payload.value}</span>
                                             </span>
                                         )}
@@ -144,7 +168,7 @@ export default function Dashboard() {
                                 </PieChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                            <div className="flex items-center justify-center h-full text-gray-500">
                                 {t('No data available')}
                             </div>
                         )}
@@ -184,7 +208,7 @@ export default function Dashboard() {
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                            <div className="flex items-center justify-center h-full text-gray-500">
                                 {t('No data available')}
                             </div>
                         )}
@@ -200,7 +224,7 @@ export default function Dashboard() {
                 <CardContent>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left">
-                            <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-300">
+                            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                                 <tr>
                                     <th className="px-6 py-3">{t('Order')}</th>
                                     <th className="px-6 py-3">{t('Customer')}</th>
@@ -211,31 +235,31 @@ export default function Dashboard() {
                                     <th className="px-6 py-3">{t('Actions')}</th>
                                 </tr>
                             </thead>
-                            <tbody className="dark:text-gray-300">
+                            <tbody>
                                 {stats.recentShipments.length > 0 ? (
                                     stats.recentShipments.map((shipment) => (
-                                        <tr key={shipment.id} className="bg-white border-b hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:hover:bg-gray-800">
-                                            <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{shipment.orderId}</td>
+                                        <tr key={shipment.id} className="bg-white border-b hover:bg-gray-50">
+                                            <td className="px-6 py-4 font-medium text-gray-900">{shipment.orderId}</td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col">
                                                     <span className="font-medium">{shipment.customerName || '-'}</span>
-                                                    <span className="text-xs text-gray-500 dark:text-gray-400">{shipment.destinationCountry || '-'}</span>
+                                                    <span className="text-xs text-gray-500">{shipment.destinationCountry || '-'}</span>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col">
                                                     <span className="font-medium">{shipment.selectedQuote?.portal || t('Customer Cost/Pickup')}</span>
-                                                    <span className="text-xs text-gray-500 dark:text-gray-400">{shipment.selectedQuote?.carrier || '-'}</span>
+                                                    <span className="text-xs text-gray-500">{shipment.selectedQuote?.carrier || '-'}</span>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">€ {shipment.selectedQuote ? parseFloat(shipment.selectedQuote.price).toFixed(2) : '0.00'}</td>
                                             <td className="px-6 py-4 text-green-600 font-medium">
-                                                € {shipment.savings.toFixed(2)}
+                                                € {(shipment.savings || 0).toFixed(2)}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${trackingUpdates[shipment.id]?.status === 'Delivered'
-                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-yellow-100 text-yellow-800'
                                                     }`}>
                                                     {trackingUpdates[shipment.id]?.status || shipment.status}
                                                 </span>
@@ -251,7 +275,7 @@ export default function Dashboard() {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="7" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                                        <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
                                             {t('No shipments')}
                                         </td>
                                     </tr>

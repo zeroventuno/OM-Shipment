@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { storageService } from '../../services/storage';
-import { Activity, Wifi, WifiOff } from 'lucide-react';
+import { Activity, Menu } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function Layout() {
+    const { t } = useTranslation();
     const [connStatus, setConnStatus] = useState({ status: 'checking' });
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
         const checkConnection = async () => {
@@ -20,21 +23,35 @@ export default function Layout() {
 
     return (
         <div className="min-h-screen bg-background flex flex-col">
-            <Sidebar />
-            <main className="pl-64 flex-1">
+            <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+            {/* Barra superior — só aparece no mobile/tablet */}
+            <header className="lg:hidden sticky top-0 z-10 h-14 flex items-center gap-3 px-4 bg-surface border-b border-gray-200">
+                <button
+                    onClick={() => setSidebarOpen(true)}
+                    className="p-2 -ml-2 text-gray-600 hover:text-gray-900"
+                    aria-label={t('Open menu')}
+                >
+                    <Menu className="h-6 w-6" />
+                </button>
+                <img src="/logo.png" alt="Officine Mattio" className="h-7 w-auto" />
+            </header>
+
+            <main className="lg:pl-64 flex-1">
                 <div className="w-full p-4 relative">
                     <Outlet />
                 </div>
             </main>
-            <footer className="pl-64 py-4 bg-gray-100 border-t border-gray-200">
-                <div className="w-full px-4 flex justify-between items-center">
+
+            <footer className="lg:pl-64 py-4 bg-gray-100 border-t border-gray-200">
+                <div className="w-full px-4 flex flex-wrap gap-2 justify-between items-center">
                     <p className="text-sm text-gray-600">
-                        Copyright © 2025 Ventuno. Tutti i diritti reservados.
+                        Copyright © {new Date().getFullYear()} Ventuno. {t('All rights reserved.')}
                     </p>
 
                     <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border transition-all duration-300">
                         {connStatus.status === 'connected' ? (
-                            <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400" title="Supabase Online">
+                            <div className="flex items-center gap-1.5 text-green-600" title="Supabase Online">
                                 <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                                 <span className="text-[10px] uppercase tracking-wider font-bold">Online</span>
                             </div>
@@ -44,7 +61,7 @@ export default function Layout() {
                                 <span className="text-[10px] uppercase tracking-wider font-bold">Checking...</span>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400" title={connStatus.message || connStatus.reason || "Supabase Offline"}>
+                            <div className="flex items-center gap-1.5 text-red-600" title={connStatus.message || connStatus.reason || "Supabase Offline"}>
                                 <div className="h-2 w-2 rounded-full bg-red-500" />
                                 <span className="text-[10px] uppercase tracking-wider font-bold">Offline</span>
                             </div>
