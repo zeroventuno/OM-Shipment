@@ -79,7 +79,7 @@ function drawHeader(page, { shipment, locale, labels, bold, regular, rgb }) {
             : '-'],
         [labels.tracking, shipment.trackingCode || '-'],
         [labels.date, shipment.createdAt ? new Date(shipment.createdAt).toLocaleDateString(locale) : '-'],
-        [labels.status, shipment.status || '-'],
+        [labels.status, labels.statusValue ? labels.statusValue(shipment.status) : (shipment.status || '-')],
     ];
 
     for (const [label, value] of rows) {

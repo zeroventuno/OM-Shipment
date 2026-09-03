@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { countrySpellings } from '../data/countries';
+import { resolveStatus } from '../utils/shipmentStatus';
 
 const STORAGE_KEY = 'bikeship_data_v1';
 
@@ -94,7 +95,7 @@ export const storageService = {
             ...shipment,
             id: crypto.randomUUID(),
             createdAt: new Date().toISOString(),
-            status: 'Pending',
+            status: resolveStatus(shipment),
             trackingHistory: []
         };
 

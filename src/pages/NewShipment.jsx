@@ -10,6 +10,7 @@ import { storageService } from '../services/storage';
 import { useTranslation } from 'react-i18next';
 import { COUNTRIES, countryLabel } from '../data/countries';
 import { analyzeQuotes, calculateProfit } from '../utils/quotes';
+import { resolveStatus } from '../utils/shipmentStatus';
 
 const PORTALS = ['MBE', 'My Parcel', 'My DHL', 'BRT'];
 const ALL_CARRIERS = ['TNT', 'Fedex', 'DHL', 'BRT', 'SDA', 'UPS'];
@@ -188,6 +189,9 @@ export default function NewShipment() {
         try {
             let shipmentData;
 
+            // Comprovante anexado é prova de entrega — ver resolveStatus.
+            const deliveredByPod = (formData.podFiles || []).length > 0;
+
             if (isEditing && !analysis) {
                 // Editing without changing quotes - keep existing data but recalculate profit
                 console.log('Editing without analysis, loading existing shipment...');
@@ -223,7 +227,8 @@ export default function NewShipment() {
                     ...formData, // Update form fields
                     customerPayment: parseFloat(formData.customerPayment) || 0,
                     profit: newProfit,
-                    savings: newSavings
+                    savings: newSavings,
+                    status: resolveStatus(formData, existingShipment.status)
                 };
                 console.log('Updated shipment data with recalculated profit:', shipmentData);
             } else {
@@ -238,7 +243,8 @@ export default function NewShipment() {
                         selectedQuote: null,
                         profit: 0,
                         savings: 0,
-                        allQuotes: []
+                        allQuotes: [],
+                        ...(deliveredByPod && { status: 'Delivered' })
                     };
                 } else {
                     shipmentData = {
@@ -247,7 +253,8 @@ export default function NewShipment() {
                         selectedQuote: analysis.selected,
                         profit: calculateProfit(formData.customerPayment, analysis.selected),
                         savings: analysis.savings,
-                        allQuotes: quotes
+                        allQuotes: quotes,
+                        ...(deliveredByPod && { status: 'Delivered' })
                     };
                 }
             }

@@ -343,6 +343,7 @@ export default function Reports() {
                     tracking: t('Tracking'),
                     date: t('Date'),
                     status: t('Status'),
+                    statusValue: (v) => (v ? t(v) : '-'),
                 }
             });
             downloadPdf(bytes, `comprovantes-${new Date().toISOString().split('T')[0]}.pdf`);

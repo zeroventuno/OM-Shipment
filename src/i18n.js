@@ -200,7 +200,14 @@ const resources = {
             "Export proofs (PDF)": "Exportar comprovantes (PDF)",
             "No proof of delivery to export": "Nenhum envio selecionado tem comprovante",
             "Generating...": "Gerando...",
-            "Delivery Proof": "Comprovante de Entrega"
+            "Delivery Proof": "Comprovante de Entrega",
+
+            // Status do envio
+            "Pending": "Pendente",
+            "In Transit": "Em trânsito",
+            "Out for Delivery": "Saiu para entrega",
+            "Delivered": "Entregue",
+            "Exception": "Ocorrência"
         }
     },
     it: {
@@ -402,7 +409,14 @@ const resources = {
             "Export proofs (PDF)": "Esporta prove di consegna (PDF)",
             "No proof of delivery to export": "Nessuna spedizione selezionata ha la prova di consegna",
             "Generating...": "Generazione...",
-            "Delivery Proof": "Prova di Consegna"
+            "Delivery Proof": "Prova di Consegna",
+
+            // Stato della spedizione
+            "Pending": "In attesa",
+            "In Transit": "In transito",
+            "Out for Delivery": "In consegna",
+            "Delivered": "Consegnato",
+            "Exception": "Anomalia"
         }
     }
 };

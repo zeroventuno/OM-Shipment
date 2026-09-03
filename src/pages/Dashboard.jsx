@@ -44,12 +44,17 @@ export default function Dashboard() {
             }
             setStats(data);
 
-            // Consulta o rastreio dos envios recentes e grava a mudança de status,
-            // senão o envio ficaria "Pending" para sempre no banco.
+            // Só consulta se houver rastreio real configurado. Sem chave de API,
+            // getTrackingStatus devolve null e nada é exibido nem gravado — o
+            // status mostrado passa a ser só o que está no banco.
+            if (!trackingService.isConfigured()) return;
+
             data.recentShipments.forEach(async (shipment) => {
                 if (!shipment.trackingCode || shipment.status === 'Delivered') return;
 
                 const update = await trackingService.getTrackingStatus(shipment.trackingCode);
+                if (!update) return;
+
                 setTrackingUpdates(prev => ({ ...prev, [shipment.id]: update }));
 
                 if (update.status !== shipment.status) {
