@@ -11,11 +11,12 @@ import {
 } from 'recharts';
 
 import { useTranslation } from 'react-i18next';
+import { countryLabel } from '../data/countries';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#4caf50'];
 
 export default function Dashboard() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [stats, setStats] = useState({
         totalSavings: 0,
         totalShipments: 0,
@@ -243,7 +244,7 @@ export default function Dashboard() {
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col">
                                                     <span className="font-medium">{shipment.customerName || '-'}</span>
-                                                    <span className="text-xs text-gray-500">{shipment.destinationCountry || '-'}</span>
+                                                    <span className="text-xs text-gray-500">{countryLabel(shipment.destinationCountry, i18n.language) || '-'}</span>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">

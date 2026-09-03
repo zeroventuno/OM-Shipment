@@ -7,39 +7,15 @@ import { Button } from '../components/ui/Button';
 import { PhotoUpload } from '../components/shipments/PhotoUpload';
 import { storageService } from '../services/storage';
 import { useTranslation } from 'react-i18next';
+import { COUNTRIES, countryLabel } from '../data/countries';
+import { analyzeQuotes, calculateProfit } from '../utils/quotes';
 
 const PORTALS = ['MBE', 'My Parcel', 'My DHL', 'BRT'];
 const ALL_CARRIERS = ['TNT', 'Fedex', 'DHL', 'BRT', 'SDA', 'UPS'];
 const ORDER_TYPES = ['Bicycle', 'Frame Kit', 'Components', 'Warranty', 'Clothing/Accessories', 'Gift', 'Rental', 'Other'];
-const COUNTRIES = [
-    "África do Sul", "Alemanha", "Andorra", "Angola", "Arábia Saudita", "Argélia", "Argentina",
-    "Armênia", "Austrália", "Áustria", "Azerbaijão", "Bahamas", "Bangladesh", "Barbados",
-    "Barein", "Bélgica", "Belize", "Bielorrússia", "Bolívia", "Bósnia e Herzegovina", "Brasil",
-    "Brunei", "Bulgária", "Cabo Verde", "Camboja", "Camarões", "Canadá", "Catar", "Cazaquistão",
-    "Chile", "China", "Chipre", "Cingapura", "Colômbia", "Coreia do Norte", "Coreia do Sul",
-    "Costa do Marfim", "Costa Rica", "Croácia", "Cuba", "Dinamarca", "Dominica", "Egito",
-    "El Salvador", "Emirados Árabes Unidos", "Equador", "Eslováquia", "Eslovênia", "Espanha",
-    "Estados Unidos", "Estônia", "Etiópia", "Fiji", "Filipinas", "Finlândia", "França", "Gabão",
-    "Gana", "Geórgia", "Gibraltar", "Grécia", "Groenlândia", "Guadalupe", "Guam", "Guatemala",
-    "Guiana", "Guiana Francesa", "Haiti", "Holanda", "Honduras", "Hong Kong", "Hungria", "Iêmen",
-    "Ilhas Cayman", "Ilhas Fiji", "Ilhas Maurício", "Índia", "Indonésia", "Irã", "Iraque",
-    "Irlanda", "Islândia", "Israel", "Itália", "Jamaica", "Japão", "Jordânia", "Kosovo", "Kuwait",
-    "Laos", "Letônia", "Líbano", "Líbia", "Liechtenstein", "Lituânia", "Luxemburgo", "Macau",
-    "Macedônia do Norte", "Madagascar", "Malásia", "Malawi", "Maldivas", "Mali", "Malta",
-    "Marrocos", "Martinica", "Maurícia", "México", "Mianmar", "Moçambique", "Mônaco", "Mongólia",
-    "Montenegro", "Namíbia", "Nepal", "Nicarágua", "Nigéria", "Noruega", "Nova Caledônia",
-    "Nova Zelândia", "Omã", "Panamá", "Paquistão", "Paraguai", "Peru", "Polinésia Francesa",
-    "Polônia", "Porto Rico", "Portugal", "Quênia", "Quirguistão", "Reino Unido",
-    "República Checa", "República Democrática do Congo", "República Dominicana", "Reunião",
-    "Romênia", "Ruanda", "Rússia", "Samoa", "San Marino", "Senegal", "Sérvia", "Seychelles",
-    "Singapura", "Síria", "Sri Lanka", "Suazilândia", "Sudão", "Suécia", "Suíça", "Suriname",
-    "Tailândia", "Taiwan", "Tanzânia", "Timor-Leste", "Togo", "Trinidad e Tobago", "Tunísia",
-    "Turcomenistão", "Turquia", "Ucrânia", "Uganda", "Uruguai", "Uzbequistão", "Vaticano",
-    "Venezuela", "Vietnã", "Zâmbia", "Zimbábue"
-];
 
 export default function NewShipment() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { id } = useParams();
     const isEditing = !!id;
@@ -73,6 +49,14 @@ export default function NewShipment() {
 
     const [loadError, setLoadError] = useState('');
 
+    // Nomes dos países no idioma atual, em ordem alfabética desse idioma.
+    const localizedCountries = useMemo(() => {
+        const lang = i18n.language || 'pt';
+        return COUNTRIES
+            .map(c => ({ ...c, label: countryLabel(c.code, lang) }))
+            .sort((a, b) => a.label.localeCompare(b.label, lang));
+    }, [i18n.language]);
+
     // Load data for editing
     useEffect(() => {
         const loadData = async () => {
@@ -99,9 +83,7 @@ export default function NewShipment() {
                 }
 
                 // Load unique customers for autocomplete
-                const allShipments = await storageService.getShipments();
-                const customers = [...new Set(allShipments.map(s => s.customerName).filter(Boolean))].sort();
-                setUniqueCustomers(customers);
+                setUniqueCustomers(await storageService.getCustomerNames());
             } catch (err) {
                 console.error('Failed to load shipment data:', err);
                 setLoadError(err.message || 'Unexpected error');
@@ -158,21 +140,10 @@ export default function NewShipment() {
         return ALL_CARRIERS;
     };
 
-    const analysis = useMemo(() => {
-        const validQuotes = quotes.filter(q => q.price && !isNaN(parseFloat(q.price)));
-        if (validQuotes.length === 0) return null;
-
-        const sorted = [...validQuotes].sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-        const bestPriceQuote = sorted[0];
-        const worstPriceQuote = sorted[sorted.length - 1];
-
-        // Use selected quote or default to best price
-        const selected = selectedQuoteId ? validQuotes.find(q => q.id === selectedQuoteId) || bestPriceQuote : bestPriceQuote;
-
-        const savings = parseFloat(worstPriceQuote.price) - parseFloat(selected.price);
-
-        return { best: bestPriceQuote, worst: worstPriceQuote, selected, savings };
-    }, [quotes, selectedQuoteId]);
+    const analysis = useMemo(
+        () => analyzeQuotes(quotes, selectedQuoteId),
+        [quotes, selectedQuoteId]
+    );
 
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
@@ -228,8 +199,7 @@ export default function NewShipment() {
 
                 // Recalculate profit based on new customer payment
                 const selectedQuotePrice = parseFloat(existingShipment.selectedQuote?.price || 0);
-                const customerPayment = parseFloat(formData.customerPayment || 0);
-                const newProfit = customerPayment - selectedQuotePrice;
+                const newProfit = calculateProfit(formData.customerPayment, existingShipment.selectedQuote);
 
                 // Recalculate savings (difference between selected and worst quote)
                 let newSavings = existingShipment.savings || 0;
@@ -272,7 +242,7 @@ export default function NewShipment() {
                         ...formData,
                         customerPayment: parseFloat(formData.customerPayment) || 0,
                         selectedQuote: analysis.selected,
-                        profit: parseFloat(formData.customerPayment) - parseFloat(analysis.selected.price),
+                        profit: calculateProfit(formData.customerPayment, analysis.selected),
                         savings: analysis.savings,
                         allQuotes: quotes
                     };
@@ -388,8 +358,8 @@ export default function NewShipment() {
                                         onChange={(e) => setFormData({ ...formData, destinationCountry: e.target.value })}
                                     >
                                         <option value="">{t('Select Country')}</option>
-                                        {COUNTRIES.map(country => (
-                                            <option key={country} value={country}>{country}</option>
+                                        {localizedCountries.map(country => (
+                                            <option key={country.code} value={country.value}>{country.label}</option>
                                         ))}
                                     </select>
                                     {suggestedPortal && (

@@ -7,6 +7,7 @@ import { Pencil, Trash2, Search, DollarSign, TrendingUp, TrendingDown, User, Fil
 import MonthlyChart from '../components/MonthlyChart';
 import { storageService } from '../services/storage';
 import { useTranslation } from 'react-i18next';
+import { countryLabel } from '../data/countries';
 import * as XLSX from 'xlsx';
 
 export default function Reports() {
@@ -290,7 +291,7 @@ export default function Reports() {
             [t('Order')]: s.orderId,
             [t('Tracking')]: s.trackingCode,
             [t('Customer')]: s.customerName,
-            [t('Country')]: s.destinationCountry,
+            [t('Country')]: countryLabel(s.destinationCountry, i18n.language),
             [t('Portal/Carrier')]: s.selectedQuote ? `${s.selectedQuote.portal} / ${s.selectedQuote.carrier}` : t('Customer Cost/Pickup'),
             [t('Cost')]: s.selectedQuote ? `€ ${s.selectedQuote.price}` : '€ 0.00',
             [t('Customer Payment')]: `€ ${s.customerPayment}`,
@@ -585,7 +586,7 @@ export default function Reports() {
                                             </div>
                                         </td>
                                         <td className="px-2 py-2">{shipment.customerName}</td>
-                                        <td className="px-2 py-2">{shipment.destinationCountry}</td>
+                                        <td className="px-2 py-2">{countryLabel(shipment.destinationCountry, i18n.language)}</td>
                                         <td className="px-2 py-2">{shipment.selectedQuote ? `${shipment.selectedQuote.portal} / ${shipment.selectedQuote.carrier}` : t('Customer Cost/Pickup')}</td>
                                         <td className="px-2 py-2">€ {shipment.selectedQuote ? shipment.selectedQuote.price : '0.00'}</td>
                                         <td className="px-2 py-2">€ {shipment.customerPayment}</td>

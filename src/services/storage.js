@@ -1,6 +1,13 @@
 import { supabase } from './supabaseClient';
+import { countrySpellings } from '../data/countries';
 
 const STORAGE_KEY = 'bikeship_data_v1';
+
+// Colunas que as estatísticas realmente usam. Puxar '*' traria também
+// all_quotes e photo_urls, que são os campos mais pesados da tabela e não
+// entram em nenhum cálculo.
+const STATS_COLUMNS = 'created_at,status,order_type,quantity,savings,selected_quote';
+const RECENT_COLUMNS = 'id,created_at,order_id,customer_name,destination_country,status,tracking_code,savings,selected_quote';
 
 // Helpers to map between DB (snake_case) and App (camelCase)
 const mapToDb = (s) => ({
@@ -181,30 +188,87 @@ export const storageService = {
         }
     },
 
+    // Portal mais usado para um destino. Filtra no banco e traz só a coluna
+    // necessária — antes puxava a tabela inteira a cada troca de país no form.
     getSuggestedPortal: async (country) => {
         if (!country) return null;
 
-        const shipments = await storageService.getShipments();
+        // Um país pode estar gravado com grafias diferentes ('Cingapura' e
+        // 'Singapura'); todas contam para a sugestão.
+        const spellings = countrySpellings(country);
 
-        const countryShipments = shipments.filter(s =>
-            s.destinationCountry && s.destinationCountry.toLowerCase() === country.toLowerCase()
-        );
+        let rows;
+        if (supabase) {
+            const { data, error } = await supabase
+                .from('shipments')
+                .select('selected_quote')
+                .in('destination_country', spellings);
 
-        if (countryShipments.length === 0) return null;
-
-        const portalCounts = countryShipments.reduce((acc, curr) => {
-            if (curr.selectedQuote && curr.selectedQuote.portal) {
-                const portal = curr.selectedQuote.portal;
-                acc[portal] = (acc[portal] || 0) + 1;
+            if (error) {
+                console.error('Supabase suggestion query error:', error);
+                throw error;
             }
+            rows = data.map(r => r.selected_quote);
+        } else {
+            const wanted = new Set(spellings.map(s => s.toLowerCase()));
+            rows = localRead()
+                .filter(s => wanted.has((s.destinationCountry || '').toLowerCase()))
+                .map(s => s.selectedQuote);
+        }
+
+        const portalCounts = rows.reduce((acc, quote) => {
+            if (quote?.portal) acc[quote.portal] = (acc[quote.portal] || 0) + 1;
             return acc;
         }, {});
 
         return Object.entries(portalCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
     },
 
+    // Só os nomes de clientes, para o autocomplete do formulário.
+    getCustomerNames: async () => {
+        if (!supabase) {
+            return [...new Set(localRead().map(s => s.customerName).filter(Boolean))].sort();
+        }
+
+        const { data, error } = await supabase
+            .from('shipments')
+            .select('customer_name')
+            .not('customer_name', 'is', null);
+
+        if (error) {
+            console.error('Supabase customer names error:', error);
+            throw error;
+        }
+
+        return [...new Set(data.map(r => r.customer_name).filter(Boolean))].sort();
+    },
+
     getStats: async () => {
-        const shipments = await storageService.getShipments();
+        let shipments, recentShipments;
+
+        if (supabase) {
+            // Duas consultas enxutas em vez de uma que traz a tabela inteira
+            // com todas as colunas.
+            const [aggregate, recent] = await Promise.all([
+                supabase.from('shipments').select(STATS_COLUMNS),
+                supabase.from('shipments').select(RECENT_COLUMNS).order('created_at', { ascending: false }).limit(5)
+            ]);
+
+            if (aggregate.error) {
+                console.error('Supabase stats error:', aggregate.error);
+                throw aggregate.error;
+            }
+            if (recent.error) {
+                console.error('Supabase recent shipments error:', recent.error);
+                throw recent.error;
+            }
+
+            shipments = aggregate.data.map(mapFromDb);
+            recentShipments = recent.data.map(mapFromDb);
+        } else {
+            shipments = localRead();
+            recentShipments = shipments.slice(0, 5);
+        }
 
         const totalSavings = shipments.reduce((acc, curr) => acc + (curr.savings || 0), 0);
         const totalShipments = shipments.length;
@@ -271,7 +335,7 @@ export const storageService = {
             monthlyData,
             totalBikes,
             avgBikesPerMonth,
-            recentShipments: shipments.slice(0, 5)
+            recentShipments
         };
     },
 
