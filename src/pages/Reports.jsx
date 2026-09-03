@@ -339,7 +339,7 @@ export default function Reports() {
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="flex flex-wrap gap-3 justify-between items-center animate-in fade-in slide-in-from-top-4 duration-500">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">{t('Reports')}</h1>
                     <p className="text-gray-500 mt-1">{t('Complete History')}</p>
@@ -466,16 +466,16 @@ export default function Reports() {
             </div>
 
             <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <CardTitle>{t('All Shipments')} ({filteredShipments.length})</CardTitle>
-                    <div className="flex gap-2">
-                        <div className="relative">
+                    <div className="flex flex-wrap gap-2">
+                        <div className="relative flex-1 min-w-[12rem]">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <Input
                                 placeholder={t('Search...')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10 w-64"
+                                className="pl-10 w-full"
                             />
                         </div>
                         <Button
@@ -510,17 +510,17 @@ export default function Reports() {
                                         />
                                     </th>
                                     <th className="px-2 py-2">{t('Order')}</th>
-                                    <th className="px-2 py-2 w-10 text-center">{t('Tracking')}</th>
-                                    <th className="px-2 py-2 w-10 text-center">{t('Photos')}</th>
-                                    <th className="px-2 py-2 w-10 text-center">{t('Order Type')}</th>
+                                    <th className="hidden md:table-cell px-2 py-2 w-10 text-center">{t('Tracking')}</th>
+                                    <th className="hidden md:table-cell px-2 py-2 w-10 text-center">{t('Photos')}</th>
+                                    <th className="hidden md:table-cell px-2 py-2 w-10 text-center">{t('Order Type')}</th>
                                     <th className="px-2 py-2">{t('Customer')}</th>
-                                    <th className="px-2 py-2">{t('Country')}</th>
-                                    <th className="px-2 py-2">{t('Portal/Carrier')}</th>
-                                    <th className="px-2 py-2">{t('Cost')}</th>
-                                    <th className="px-2 py-2">{t('Customer Payment')}</th>
+                                    <th className="hidden md:table-cell px-2 py-2">{t('Country')}</th>
+                                    <th className="hidden md:table-cell px-2 py-2">{t('Portal/Carrier')}</th>
+                                    <th className="hidden md:table-cell px-2 py-2">{t('Cost')}</th>
+                                    <th className="hidden md:table-cell px-2 py-2">{t('Customer Payment')}</th>
                                     <th className="px-2 py-2">{t('Profit')}</th>
-                                    <th className="px-2 py-2">{t('Savings')}</th>
-                                    <th className="px-2 py-2">{t('Date')}</th>
+                                    <th className="hidden md:table-cell px-2 py-2">{t('Savings')}</th>
+                                    <th className="hidden md:table-cell px-2 py-2">{t('Date')}</th>
                                     <th className="px-2 py-2">{t('Actions')}</th>
                                 </tr>
                             </thead>
@@ -536,7 +536,7 @@ export default function Reports() {
                                             />
                                         </td>
                                         <td className="px-2 py-2 font-medium text-gray-900">{shipment.orderId}</td>
-                                        <td className="px-2 py-2">
+                                        <td className="hidden md:table-cell px-2 py-2">
                                             <div className="flex justify-center">
                                                 {shipment.trackingCode ? (
                                                     <button
@@ -552,7 +552,7 @@ export default function Reports() {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-2 py-2">
+                                        <td className="hidden md:table-cell px-2 py-2">
                                             <div className="flex justify-center">
                                                 {shipment.photoUrls && shipment.photoUrls.length > 0 ? (
                                                     <button
@@ -570,7 +570,7 @@ export default function Reports() {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-2 py-2">
+                                        <td className="hidden md:table-cell px-2 py-2">
                                             <div className="flex justify-center">
                                                 <Link to={`/new-shipment/${shipment.id}`}>
                                                     <div
@@ -586,15 +586,15 @@ export default function Reports() {
                                             </div>
                                         </td>
                                         <td className="px-2 py-2">{shipment.customerName}</td>
-                                        <td className="px-2 py-2">{countryLabel(shipment.destinationCountry, i18n.language)}</td>
-                                        <td className="px-2 py-2">{shipment.selectedQuote ? `${shipment.selectedQuote.portal} / ${shipment.selectedQuote.carrier}` : t('Customer Cost/Pickup')}</td>
-                                        <td className="px-2 py-2">€ {shipment.selectedQuote ? shipment.selectedQuote.price : '0.00'}</td>
-                                        <td className="px-2 py-2">€ {shipment.customerPayment}</td>
+                                        <td className="hidden md:table-cell px-2 py-2">{countryLabel(shipment.destinationCountry, i18n.language)}</td>
+                                        <td className="hidden md:table-cell px-2 py-2">{shipment.selectedQuote ? `${shipment.selectedQuote.portal} / ${shipment.selectedQuote.carrier}` : t('Customer Cost/Pickup')}</td>
+                                        <td className="hidden md:table-cell px-2 py-2">€ {shipment.selectedQuote ? shipment.selectedQuote.price : '0.00'}</td>
+                                        <td className="hidden md:table-cell px-2 py-2">€ {shipment.customerPayment}</td>
                                         <td className={`px-2 py-2 font-semibold ${shipment.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                             € {(shipment.profit || 0).toFixed(2)}
                                         </td>
-                                        <td className="px-2 py-2 text-green-600 font-semibold">€ {(shipment.savings || 0).toFixed(2)}</td>
-                                        <td className="px-2 py-2 text-nowrap">{new Date(shipment.createdAt).toLocaleDateString()}</td>
+                                        <td className="hidden md:table-cell px-2 py-2 text-green-600 font-semibold">€ {(shipment.savings || 0).toFixed(2)}</td>
+                                        <td className="hidden md:table-cell px-2 py-2 text-nowrap">{new Date(shipment.createdAt).toLocaleDateString()}</td>
                                         <td className="px-2 py-2">
                                             <div className="flex gap-2">
                                                 <Link to={`/new-shipment/${shipment.id}`}>

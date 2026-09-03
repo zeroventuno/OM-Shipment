@@ -66,9 +66,9 @@ export default function Dashboard() {
 
     return (
         <div className="space-y-8 pb-8">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-wrap gap-3 justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">{t('Dashboard')}</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('Dashboard')}</h1>
                     <p className="text-gray-500 mt-1">{t('Dashboard Overview')}</p>
                 </div>
                 <Link to="/new-shipment">
@@ -229,9 +229,9 @@ export default function Dashboard() {
                                 <tr>
                                     <th className="px-6 py-3">{t('Order')}</th>
                                     <th className="px-6 py-3">{t('Customer')}</th>
-                                    <th className="px-6 py-3">{t('Portal/Carrier')}</th>
-                                    <th className="px-6 py-3">{t('Cost')}</th>
-                                    <th className="px-6 py-3">{t('Savings')}</th>
+                                    <th className="hidden md:table-cell px-6 py-3">{t('Portal/Carrier')}</th>
+                                    <th className="hidden md:table-cell px-6 py-3">{t('Cost')}</th>
+                                    <th className="hidden md:table-cell px-6 py-3">{t('Savings')}</th>
                                     <th className="px-6 py-3">{t('Status')}</th>
                                     <th className="px-6 py-3">{t('Actions')}</th>
                                 </tr>
@@ -247,14 +247,14 @@ export default function Dashboard() {
                                                     <span className="text-xs text-gray-500">{countryLabel(shipment.destinationCountry, i18n.language) || '-'}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="hidden md:table-cell px-6 py-4">
                                                 <div className="flex flex-col">
                                                     <span className="font-medium">{shipment.selectedQuote?.portal || t('Customer Cost/Pickup')}</span>
                                                     <span className="text-xs text-gray-500">{shipment.selectedQuote?.carrier || '-'}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">€ {shipment.selectedQuote ? parseFloat(shipment.selectedQuote.price).toFixed(2) : '0.00'}</td>
-                                            <td className="px-6 py-4 text-green-600 font-medium">
+                                            <td className="hidden md:table-cell px-6 py-4">€ {shipment.selectedQuote ? parseFloat(shipment.selectedQuote.price).toFixed(2) : '0.00'}</td>
+                                            <td className="hidden md:table-cell px-6 py-4 text-green-600 font-medium">
                                                 € {(shipment.savings || 0).toFixed(2)}
                                             </td>
                                             <td className="px-6 py-4">
