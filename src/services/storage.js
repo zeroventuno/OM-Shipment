@@ -3,6 +3,10 @@ import { countrySpellings } from '../data/countries';
 
 const STORAGE_KEY = 'bikeship_data_v1';
 
+// Comprovantes de entrega ficam num bucket privado, separado do de fotos, que
+// tem leitura pública. Um POD traz assinatura, nome e endereço do cliente.
+const POD_BUCKET = 'shipment-pods';
+
 // Colunas que as estatísticas realmente usam. Puxar '*' traria também
 // all_quotes e photo_urls, que são os campos mais pesados da tabela e não
 // entram em nenhum cálculo.
@@ -27,7 +31,8 @@ const mapToDb = (s) => ({
     profit: s.profit,
     savings: s.savings,
     photo_urls: s.photoUrls || [],
-    customer_cost_pickup: s.customerCostPickup || false
+    customer_cost_pickup: s.customerCostPickup || false,
+    pod_files: s.podFiles || []
 });
 
 const mapFromDb = (s) => ({
@@ -47,7 +52,8 @@ const mapFromDb = (s) => ({
     profit: s.profit,
     savings: s.savings,
     photoUrls: s.photo_urls || [],
-    customerCostPickup: s.customer_cost_pickup || false
+    customerCostPickup: s.customer_cost_pickup || false,
+    podFiles: s.pod_files || []
 });
 
 // LocalStorage só é usado quando o Supabase NÃO está configurado. Quando ele
@@ -348,6 +354,55 @@ export const storageService = {
             return { status: 'connected' };
         } catch (err) {
             return { status: 'error', message: err.message };
+        }
+    },
+
+    // --- Comprovante de entrega (POD) -------------------------------------
+    // Bucket privado: guardamos o CAMINHO do arquivo, não uma URL pública.
+
+    uploadPod: async (file) => {
+        if (!supabase) throw new Error('Supabase not configured');
+
+        const ext = file.name.split('.').pop().toLowerCase();
+        const path = `pods/${crypto.randomUUID()}.${ext}`;
+
+        const { error } = await supabase.storage
+            .from(POD_BUCKET)
+            .upload(path, file, { contentType: file.type || undefined });
+
+        if (error) {
+            console.error('Supabase POD upload error:', error);
+            throw error;
+        }
+
+        return path;
+    },
+
+    // URL temporária para abrir o comprovante. Expira em 5 minutos, então é
+    // gerada na hora do clique e nunca fica gravada em lugar nenhum.
+    getPodUrl: async (path) => {
+        if (!supabase) throw new Error('Supabase not configured');
+
+        const { data, error } = await supabase.storage
+            .from(POD_BUCKET)
+            .createSignedUrl(path, 300);
+
+        if (error) {
+            console.error('Supabase POD signed url error:', error);
+            throw error;
+        }
+
+        return data.signedUrl;
+    },
+
+    deletePod: async (path) => {
+        if (!supabase) throw new Error('Supabase not configured');
+
+        const { error } = await supabase.storage.from(POD_BUCKET).remove([path]);
+
+        if (error) {
+            console.error('Supabase POD delete error:', error);
+            throw error;
         }
     },
 

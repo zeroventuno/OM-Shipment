@@ -17,7 +17,8 @@ entre portais de transporte, acompanhar rastreio e gerar relatórios.
 | Planilhas | SheetJS (`xlsx`, build oficial do CDN) |
 | Dados / Auth / Storage | Supabase |
 | Idiomas | i18next — português e italiano |
-| Rastreio | 17TRACK (API + widget) |
+| Rastreio | 17TRACK (widget) |
+| Comprovantes | pdf-lib (geração do PDF de arquivamento) |
 
 ## Rodando localmente
 
@@ -72,7 +73,16 @@ link que leva a `/reset-password`.
 ## Banco de dados
 
 Tabela única `shipments` (dados compartilhados: todo usuário autenticado vê e
-edita tudo) e o bucket `shipment-photos` no Storage.
+edita tudo) e dois buckets no Storage:
+
+| Bucket | Leitura | Conteúdo |
+|---|---|---|
+| `shipment-photos` | pública | fotos do envio |
+| `shipment-pods` | **só autenticado** | comprovantes de entrega |
+
+O bucket de comprovantes é privado porque um POD traz assinatura, nome e
+endereço do cliente. A tabela guarda o *caminho* do arquivo, não uma URL
+pública; o app gera uma URL assinada de 5 minutos na hora de abrir.
 
 As migrations ficam em `supabase/migrations/`, em ordem cronológica. Elas são
 aplicadas manualmente pelo **SQL Editor** do Supabase — o projeto não usa a CLI
@@ -92,6 +102,24 @@ SELECT relname, relrowsecurity FROM pg_class WHERE relname = 'shipments';
 -- relrowsecurity precisa ser true
 ```
 
+## Comprovante de entrega (POD)
+
+O comprovante assinado é dado de titular de conta na transportadora. Como boa
+parte dos envios é contratada via MBE e My Parcel, que são revendedores, o
+titular naqueles envios é o revendedor — não há API, própria ou agregadora, que
+devolva esse documento para nós. Por isso o comprovante é **anexado à mão**,
+baixado do portal da transportadora.
+
+- até 3 arquivos por envio, PDF ou imagem, 10 MB cada
+- nos Relatórios, o ícone verde indica quem já tem comprovante
+- o botão **Comprovante de entrega** gera um PDF único para arquivamento
+  físico: uma folha de identificação por envio (ordem, cliente, país,
+  transportadora, tracking, data e status) seguida do documento. Comprovante em
+  imagem entra na mesma folha; em PDF, as páginas originais vêm na sequência,
+  sem nada por cima
+- funciona sobre a seleção da tabela, ou sobre todos os filtrados se nada
+  estiver selecionado
+
 ## Estrutura
 
 ```
@@ -101,6 +129,7 @@ src/
     auth/ProtectedRoute.jsx     bloqueio das rotas privadas
     layout/                     Sidebar (com menu mobile) e Layout
     shipments/PhotoUpload.jsx   upload com conversão HEIC e compressão
+    shipments/PodUpload.jsx     anexo do comprovante (bucket privado)
     ui/                         Button, Card, Input
   pages/
     Login.jsx, ResetPassword.jsx
@@ -111,6 +140,9 @@ src/
     supabaseClient.js
     storage.js                  CRUD e estatísticas
     trackingService.js          17TRACK, com fallback simulado
+    podExport.js                monta o PDF de arquivamento dos comprovantes
+  data/countries.js             países: código ISO, grafias e nome traduzido
+  utils/quotes.js               cálculo de economia e lucro
   i18n.js                       traduções pt/it
 supabase/migrations/            SQL aplicado no Supabase
 ```

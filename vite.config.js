@@ -14,6 +14,7 @@ export default defineConfig({
           if (!id.includes('node_modules')) return
           if (id.includes('recharts') || id.includes('d3-')) return 'charts'
           if (id.includes('xlsx')) return 'xlsx'
+          if (id.includes('pdf-lib')) return 'pdf'
           if (id.includes('@supabase')) return 'supabase'
           if (id.includes('react-router') || id.includes('react-dom') || id.includes('/react/')) return 'react'
           if (id.includes('i18next')) return 'i18n'

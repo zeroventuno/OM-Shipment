@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { PhotoUpload } from '../components/shipments/PhotoUpload';
+import { PodUpload } from '../components/shipments/PodUpload';
 import { storageService } from '../services/storage';
 import { useTranslation } from 'react-i18next';
 import { COUNTRIES, countryLabel } from '../data/countries';
@@ -29,7 +30,8 @@ export default function NewShipment() {
         customerPayment: '',
         trackingCode: '',
         photoUrls: [],
-        customerCostPickup: false
+        customerCostPickup: false,
+        podFiles: []
     });
 
     const [uniqueCustomers, setUniqueCustomers] = useState([]);
@@ -73,7 +75,8 @@ export default function NewShipment() {
                             customerPayment: shipment.customerPayment,
                             trackingCode: shipment.trackingCode || '',
                             photoUrls: shipment.photoUrls || [],
-                            customerCostPickup: shipment.customerCostPickup || false
+                            customerCostPickup: shipment.customerCostPickup || false,
+                            podFiles: shipment.podFiles || []
                         });
                         setQuotes(shipment.allQuotes || []);
                         if (shipment.selectedQuote) {
@@ -405,6 +408,13 @@ export default function NewShipment() {
                                 <PhotoUpload
                                     photos={formData.photoUrls || []}
                                     onPhotosChange={(urls) => setFormData({ ...formData, photoUrls: urls })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-700">{t('Proof of delivery')}</label>
+                                <PodUpload
+                                    files={formData.podFiles || []}
+                                    onFilesChange={(paths) => setFormData({ ...formData, podFiles: paths })}
                                 />
                             </div>
                         </CardContent>

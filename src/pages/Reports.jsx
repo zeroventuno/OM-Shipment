@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Pencil, Trash2, Search, DollarSign, TrendingUp, TrendingDown, User, FileDown, Printer, Camera, X, Truck, Wrench, Menu, AlertCircle } from 'lucide-react';
+import { Pencil, Trash2, Search, DollarSign, TrendingUp, TrendingDown, User, FileDown, Printer, Camera, X, Truck, Wrench, Menu, AlertCircle, FileCheck, FileStack, Loader2 } from 'lucide-react';
 import MonthlyChart from '../components/MonthlyChart';
 import { storageService } from '../services/storage';
 import { useTranslation } from 'react-i18next';
 import { countryLabel } from '../data/countries';
+import { buildPodPdf, downloadPdf } from '../services/podExport';
 import * as XLSX from 'xlsx';
 
 export default function Reports() {
@@ -20,6 +21,7 @@ export default function Reports() {
     const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
     const [currentPhotos, setCurrentPhotos] = useState([]);
     const [error, setError] = useState('');
+    const [exportingPod, setExportingPod] = useState(false);
 
     useEffect(() => {
         loadShipments();
@@ -306,6 +308,52 @@ export default function Reports() {
         XLSX.writeFile(wb, `relatorio-envios-${new Date().toISOString().split('T')[0]}.xlsx`);
     };
 
+    const openPod = async (path) => {
+        try {
+            const url = await storageService.getPodUrl(path);
+            window.open(url, '_blank', 'noopener,noreferrer');
+        } catch (err) {
+            console.error('Could not open POD:', err);
+            setError(err.message || 'Unexpected error');
+        }
+    };
+
+    const handleExportPods = async () => {
+        const target = selectedItems.length > 0
+            ? filteredShipments.filter(s => selectedItems.includes(s.id))
+            : filteredShipments;
+
+        const withPod = target.filter(s => s.podFiles && s.podFiles.length > 0);
+        if (withPod.length === 0) {
+            alert(t('No proof of delivery to export'));
+            return;
+        }
+
+        setExportingPod(true);
+        setError('');
+        try {
+            const bytes = await buildPodPdf(withPod, {
+                locale: i18n.language,
+                labels: {
+                    title: t('Delivery Proof'),
+                    order: t('Order'),
+                    customer: t('Customer'),
+                    country: t('Country'),
+                    carrier: t('Portal/Carrier'),
+                    tracking: t('Tracking'),
+                    date: t('Date'),
+                    status: t('Status'),
+                }
+            });
+            downloadPdf(bytes, `comprovantes-${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (err) {
+            console.error('POD export failed:', err);
+            setError(err.message || 'Unexpected error');
+        } finally {
+            setExportingPod(false);
+        }
+    };
+
     const handlePrint = () => {
         const dataToExport = selectedItems.length > 0
             ? filteredShipments.filter(s => selectedItems.includes(s.id))
@@ -488,6 +536,17 @@ export default function Reports() {
                         </Button>
                         <Button
                             variant="outlined"
+                            onClick={handleExportPods}
+                            disabled={filteredShipments.length === 0 || exportingPod}
+                            title={t('Export proofs (PDF)')}
+                        >
+                            {exportingPod
+                                ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                : <FileStack className="h-4 w-4 mr-2" />}
+                            {exportingPod ? t('Generating...') : t('Proof of delivery')}
+                        </Button>
+                        <Button
+                            variant="outlined"
                             onClick={handlePrint}
                             disabled={filteredShipments.length === 0}
                         >
@@ -512,6 +571,7 @@ export default function Reports() {
                                     <th className="px-2 py-2">{t('Order')}</th>
                                     <th className="hidden md:table-cell px-2 py-2 w-10 text-center">{t('Tracking')}</th>
                                     <th className="hidden md:table-cell px-2 py-2 w-10 text-center">{t('Photos')}</th>
+                                    <th className="hidden md:table-cell px-2 py-2 w-10 text-center">{t('Proof of delivery')}</th>
                                     <th className="hidden md:table-cell px-2 py-2 w-10 text-center">{t('Order Type')}</th>
                                     <th className="px-2 py-2">{t('Customer')}</th>
                                     <th className="hidden md:table-cell px-2 py-2">{t('Country')}</th>
@@ -567,6 +627,21 @@ export default function Reports() {
                                                     </button>
                                                 ) : (
                                                     <Camera className="h-4 w-4 text-gray-200" title={t('No photos')} />
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="hidden md:table-cell px-2 py-2">
+                                            <div className="flex justify-center">
+                                                {shipment.podFiles && shipment.podFiles.length > 0 ? (
+                                                    <button
+                                                        onClick={() => openPod(shipment.podFiles[0])}
+                                                        title={t('Proof of delivery')}
+                                                        className="text-green-600 hover:text-green-800 transition-colors p-1"
+                                                    >
+                                                        <FileCheck className="h-4 w-4" />
+                                                    </button>
+                                                ) : (
+                                                    <FileCheck className="h-4 w-4 text-gray-200" title={t('No proof of delivery')} />
                                                 )}
                                             </div>
                                         </td>

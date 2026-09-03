@@ -186,7 +186,21 @@ const resources = {
             "Unexpected error": "Erro inesperado",
             "Could not load data": "Não foi possível carregar os dados",
             "Open menu": "Abrir menu",
-            "All rights reserved.": "Todos os direitos reservados."
+            "All rights reserved.": "Todos os direitos reservados.",
+
+            // Comprovante de entrega
+            "Proof of delivery": "Comprovante de entrega",
+            "Attach proof of delivery": "Anexar comprovante",
+            "Remove this proof of delivery?": "Remover este comprovante?",
+            "Maximum {{count}} files": "Máximo de {{count}} arquivos",
+            "File is too large (max 10 MB)": "Arquivo grande demais (máx. 10 MB)",
+            "Only PDF or image files": "Somente PDF ou imagem",
+            "PDF or image, up to 10 MB. Visible only to signed-in users.": "PDF ou imagem, até 10 MB. Visível apenas para usuários logados.",
+            "No proof of delivery": "Sem comprovante",
+            "Export proofs (PDF)": "Exportar comprovantes (PDF)",
+            "No proof of delivery to export": "Nenhum envio selecionado tem comprovante",
+            "Generating...": "Gerando...",
+            "Delivery Proof": "Comprovante de Entrega"
         }
     },
     it: {
@@ -374,7 +388,21 @@ const resources = {
             "Unexpected error": "Errore imprevisto",
             "Could not load data": "Impossibile caricare i dati",
             "Open menu": "Apri menu",
-            "All rights reserved.": "Tutti i diritti riservati."
+            "All rights reserved.": "Tutti i diritti riservati.",
+
+            // Prova di consegna
+            "Proof of delivery": "Prova di consegna",
+            "Attach proof of delivery": "Allega prova di consegna",
+            "Remove this proof of delivery?": "Rimuovere questa prova di consegna?",
+            "Maximum {{count}} files": "Massimo {{count}} file",
+            "File is too large (max 10 MB)": "File troppo grande (max 10 MB)",
+            "Only PDF or image files": "Solo PDF o immagini",
+            "PDF or image, up to 10 MB. Visible only to signed-in users.": "PDF o immagine, fino a 10 MB. Visibile solo agli utenti autenticati.",
+            "No proof of delivery": "Nessuna prova di consegna",
+            "Export proofs (PDF)": "Esporta prove di consegna (PDF)",
+            "No proof of delivery to export": "Nessuna spedizione selezionata ha la prova di consegna",
+            "Generating...": "Generazione...",
+            "Delivery Proof": "Prova di Consegna"
         }
     }
 };
