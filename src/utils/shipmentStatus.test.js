@@ -29,4 +29,16 @@ describe('resolveStatus', () => {
         expect(resolveStatus(undefined)).toBe(DEFAULT_STATUS);
         expect(resolveStatus({ podFiles: null })).toBe(DEFAULT_STATUS);
     });
+
+    it('preserva o status vindo no próprio objeto, não só no segundo argumento', () => {
+        // É este caso que evitava o bug do status virar NULL ao editar um
+        // envio com cotações: o formulário carrega o status junto.
+        expect(resolveStatus({ podFiles: [], status: DELIVERED })).toBe(DELIVERED);
+        expect(resolveStatus({ podFiles: [], status: 'In Transit' })).toBe('In Transit');
+    });
+
+    it('nunca devolve undefined', () => {
+        expect(resolveStatus({ status: undefined })).toBe(DEFAULT_STATUS);
+        expect(resolveStatus({ status: undefined }, undefined)).toBe(DEFAULT_STATUS);
+    });
 });

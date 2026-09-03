@@ -32,7 +32,10 @@ export default function NewShipment() {
         trackingCode: '',
         photoUrls: [],
         customerCostPickup: false,
-        podFiles: []
+        podFiles: [],
+        // Carregado junto com o envio: sem isso, salvar uma edição gravaria
+        // status undefined, que vira NULL no banco e apagaria um 'Delivered'.
+        status: undefined
     });
 
     const [uniqueCustomers, setUniqueCustomers] = useState([]);
@@ -77,7 +80,8 @@ export default function NewShipment() {
                             trackingCode: shipment.trackingCode || '',
                             photoUrls: shipment.photoUrls || [],
                             customerCostPickup: shipment.customerCostPickup || false,
-                            podFiles: shipment.podFiles || []
+                            podFiles: shipment.podFiles || [],
+                            status: shipment.status
                         });
                         setQuotes(shipment.allQuotes || []);
                         if (shipment.selectedQuote) {
@@ -189,8 +193,9 @@ export default function NewShipment() {
         try {
             let shipmentData;
 
-            // Comprovante anexado é prova de entrega — ver resolveStatus.
-            const deliveredByPod = (formData.podFiles || []).length > 0;
+            // Comprovante anexado é prova de entrega; sem ele, preserva o
+            // status que já estava gravado. Ver resolveStatus.
+            const status = resolveStatus(formData);
 
             if (isEditing && !analysis) {
                 // Editing without changing quotes - keep existing data but recalculate profit
@@ -244,7 +249,7 @@ export default function NewShipment() {
                         profit: 0,
                         savings: 0,
                         allQuotes: [],
-                        ...(deliveredByPod && { status: 'Delivered' })
+                        status
                     };
                 } else {
                     shipmentData = {
@@ -254,7 +259,7 @@ export default function NewShipment() {
                         profit: calculateProfit(formData.customerPayment, analysis.selected),
                         savings: analysis.savings,
                         allQuotes: quotes,
-                        ...(deliveredByPod && { status: 'Delivered' })
+                        status
                     };
                 }
             }
