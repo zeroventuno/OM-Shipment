@@ -56,6 +56,33 @@ describe('nome traduzido', () => {
         expect(countryLabel('DE', 'pt')).toBe('Alemanha');
     });
 
+    it('em português usa os nomes da lista original, não os do CLDR', () => {
+        // O CLDR devolveria Tchéquia, Países Baixos, Essuatíni e
+        // 'Macau, RAE da China' — nomes oficiais que ninguém procura.
+        expect(countryLabel('CZ', 'pt')).toBe('República Checa');
+        expect(countryLabel('NL', 'pt')).toBe('Holanda');
+        expect(countryLabel('SZ', 'pt')).toBe('Suazilândia');
+        expect(countryLabel('MO', 'pt')).toBe('Macau');
+        expect(countryLabel('CD', 'pt')).toBe('República Democrática do Congo');
+    });
+
+    it('todo país do dropdown aparece em português com o nome cadastrado', () => {
+        for (const c of COUNTRIES) {
+            expect(countryLabel(c.code, 'pt')).toBe(c.value);
+        }
+    });
+
+    it('substitui os nomes oficiais esquisitos em italiano', () => {
+        expect(countryLabel('HK', 'it')).toBe('Hong Kong');
+        expect(countryLabel('MO', 'it')).toBe('Macao');
+        expect(countryLabel('CD', 'it')).toBe('Rep. Dem. del Congo');
+    });
+
+    it('aceita variantes de locale como pt-BR e it-IT', () => {
+        expect(countryLabel('CZ', 'pt-BR')).toBe('República Checa');
+        expect(countryLabel('HK', 'it-IT')).toBe('Hong Kong');
+    });
+
     it('aceita o nome gravado no banco, não só o código', () => {
         expect(countryLabel('Alemanha', 'it')).toBe('Germania');
         expect(countryLabel('Estados Unidos', 'it')).toBe('Stati Uniti');

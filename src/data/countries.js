@@ -370,18 +370,45 @@ export function countryCode(storedName) {
     return LEGACY_TO_CODE[storedName] ?? null;
 }
 
+const CODE_TO_PT = COUNTRIES.reduce((acc, c) => {
+    acc[c.code] = c.value;
+    return acc;
+}, {});
+
+// Casos em que o nome oficial do CLDR não é o que as pessoas procuram.
+// 'RAS di Hong Kong' é correto, mas ninguém digita isso num formulário.
+const LABEL_OVERRIDES = {
+    it: {
+        HK: 'Hong Kong',
+        MO: 'Macao',
+        CD: 'Rep. Dem. del Congo',
+    },
+};
+
 /**
  * Nome do país no idioma pedido. Aceita código ISO ou o nome gravado no banco.
  * Cai para o próprio valor recebido quando o país não é reconhecido, para nunca
  * apagar da tela um dado que existe.
+ *
+ * Em português usamos os nomes da lista original, não os do Intl. O padrão CLDR
+ * traz a forma oficial — 'Tchéquia', 'Macau, RAE da China', 'Congo - Kinshasa' —
+ * e ninguém procura o país por esse nome. Para os outros idiomas o Intl é ótimo.
  */
 export function countryLabel(codeOrName, locale = 'pt') {
     const code = codeOrName?.length === 2 ? codeOrName : countryCode(codeOrName);
     if (!code) return codeOrName || '';
+
+    const lang = String(locale).toLowerCase().split('-')[0];
+
+    if (lang === 'pt') return CODE_TO_PT[code] || codeOrName;
+
+    const override = LABEL_OVERRIDES[lang]?.[code];
+    if (override) return override;
+
     try {
-        return displayNames(locale).of(code) || codeOrName;
+        return displayNames(locale).of(code) || CODE_TO_PT[code] || codeOrName;
     } catch {
-        return codeOrName;
+        return CODE_TO_PT[code] || codeOrName;
     }
 }
 
