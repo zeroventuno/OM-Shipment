@@ -62,7 +62,7 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
 export const formInfo = (token: string) => rpc<{ name: string }>("request_form_info", { token });
 export const formCustomers = (token: string) => rpc<CustomerOption[]>("request_form_customers", { token });
 export const formCreateCustomer = (token: string, customer: CustomerInput) =>
-  rpc<{ id: string; name: string; existed: boolean }>("request_form_create_customer", { token, customer });
+  rpc<{ id: string; name: string; existed: boolean; address_id: string | null }>("request_form_create_customer", { token, customer });
 
 /** Caixa padrão da Officine Mattio (medidas em cm, peso médio em kg). */
 export interface BoxPreset {
@@ -76,8 +76,30 @@ export interface BoxPreset {
 export const formBoxPresets = (token: string) => rpc<BoxPreset[]>("request_form_box_presets", { token });
 export const formSubmit = (
   token: string,
-  request: { customer_id: string; boxes: Box[]; service_level: string; order_ref?: string; notes?: string; requested_by: string },
+  request: { customer_id: string; address_id?: string; boxes: Box[]; service_level: string; order_ref?: string; notes?: string; requested_by: string },
 ) => rpc<{ id: string }>("request_form_submit", { token, request });
+
+/** Endereço de entrega (um cliente pode ter vários). */
+export interface AddressInput {
+  label?: string;
+  address_line1: string;
+  address_line2?: string;
+  address_line3?: string;
+  postal_code?: string;
+  city: string;
+  region?: string;
+  country: string;
+  contact_name?: string;
+  phone?: string;
+}
+export interface CustomerAddress extends AddressInput {
+  id: string;
+  is_default: boolean;
+}
+export const formCustomerAddresses = (token: string, customerId: string) =>
+  rpc<CustomerAddress[]>("request_form_customer_addresses", { token, customer_id: customerId });
+export const formAddAddress = (token: string, customerId: string, address: AddressInput) =>
+  rpc<{ id: string }>("request_form_add_address", { token, customer_id: customerId, address });
 export const formList = (token: string) => rpc<PublicRequest[]>("request_form_list", { token });
 
 // --- Tela interna ----------------------------------------------------------
@@ -100,6 +122,7 @@ export interface Customer {
 
 export interface ShipmentRequest {
   id: string;
+  address: (CustomerAddress & { phone: string | null }) | null;
   created_at: string;
   boxes: Box[];
   service_level: "standard" | "express";
@@ -116,7 +139,7 @@ export const REQUESTS_QUERY_KEY = ["shipment_requests"];
 export async function listRequests(): Promise<ShipmentRequest[]> {
   const { data, error } = await requireSupabase()
     .from("shipment_requests")
-    .select("id, created_at, boxes, service_level, order_ref, notes, requested_by, status, shipment_id, customer:customers(*)")
+    .select("id, created_at, boxes, service_level, order_ref, notes, requested_by, status, shipment_id, customer:customers(*), address:customer_addresses(*)")
     .order("created_at", { ascending: false })
     .limit(300);
   if (error) throw error;
@@ -126,7 +149,7 @@ export async function listRequests(): Promise<ShipmentRequest[]> {
 export async function getRequest(id: string): Promise<ShipmentRequest> {
   const { data, error } = await requireSupabase()
     .from("shipment_requests")
-    .select("id, created_at, boxes, service_level, order_ref, notes, requested_by, status, shipment_id, customer:customers(*)")
+    .select("id, created_at, boxes, service_level, order_ref, notes, requested_by, status, shipment_id, customer:customers(*), address:customer_addresses(*)")
     .eq("id", id)
     .single();
   if (error) throw error;
@@ -138,8 +161,19 @@ export async function setRequestStatus(id: string, status: ShipmentRequest["stat
   if (error) throw error;
 }
 
+export async function listCustomerAddresses(customerId: string): Promise<(CustomerAddress & { phone: string | null })[]> {
+  const { data, error } = await requireSupabase()
+    .from("customer_addresses")
+    .select("*")
+    .eq("customer_id", customerId)
+    .order("is_default", { ascending: false })
+    .order("created_at");
+  if (error) throw error;
+  return (data ?? []) as (CustomerAddress & { phone: string | null })[];
+}
+
 /** Endereço em uma linha, para mostrar e copiar. */
-export function formatAddress(c: Partial<Customer>): string {
+export function formatAddress(c: Partial<Customer> | Partial<AddressInput>): string {
   return [c.address_line1, c.address_line2, c.address_line3, [c.postal_code, c.city].filter(Boolean).join(" "), c.region, c.country]
     .filter((part) => part && String(part).trim())
     .join(", ");

@@ -1,8 +1,14 @@
 {
     "rewrites": [
         {
-            "source": "/(.*)",
-            "destination": "/index.html"
+            "source": "/((?!assets/|og-|favicon|logo|apple-touch-icon).*)",
+            "destination": "/"
+        }
+    ],
+    "headers": [
+        {
+            "source": "/og-(.*)",
+            "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }]
         }
     ]
 }

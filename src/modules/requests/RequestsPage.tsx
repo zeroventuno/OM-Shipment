@@ -9,7 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useDateLocale } from "@/i18n/dateLocale";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "../common/PageHeader";
-import { listRequests, setRequestStatus, formatAddress, boxSummary, totalWeight, REQUESTS_QUERY_KEY, type ShipmentRequest } from "./api";
+import { listRequests, setRequestStatus, formatAddress, boxSummary, totalWeight, REQUESTS_QUERY_KEY, type ShipmentRequest, type Customer } from "./api";
+import CustomerDialog from "./CustomerDialog";
 
 type Filter = "pending" | "shipped" | "cancelled";
 
@@ -19,6 +20,7 @@ export default function RequestsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<Filter>("pending");
+  const [customerOpen, setCustomerOpen] = useState<Customer | null>(null);
 
   const { data: requests = [], isLoading, error } = useQuery({ queryKey: REQUESTS_QUERY_KEY, queryFn: listRequests });
 
@@ -73,7 +75,11 @@ export default function RequestsPage() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {visible.map((r) => {
-            const address = formatAddress(r.customer);
+            // Endereço de entrega escolhido no pedido (antigos: o do cadastro).
+            const address = formatAddress(r.address ?? r.customer);
+            const contact = r.address
+              ? [r.address.contact_name, r.address.phone]
+              : [r.customer.contact_name, r.customer.phone];
             return (
               <article key={r.id} className="bg-card border border-border rounded-lg p-5 flex flex-col gap-4">
                 <div className="flex items-start justify-between gap-3">
@@ -81,7 +87,16 @@ export default function RequestsPage() {
                     <span className="eyebrow">
                       {format(new Date(r.created_at), "dd/MM/yyyy HH:mm", { locale })} · {r.requested_by}
                     </span>
-                    <h2 className="text-xl font-bold tracking-tight break-words">{r.customer.name}</h2>
+                    <h2 className="text-xl font-bold tracking-tight break-words">
+                      <button
+                        type="button"
+                        onClick={() => setCustomerOpen(r.customer)}
+                        className="text-left underline decoration-border underline-offset-4 hover:decoration-foreground"
+                        title={t("Customer details")}
+                      >
+                        {r.customer.name}
+                      </button>
+                    </h2>
                   </div>
                   {r.service_level === "express" && (
                     <span className="shrink-0 px-2.5 py-0.5 rounded-full bg-destructive text-destructive-foreground text-[11px] font-semibold uppercase tracking-[0.06em]">
@@ -91,6 +106,7 @@ export default function RequestsPage() {
                 </div>
 
                 <div className="flex flex-col gap-1 text-sm">
+                  {r.address?.label && <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">{r.address.label}</p>}
                   <div className="flex items-start gap-2">
                     <p className="flex-1">{address || <span className="text-muted-foreground">{t("No address registered")}</span>}</p>
                     {address && (
@@ -99,8 +115,8 @@ export default function RequestsPage() {
                       </button>
                     )}
                   </div>
-                  {[r.customer.contact_name, r.customer.phone, r.customer.email].some(Boolean) && (
-                    <p className="text-muted-foreground">{[r.customer.contact_name, r.customer.phone, r.customer.email].filter(Boolean).join(" · ")}</p>
+                  {[...contact, r.customer.email].some(Boolean) && (
+                    <p className="text-muted-foreground">{[...contact, r.customer.email].filter(Boolean).join(" · ")}</p>
                   )}
                   {r.customer.tax_id && <p className="text-muted-foreground">{t("Tax ID")}: {r.customer.tax_id}</p>}
                 </div>
@@ -137,6 +153,8 @@ export default function RequestsPage() {
           })}
         </div>
       )}
+
+      <CustomerDialog customer={customerOpen} onClose={() => setCustomerOpen(null)} />
     </div>
   );
 }

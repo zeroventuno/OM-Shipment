@@ -126,7 +126,7 @@ export default function NewShipment() {
                         requestId: req.id,
                         parcels: req.boxes,
                         customerName: req.customer?.name || f.customerName,
-                        destinationCountry: req.customer?.country || f.destinationCountry,
+                        destinationCountry: req.address?.country || req.customer?.country || f.destinationCountry,
                         serviceLevel: req.service_level,
                         orderId: req.order_ref || f.orderId,
                         quantity: req.boxes?.length || f.quantity
@@ -407,7 +407,10 @@ export default function NewShipment() {
                         {t('From shipment request')} · {request.requested_by}
                     </span>
                     <p className="font-semibold text-base">{request.customer?.name}</p>
-                    <p>{formatAddress(request.customer || {}) || t('No address registered')}</p>
+                    <p>{formatAddress(request.address || request.customer || {}) || t('No address registered')}</p>
+                    {request.address && [request.address.contact_name, request.address.phone].some(Boolean) && (
+                        <p className="text-muted-foreground">{[request.address.contact_name, request.address.phone].filter(Boolean).join(' · ')}</p>
+                    )}
                     <p>{request.boxes.map(boxSummary).join(' · ')} — {t('Total')} {totalWeight(request.boxes)} kg</p>
                     {request.notes && <p className="text-muted-foreground whitespace-pre-line">{request.notes}</p>}
                 </div>

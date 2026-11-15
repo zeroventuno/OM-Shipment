@@ -11,8 +11,9 @@ import { cn } from "@/lib/utils";
 import { useDateLocale } from "@/i18n/dateLocale";
 import { COUNTRIES, countryLabel } from "@/modules/shipments/data/countries";
 import {
-  formInfo, formCustomers, formCreateCustomer, formSubmit, formList, formBoxPresets, boxSummary, totalWeight,
-  type Box, type CustomerInput, type CustomerOption,
+  formInfo, formCustomers, formCreateCustomer, formSubmit, formList, formBoxPresets, formCustomerAddresses, formAddAddress,
+  boxSummary, totalWeight, formatAddress,
+  type Box, type CustomerInput, type CustomerOption, type AddressInput,
 } from "./api";
 
 /*
@@ -25,6 +26,8 @@ const NAME_KEY = "om-request-name";
 const emptyBox = (): BoxDraft => ({ width: "", height: "", depth: "", weight: "" });
 type BoxDraft = Record<keyof Box, string> & { presetId?: string };
 const emptyCustomer: CustomerInput = { name: "", address_line1: "", city: "", country: "" };
+const emptyAddress: AddressInput = { address_line1: "", city: "", country: "" };
+const addressComplete = (a: AddressInput) => !!(a.address_line1.trim() && a.city.trim() && a.country);
 
 function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return (
@@ -77,7 +80,7 @@ function CustomerFields({ value, onChange, countries }: {
           <select
             value={value.country}
             onChange={(e) => onChange("country", e.target.value)}
-            className="flex h-11 w-full rounded-md border border-input bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex h-11 w-full rounded-md border border-input bg-card px-3 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">{t("Select...")}</option>
             {countries.map((c: { code: string; value: string; label: string }) => (
@@ -103,6 +106,62 @@ function CustomerFields({ value, onChange, countries }: {
   );
 }
 
+/** Campos de um endereço de entrega. */
+function AddressFields({ value, onChange, countries }: {
+  value: AddressInput;
+  onChange: (field: keyof AddressInput, value: string) => void;
+  countries: Country[];
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col gap-4">
+      <Field label={t("Address name (optional)")} hint={t("e.g. Warehouse, Milan shop")}>
+        <Input value={value.label ?? ""} onChange={(e) => onChange("label", e.target.value)} />
+      </Field>
+      <Field label={`${t("Address line 1")} *`}>
+        <Input value={value.address_line1} onChange={(e) => onChange("address_line1", e.target.value)} autoComplete="address-line1" />
+      </Field>
+      <div className="grid sm:grid-cols-2 gap-4">
+        <Field label={t("Address line 2")}>
+          <Input value={value.address_line2 ?? ""} onChange={(e) => onChange("address_line2", e.target.value)} autoComplete="address-line2" />
+        </Field>
+        <Field label={t("Address line 3")}>
+          <Input value={value.address_line3 ?? ""} onChange={(e) => onChange("address_line3", e.target.value)} autoComplete="address-line3" />
+        </Field>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <Field label={t("Postal code")}>
+          <Input value={value.postal_code ?? ""} onChange={(e) => onChange("postal_code", e.target.value)} autoComplete="postal-code" />
+        </Field>
+        <Field label={`${t("City")} *`}>
+          <Input value={value.city} onChange={(e) => onChange("city", e.target.value)} autoComplete="address-level2" />
+        </Field>
+        <Field label={t("Region")}>
+          <Input value={value.region ?? ""} onChange={(e) => onChange("region", e.target.value)} autoComplete="address-level1" />
+        </Field>
+      </div>
+      <Field label={`${t("Country")} *`}>
+        <select
+          value={value.country}
+          onChange={(e) => onChange("country", e.target.value)}
+          className="flex h-11 w-full rounded-md border border-input bg-card px-3 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="">{t("Select...")}</option>
+          {countries.map((c) => <option key={c.code} value={c.value}>{c.label}</option>)}
+        </select>
+      </Field>
+      <div className="grid sm:grid-cols-2 gap-4">
+        <Field label={t("Contact name")}>
+          <Input value={value.contact_name ?? ""} onChange={(e) => onChange("contact_name", e.target.value)} />
+        </Field>
+        <Field label={t("Phone")}>
+          <Input type="tel" value={value.phone ?? ""} onChange={(e) => onChange("phone", e.target.value)} autoComplete="tel" />
+        </Field>
+      </div>
+    </div>
+  );
+}
+
 export default function RequestFormPage() {
   const { token = "" } = useParams();
   const { t, i18n } = useTranslation();
@@ -121,6 +180,9 @@ export default function RequestFormPage() {
   });
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<CustomerOption | null>(null);
+  // Endereço de entrega escolhido: id de um endereço existente ou "new".
+  const [addressChoice, setAddressChoice] = useState<string | null>(null);
+  const [newAddress, setNewAddress] = useState<AddressInput>(emptyAddress);
   const [newCustomer, setNewCustomer] = useState<CustomerInput | null>(null);
   const [boxes, setBoxes] = useState<BoxDraft[]>([emptyBox()]);
   const [service, setService] = useState<"standard" | "express">("standard");
@@ -135,6 +197,25 @@ export default function RequestFormPage() {
   useEffect(() => {
     try { localStorage.setItem(NAME_KEY, requestedBy); } catch { /* sem localStorage */ }
   }, [requestedBy]);
+
+  const addresses = useQuery({
+    queryKey: ["request-form", token, "addresses", selected?.id],
+    queryFn: () => formCustomerAddresses(token, selected!.id),
+    enabled: !!selected,
+  });
+
+  // Ao escolher o cliente, já marca o endereço padrão (ou pede um novo se não houver).
+  useEffect(() => {
+    if (!selected || !addresses.data) return;
+    if (addresses.data.length === 0) setAddressChoice("new");
+    else setAddressChoice((c) => (c && (c === "new" || addresses.data!.some((a) => a.id === c)) ? c : (addresses.data!.find((a) => a.is_default) ?? addresses.data![0]).id));
+  }, [selected, addresses.data]);
+
+  const pickCustomer = (c: CustomerOption | null) => {
+    setSelected(c);
+    setAddressChoice(null);
+    setNewAddress(emptyAddress);
+  };
 
   const countries = useMemo(() => {
     const lang = i18n.language || "it";
@@ -151,12 +232,21 @@ export default function RequestFormPage() {
   const submit = useMutation({
     mutationFn: async () => {
       let customerId = selected?.id;
+      let addressId: string | undefined;
       if (!customerId && newCustomer) {
-        customerId = (await formCreateCustomer(token, newCustomer)).id;
+        const created = await formCreateCustomer(token, newCustomer);
+        customerId = created.id;
+        addressId = created.address_id ?? undefined;
       }
       if (!customerId) throw new Error(t("Choose or register the customer"));
+      if (selected) {
+        addressId = addressChoice === "new"
+          ? (await formAddAddress(token, selected.id, newAddress)).id
+          : addressChoice ?? undefined;
+      }
       return formSubmit(token, {
         customer_id: customerId,
+        address_id: addressId,
         boxes: boxes.map((b) => ({
           width: Number(b.width), height: Number(b.height), depth: Number(b.depth), weight: Number(String(b.weight).replace(",", ".")),
         })),
@@ -168,7 +258,7 @@ export default function RequestFormPage() {
     },
     onSuccess: () => {
       setSent(true);
-      setSelected(null); setNewCustomer(null); setSearch("");
+      pickCustomer(null); setNewCustomer(null); setSearch("");
       setBoxes([emptyBox()]); setService("standard"); setOrderRef(""); setNotes("");
       queryClient.invalidateQueries({ queryKey: ["request-form", token] });
     },
@@ -199,6 +289,10 @@ export default function RequestFormPage() {
     setError("");
     if (!requestedBy.trim()) return setError(t("Tell us your name"));
     if (!selected && !newCustomer) return setError(t("Choose or register the customer"));
+    if (selected && addressChoice === "new" && !addressComplete(newAddress)) {
+      return setError(t("Fill in the delivery address, city and country"));
+    }
+    if (selected && !addressChoice) return setError(t("Choose the delivery address"));
     if (newCustomer && (!newCustomer.name.trim() || !newCustomer.address_line1.trim() || !newCustomer.city.trim() || !newCustomer.country)) {
       return setError(t("Fill in the new customer's name, address, city and country"));
     }
@@ -257,18 +351,23 @@ export default function RequestFormPage() {
           <h1 className="page-title">{t("Shipment request")}</h1>
         </div>
 
-        <div role="tablist" className="flex flex-wrap p-1 rounded-full bg-secondary self-start">
-          {([["new", t("New request")], ["customer", t("Register customer")], ["list", `${t("Requests")} · ${requests.data?.length ?? 0}`]] as const).map(([value, label]) => (
+        <div role="tablist" className="grid grid-cols-3 p-1 rounded-full bg-secondary w-full sm:w-auto sm:self-start">
+          {([
+            ["new", t("New request"), t("tab.request")],
+            ["customer", t("Register customer"), t("tab.customer")],
+            ["list", `${t("Requests")} · ${requests.data?.length ?? 0}`, `${t("tab.list")} · ${requests.data?.length ?? 0}`],
+          ] as const).map(([value, label, short]) => (
             <button
               key={value}
               type="button"
               role="tab"
               aria-selected={tab === value}
               onClick={() => { setTab(value); setSent(false); setCustomerDone(null); setError(""); }}
-              className={cn("h-10 px-4 sm:px-5 rounded-full text-[11px] font-semibold uppercase tracking-[0.12em]",
+              className={cn("h-10 px-2 sm:px-5 rounded-full text-[11px] font-semibold uppercase tracking-[0.08em] sm:tracking-[0.12em] whitespace-nowrap",
                 tab === value ? "bg-card shadow-sm" : "text-foreground/70")}
             >
-              {label}
+              <span className="sm:hidden">{short}</span>
+              <span className="hidden sm:inline">{label}</span>
             </button>
           ))}
         </div>
@@ -294,14 +393,66 @@ export default function RequestFormPage() {
               <h2 className="text-xs font-bold uppercase tracking-[0.12em]">{t("Customer")}</h2>
 
               {selected ? (
-                <div className="flex items-center justify-between gap-3 p-3 rounded-md bg-secondary">
-                  <div className="min-w-0">
-                    <p className="font-semibold truncate">{selected.name}</p>
-                    <p className="text-sm text-muted-foreground">{[selected.city, selected.country].filter(Boolean).join(" · ") || "—"}</p>
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between gap-3 p-3 rounded-md bg-secondary">
+                    <p className="font-semibold min-w-0 break-words">{selected.name}</p>
+                    <button type="button" onClick={() => pickCustomer(null)} aria-label={t("Change customer")} className="h-10 w-10 shrink-0 rounded-full flex items-center justify-center hover:bg-card">
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
-                  <button type="button" onClick={() => setSelected(null)} aria-label={t("Change customer")} className="h-10 w-10 rounded-full flex items-center justify-center hover:bg-card">
-                    <X className="h-4 w-4" />
-                  </button>
+
+                  <div className="flex flex-col gap-2">
+                    <span className="eyebrow">{t("Delivery address")}</span>
+                    {addresses.isLoading && <p className="text-sm text-muted-foreground">…</p>}
+                    {addresses.data?.length === 0 && (
+                      <p className="text-sm text-muted-foreground">{t("This customer has no delivery address yet: add it below.")}</p>
+                    )}
+                    <div role="radiogroup" aria-label={t("Delivery address")} className="flex flex-col gap-2">
+                      {addresses.data?.map((a) => (
+                        <button
+                          key={a.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={addressChoice === a.id}
+                          onClick={() => setAddressChoice(a.id)}
+                          className={cn("text-left rounded-md border p-3 flex gap-3 items-start",
+                            addressChoice === a.id ? "border-foreground bg-secondary" : "border-border hover:border-foreground")}
+                        >
+                          <span className={cn("mt-0.5 h-4 w-4 shrink-0 rounded-full border-2", addressChoice === a.id ? "border-foreground bg-foreground shadow-[inset_0_0_0_2px_white]" : "border-input")} aria-hidden="true" />
+                          <span className="min-w-0">
+                            {(a.label || a.is_default) && (
+                              <span className="block text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                                {[a.label, a.is_default ? t("Default") : null].filter(Boolean).join(" · ")}
+                              </span>
+                            )}
+                            <span className="block text-sm break-words">{formatAddress(a)}</span>
+                            {a.contact_name && <span className="block text-xs text-muted-foreground">{a.contact_name}</span>}
+                          </span>
+                        </button>
+                      ))}
+                      {(addresses.data?.length ?? 0) > 0 && (
+                        <button
+                          type="button"
+                          role="radio"
+                          aria-checked={addressChoice === "new"}
+                          onClick={() => setAddressChoice("new")}
+                          className={cn("text-left rounded-md border border-dashed p-3 flex gap-3 items-center text-sm font-semibold",
+                            addressChoice === "new" ? "border-foreground bg-secondary" : "border-input hover:border-foreground")}
+                        >
+                          <Plus className="h-4 w-4" aria-hidden="true" /> {t("New delivery address")}
+                        </button>
+                      )}
+                    </div>
+                    {addressChoice === "new" && (
+                      <div className="pt-2">
+                        <AddressFields
+                          value={newAddress}
+                          onChange={(field, value) => setNewAddress((a) => ({ ...a, [field]: value }))}
+                          countries={countries}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : newCustomer ? (
                 <div className="flex flex-col gap-4">
@@ -322,14 +473,14 @@ export default function RequestFormPage() {
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder={t("Type the customer's name…")}
-                      className="flex-1 min-w-0 bg-transparent text-sm outline-none"
+                      className="flex-1 min-w-0 bg-transparent text-base sm:text-sm outline-none"
                     />
                   </label>
                   {matches.length > 0 && (
                     <ul className="flex flex-col border border-border rounded-md divide-y divide-border overflow-hidden">
                       {matches.map((c) => (
                         <li key={c.id}>
-                          <button type="button" onClick={() => setSelected(c)} className="w-full text-left px-4 py-3 hover:bg-secondary">
+                          <button type="button" onClick={() => pickCustomer(c)} className="w-full text-left px-4 py-3 hover:bg-secondary">
                             <span className="font-semibold">{c.name}</span>
                             <span className="text-sm text-muted-foreground"> · {[c.city, c.country].filter(Boolean).join(" · ") || "—"}</span>
                           </button>
@@ -360,27 +511,41 @@ export default function RequestFormPage() {
               {boxes.map((b, i) => (
                 <div key={i} className="flex flex-col gap-3 pb-4 border-b border-muted last:border-0 last:pb-0">
                 {(presets.data?.length ?? 0) > 0 && (
-                  <Field label={t("Standard box")}>
-                    <select
-                      value={b.presetId ?? ""}
-                      onChange={(e) => {
-                        const preset = presets.data?.find((p) => p.id === e.target.value);
-                        setBoxes((list) => list.map((x, j) => (j !== i ? x : preset ? {
-                          presetId: preset.id,
-                          width: String(preset.width), height: String(preset.height), depth: String(preset.depth),
-                          weight: preset.avg_weight != null ? String(preset.avg_weight) : x.weight,
-                        } : { ...x, presetId: undefined })));
-                      }}
-                      className="flex h-11 w-full rounded-md border border-input bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      <option value="">{t("Other size (type below)")}</option>
+                  <div className="flex flex-col gap-2">
+                    <span className="eyebrow">{boxes.length > 1 ? `${t("Box")} ${i + 1} · ${t("Standard box")}` : t("Standard box")}</span>
+                    <div role="radiogroup" aria-label={t("Standard box")} className="grid grid-cols-2 gap-2">
                       {presets.data?.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} — {p.width}×{p.height}×{p.depth} cm{p.avg_weight != null ? ` · ~${p.avg_weight} kg` : ""}
-                        </option>
+                        <button
+                          key={p.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={b.presetId === p.id}
+                          onClick={() => setBoxes((list) => list.map((x, j) => (j !== i ? x : {
+                            presetId: p.id,
+                            width: String(p.width), height: String(p.height), depth: String(p.depth),
+                            weight: p.avg_weight != null ? String(p.avg_weight) : x.weight,
+                          })))}
+                          className={cn("text-left rounded-md border px-3 py-2.5 min-h-[60px]",
+                            b.presetId === p.id ? "bg-primary text-primary-foreground border-primary" : "border-border hover:border-foreground")}
+                        >
+                          <span className="block text-sm font-semibold leading-tight">{p.name.replace(/^Scatola /i, "").replace(/^./, (ch) => ch.toUpperCase())}</span>
+                          <span className={cn("block text-xs mt-1", b.presetId === p.id ? "text-white/75" : "text-muted-foreground")}>
+                            {p.width}×{p.height}×{p.depth}{p.avg_weight != null ? ` · ${p.avg_weight} kg` : ""}
+                          </span>
+                        </button>
                       ))}
-                    </select>
-                  </Field>
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={!b.presetId}
+                        onClick={() => setBoxes((list) => list.map((x, j) => (j === i ? { ...x, presetId: undefined } : x)))}
+                        className={cn("text-left rounded-md border border-dashed px-3 py-2.5 min-h-[60px] text-sm font-semibold",
+                          !b.presetId ? "border-foreground bg-secondary" : "border-input hover:border-foreground")}
+                      >
+                        {t("Other size")}
+                      </button>
+                    </div>
+                  </div>
                 )}
                 <div className="grid grid-cols-2 sm:grid-cols-[repeat(4,minmax(0,1fr))_auto] gap-3 items-end">
                   {(["width", "height", "depth", "weight"] as const).map((field) => (
