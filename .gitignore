@@ -1,8 +1,7 @@
 node_modules
 dist
-.env
-.env.local
 .DS_Store
-*.log
-.vercel
-.claude/settings.local.json
+*.tar.gz
+.env
+.env.*
+!.env.example

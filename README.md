@@ -1,153 +1,119 @@
-# OM Shipment — Gestão de Envios
+# OM Gestionale — Envios, Assistências e Garantias
 
-Sistema interno da Officine Mattio para registrar envios, comparar cotações
-entre portais de transporte, acompanhar rastreio e gerar relatórios.
+Sistema interno da Officine Mattio. Junta num app só (e num banco só) os
+antigos **OM-Shipment** (envios) e **OM-Assist** (assistências e garantias).
 
-- **Produção:** projeto `om-shipment` na Vercel (deploy automático a cada push em `main`)
-- **Repositório:** `zeroventuno/OM-Shipment`
-- **Banco e autenticação:** Supabase
+| Área | Rota | O que faz |
+|---|---|---|
+| Envios | `/shipments`, `/shipments/new`, `/shipments/reports` | registro de envios, comparação de cotações, rastreio, comprovantes e relatórios |
+| Assistências | `/assistance` | tickets de componentes enviados ao fabricante |
+| Garantias | `/warranties` | processos de garantia, com fotos e protocolo OMW-AA-NNN |
+
+Os endereços antigos do OM-Shipment (`/dashboard`, `/new-shipment`, `/reports`)
+redirecionam para os novos.
 
 ## Stack
 
 | Camada | Tecnologia |
 |---|---|
-| Build | Vite 8 (Rolldown) |
-| UI | React 18, React Router 7, Tailwind 3 |
-| Gráficos | Recharts |
-| Planilhas | SheetJS (`xlsx`, build oficial do CDN) |
-| Dados / Auth / Storage | Supabase |
-| Idiomas | i18next — português e italiano |
-| Rastreio | 17TRACK (widget) |
-| Comprovantes | pdf-lib (geração do PDF de arquivamento) |
+| Build | Vite 8 |
+| UI | React 18, React Router 7, Tailwind 3, componentes shadcn/Radix |
+| Dados / Auth / Storage | Supabase (projeto único, o antigo do OM-Shipment) |
+| Formulários | react-hook-form + zod (schema em `src/modules/schema.ts`) |
+| Idiomas | i18next — português e italiano, com seletor no menu |
+| Envios | Recharts, SheetJS, pdf-lib, 17TRACK |
+
+Não há mais servidor: o navegador fala direto com o Supabase, protegido por
+login e Row Level Security.
 
 ## Rodando localmente
 
 ```bash
 npm install
-cp .env.example .env   # preencha as variáveis
+cp .env.example .env   # preencha VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY
 npm run dev
 ```
 
-Outros comandos:
-
 ```bash
-npm run build     # build de produção em dist/
-npm run preview   # serve o build local
-npm run lint      # ESLint
+npm run check   # TypeScript
+npm run lint    # ESLint (arquivos .js/.jsx)
+npm test        # Vitest
+npm run build
 ```
-
-## Variáveis de ambiente
-
-| Variável | Obrigatória | Descrição |
-|---|---|---|
-| `VITE_SUPABASE_URL` | sim | URL do projeto Supabase |
-| `VITE_SUPABASE_ANON_KEY` | sim | Chave anônima (pública) do Supabase |
-| `VITE_17TRACK_KEY` | não | Chave da API do 17TRACK; sem ela o rastreio usa dados simulados |
-
-As mesmas variáveis precisam estar configuradas em
-**Vercel → Settings → Environment Variables**.
-
-Sem `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` o app cai para LocalStorage e
-**não há login** — use isso apenas para testes locais, nunca em produção.
-
-## Autenticação
-
-Login por e-mail e senha via Supabase Auth. Todas as rotas da aplicação são
-protegidas: sem sessão válida o usuário é mandado para `/login`.
-
-**O cadastro público fica desligado.** Novos usuários são criados manualmente:
-
-1. Supabase → **Authentication → Users → Add user**
-2. Preencha e-mail e senha e marque *Auto Confirm User*
-
-Para conferir que o cadastro aberto está desligado:
-Supabase → **Authentication → Providers → Email** → *Allow new users to sign up* = **off**.
-
-Quem esquecer a senha usa "Esqueceu sua senha?" na tela de login e recebe um
-link que leva a `/reset-password`.
-
-> O SMTP padrão do Supabase tem limite baixo de envios por hora. Se a
-> recuperação de senha virar rotina, configure um SMTP próprio em
-> **Authentication → Emails → SMTP Settings**.
-
-## Banco de dados
-
-Tabela única `shipments` (dados compartilhados: todo usuário autenticado vê e
-edita tudo) e dois buckets no Storage:
-
-| Bucket | Leitura | Conteúdo |
-|---|---|---|
-| `shipment-photos` | pública | fotos do envio |
-| `shipment-pods` | **só autenticado** | comprovantes de entrega |
-
-O bucket de comprovantes é privado porque um POD traz assinatura, nome e
-endereço do cliente. A tabela guarda o *caminho* do arquivo, não uma URL
-pública; o app gera uma URL assinada de 5 minutos na hora de abrir.
-
-As migrations ficam em `supabase/migrations/`, em ordem cronológica. Elas são
-aplicadas manualmente pelo **SQL Editor** do Supabase — o projeto não usa a CLI
-do Supabase. Ao aplicar uma migration nova, rode o arquivo inteiro e confira o
-resultado.
-
-### Segurança (RLS)
-
-A migration `20260903000000_enable_rls.sql` liga o Row Level Security. Sem ela,
-qualquer pessoa com a chave anônima — que vai no bundle JavaScript público —
-consegue ler e alterar todos os envios.
-
-Para verificar que está ativo:
-
-```sql
-SELECT relname, relrowsecurity FROM pg_class WHERE relname = 'shipments';
--- relrowsecurity precisa ser true
-```
-
-## Comprovante de entrega (POD)
-
-O comprovante assinado é dado de titular de conta na transportadora. Como boa
-parte dos envios é contratada via MBE e My Parcel, que são revendedores, o
-titular naqueles envios é o revendedor — não há API, própria ou agregadora, que
-devolva esse documento para nós. Por isso o comprovante é **anexado à mão**,
-baixado do portal da transportadora.
-
-- até 3 arquivos por envio, PDF ou imagem, 10 MB cada
-- nos Relatórios, o ícone verde indica quem já tem comprovante
-- o botão **Comprovante de entrega** gera um PDF único para arquivamento
-  físico: uma folha de identificação por envio (ordem, cliente, país,
-  transportadora, tracking, data e status) seguida do documento. Comprovante em
-  imagem entra na mesma folha; em PDF, as páginas originais vêm na sequência,
-  sem nada por cima
-- funciona sobre a seleção da tabela, ou sobre todos os filtrados se nada
-  estiver selecionado
 
 ## Estrutura
 
 ```
 src/
-  contexts/AuthContext.jsx      sessão do Supabase Auth
+  App.tsx, main.tsx             rotas e providers
+  contexts/AuthContext.tsx      sessão do Supabase Auth
   components/
-    auth/ProtectedRoute.jsx     bloqueio das rotas privadas
-    layout/                     Sidebar (com menu mobile) e Layout
-    shipments/PhotoUpload.jsx   upload com conversão HEIC e compressão
-    shipments/PodUpload.jsx     anexo do comprovante (bucket privado)
-    ui/                         Button, Card, Input
-  pages/
-    Login.jsx, ResetPassword.jsx
-    Dashboard.jsx               KPIs e gráficos
-    NewShipment.jsx             cadastro e comparação de cotações
-    Reports.jsx                 histórico, filtros, Excel e impressão
-  services/
-    supabaseClient.js
-    storage.js                  CRUD e estatísticas
-    trackingService.js          17TRACK, com fallback simulado
-    podExport.js                monta o PDF de arquivamento dos comprovantes
-  data/countries.js             países: código ISO, grafias e nome traduzido
-  utils/quotes.js               cálculo de economia e lucro
-  i18n.js                       traduções pt/it
-supabase/migrations/            SQL aplicado no Supabase
+    auth/ProtectedRoute.tsx     bloqueio das rotas privadas
+    layout/                     Sidebar (três áreas + idioma) e Layout
+    ui/                         componentes shadcn (Assistências e Garantias)
+  pages/                        Login e ResetPassword
+  lib/supabase.ts               cliente único do Supabase
+  i18n/                         configuração e textos do menu/assistências/garantias
+  modules/
+    shipments/                  módulo de envios (código do OM-Shipment, em JS)
+    assistance/                 tickets de assistência
+    warranties/                 garantias
+    schema.ts                   colunas e validação de tickets/garantias
+    records.ts                  conversão banco ↔ app e histórico de alterações
+    labels.ts                   valores gravados → textos traduzidos
+supabase/migrations/            SQL aplicado no Supabase (SQL Editor)
+scripts/migrate-assist-data.mjs cópia única dos dados do OM-Assist
 ```
 
-## Deploy
+O módulo de envios continua em JavaScript, como veio do OM-Shipment; o resto é
+TypeScript. A ideia é converter os envios aos poucos, à medida que a tela for
+sendo melhorada.
 
-Push em `main` dispara o deploy na Vercel. O atalho `./deploy.sh "mensagem"`
-faz `add`, `commit` e `push` de uma vez.
+## Banco de dados
+
+Tabelas (todas com RLS: só usuário autenticado; dados compartilhados):
+
+| Tabela | Origem |
+|---|---|
+| `shipments` | OM-Shipment |
+| `tickets` | OM-Assist (assistências) |
+| `warranties` | OM-Assist (garantias) |
+
+Buckets no Storage:
+
+| Bucket | Leitura | Conteúdo |
+|---|---|---|
+| `shipment-photos` | pública | fotos do envio |
+| `shipment-pods` | **só autenticado** | comprovantes de entrega |
+| `warranty-images` | pública | fotos das garantias |
+
+As migrations ficam em `supabase/migrations/`, em ordem cronológica, e são
+aplicadas à mão pelo **SQL Editor** do Supabase.
+
+O número de protocolo das garantias é gerado pelo banco
+(`set_warranty_protocol`), continuando a partir do maior número já usado.
+
+## Migração dos dados do OM-Assist (uma vez só)
+
+1. Aplique `supabase/migrations/20261115000000_add_assistance_and_warranties.sql`
+   no projeto do OM-Shipment.
+2. Preencha no `.env` as variáveis da seção "cópia única" do `.env.example`
+   (conexão do banco antigo, URL e chave `service_role` do projeto novo).
+3. `npm run migrate:assist` — simulação: mostra quantos registros e fotos
+   seriam copiados, sem gravar nada.
+4. `npm run migrate:assist -- --apply` — copia de verdade (registros numa
+   transação; fotos para o bucket novo, com as URLs atualizadas).
+5. Apague do `.env` a `TARGET_SUPABASE_SERVICE_ROLE_KEY`.
+
+## Autenticação
+
+Login por e-mail e senha via Supabase Auth; todas as rotas são protegidas. O
+cadastro público fica desligado — usuários são criados em
+**Supabase → Authentication → Users → Add user** (marque *Auto Confirm User*).
+"Esqueceu sua senha?" envia um link que leva a `/reset-password`.
+
+## Comprovante de entrega (POD)
+
+O comprovante assinado é anexado à mão (baixado do portal da transportadora):
+até 3 arquivos por envio, PDF ou imagem, 10 MB cada. Nos Relatórios, o botão
+**Comprovante de entrega** gera um PDF único para arquivamento físico.

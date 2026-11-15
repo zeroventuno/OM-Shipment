@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2, LogIn, AlertCircle, MailCheck, ArrowLeft } from 'lucide-react';
-import { Input } from '../components/ui/Input';
-import { Button } from '../components/ui/Button';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../services/supabaseClient';
+import { Input } from '@/modules/shipments/components/ui/Input';
+import { Button } from '@/modules/shipments/components/ui/Button';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { useTranslation } from 'react-i18next';
 
 export default function Login() {
@@ -28,7 +28,7 @@ export default function Login() {
     }
 
     if (session) {
-        return <Navigate to={location.state?.from?.pathname || '/dashboard'} replace />;
+        return <Navigate to={location.state?.from?.pathname || '/shipments'} replace />;
     }
 
     const translateError = (err) => {
@@ -73,7 +73,7 @@ export default function Login() {
                 <div className="bg-surface rounded-xl shadow-lg border border-gray-200 p-8">
                     <div className="flex flex-col items-center mb-8">
                         <img src="/logo.png" alt="Officine Mattio" className="h-12 w-auto mb-4" />
-                        <h1 className="text-xl font-semibold text-gray-900">{t('Shipment Management')}</h1>
+                        <h1 className="text-xl font-semibold text-gray-900">{t('app.title')}</h1>
                         <p className="text-sm text-gray-500 mt-1">
                             {mode === 'login' ? t('Sign in to continue') : t('Recover your password')}
                         </p>

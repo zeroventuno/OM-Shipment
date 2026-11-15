@@ -22,6 +22,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Tipos (TypeScript)
+        run: npm run check
+
       - name: Testes
         run: npm test
 

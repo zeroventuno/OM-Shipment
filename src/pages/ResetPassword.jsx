@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, KeyRound, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { Input } from '../components/ui/Input';
-import { Button } from '../components/ui/Button';
-import { useAuth } from '../contexts/AuthContext';
+import { Input } from '@/modules/shipments/components/ui/Input';
+import { Button } from '@/modules/shipments/components/ui/Button';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -36,7 +36,7 @@ export default function ResetPassword() {
         try {
             await updatePassword(password);
             setDone(true);
-            setTimeout(() => navigate('/dashboard', { replace: true }), 1500);
+            setTimeout(() => navigate('/shipments', { replace: true }), 1500);
         } catch (err) {
             setError(err?.message || 'Unexpected error');
         } finally {

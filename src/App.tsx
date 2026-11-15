@@ -1,0 +1,59 @@
+import { Suspense, lazy, type ReactNode } from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
+import Layout from '@/components/layout/Layout'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import Login from '@/pages/Login'
+import ResetPassword from '@/pages/ResetPassword'
+
+// Carregadas sob demanda: cada área só baixa o próprio código.
+const ShipmentsDashboard = lazy(() => import('@/modules/shipments/pages/Dashboard'))
+const NewShipment = lazy(() => import('@/modules/shipments/pages/NewShipment'))
+const Reports = lazy(() => import('@/modules/shipments/pages/Reports'))
+const AssistancePage = lazy(() => import('@/modules/assistance/AssistancePage'))
+const WarrantiesPage = lazy(() => import('@/modules/warranties/WarrantiesPage'))
+
+function PageFallback() {
+    return (
+        <div className="flex items-center justify-center py-24">
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+        </div>
+    )
+}
+
+const page = (element: ReactNode) => <Suspense fallback={<PageFallback />}>{element}</Suspense>
+
+export default function App() {
+    return (
+        <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+
+            <Route
+                path="/"
+                element={
+                    <ProtectedRoute>
+                        <Layout />
+                    </ProtectedRoute>
+                }
+            >
+                <Route index element={<Navigate to="/shipments" replace />} />
+
+                <Route path="shipments" element={page(<ShipmentsDashboard />)} />
+                <Route path="shipments/new" element={page(<NewShipment />)} />
+                <Route path="shipments/reports" element={page(<Reports />)} />
+                <Route path="shipments/:id" element={page(<NewShipment />)} />
+
+                <Route path="assistance" element={page(<AssistancePage />)} />
+                <Route path="warranties" element={page(<WarrantiesPage />)} />
+
+                {/* Endereços antigos do OM-Shipment, para favoritos continuarem funcionando */}
+                <Route path="dashboard" element={<Navigate to="/shipments" replace />} />
+                <Route path="new-shipment" element={<Navigate to="/shipments/new" replace />} />
+                <Route path="reports" element={<Navigate to="/shipments/reports" replace />} />
+            </Route>
+
+            <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+    )
+}

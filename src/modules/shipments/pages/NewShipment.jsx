@@ -1,0 +1,576 @@
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Plus, Trash2, Save, TrendingDown, AlertCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
+import { Button } from '../components/ui/Button';
+import { PhotoUpload } from '../components/shipments/PhotoUpload';
+import { PodUpload } from '../components/shipments/PodUpload';
+import { storageService } from '../services/storage';
+import { useTranslation } from 'react-i18next';
+import { COUNTRIES, countryLabel } from '../data/countries';
+import { analyzeQuotes, calculateProfit } from '../utils/quotes';
+import { resolveStatus } from '../utils/shipmentStatus';
+
+const PORTALS = ['MBE', 'My Parcel', 'My DHL', 'BRT'];
+const ALL_CARRIERS = ['TNT', 'Fedex', 'DHL', 'BRT', 'SDA', 'UPS'];
+const ORDER_TYPES = ['Bicycle', 'Frame Kit', 'Components', 'Warranty', 'Clothing/Accessories', 'Gift', 'Rental', 'Other'];
+
+export default function NewShipment() {
+    const { t, i18n } = useTranslation();
+    const navigate = useNavigate();
+    const { id } = useParams();
+    const isEditing = !!id;
+
+    const [formData, setFormData] = useState({
+        orderId: '',
+        orderType: '',
+        customerName: '',
+        quantity: 1,
+        destinationCountry: '',
+        customerPayment: '',
+        trackingCode: '',
+        photoUrls: [],
+        customerCostPickup: false,
+        podFiles: [],
+        // Carregado junto com o envio: sem isso, salvar uma edição gravaria
+        // status undefined, que vira NULL no banco e apagaria um 'Delivered'.
+        status: undefined
+    });
+
+    const [uniqueCustomers, setUniqueCustomers] = useState([]);
+
+    const [quotes, setQuotes] = useState([
+        { id: 1, portal: PORTALS[0], carrier: ALL_CARRIERS[0], price: '' }, // MBE - TNT
+        { id: 2, portal: PORTALS[1], carrier: ALL_CARRIERS[0], price: '' }, // My Parcel - TNT
+        { id: 3, portal: PORTALS[2], carrier: 'DHL', price: '' },           // My DHL - DHL
+        { id: 4, portal: PORTALS[3], carrier: 'BRT', price: '' }            // BRT - BRT
+    ]);
+
+    const [suggestedPortal, setSuggestedPortal] = useState(null);
+
+    const [selectedQuoteId, setSelectedQuoteId] = useState(null);
+
+    const [isLoading, setIsLoading] = useState(false);
+
+    const [loadError, setLoadError] = useState('');
+
+    // Nomes dos países no idioma atual, em ordem alfabética desse idioma.
+    const localizedCountries = useMemo(() => {
+        const lang = i18n.language || 'pt';
+        return COUNTRIES
+            .map(c => ({ ...c, label: countryLabel(c.code, lang) }))
+            .sort((a, b) => a.label.localeCompare(b.label, lang));
+    }, [i18n.language]);
+
+    // Load data for editing
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                if (id) {
+                    const shipment = await storageService.getShipment(id);
+                    if (shipment) {
+                        setFormData({
+                            orderId: shipment.orderId,
+                            orderType: shipment.orderType || '',
+                            customerName: shipment.customerName || '',
+                            quantity: shipment.quantity || 1,
+                            destinationCountry: shipment.destinationCountry || '',
+                            customerPayment: shipment.customerPayment,
+                            trackingCode: shipment.trackingCode || '',
+                            photoUrls: shipment.photoUrls || [],
+                            customerCostPickup: shipment.customerCostPickup || false,
+                            podFiles: shipment.podFiles || [],
+                            status: shipment.status
+                        });
+                        setQuotes(shipment.allQuotes || []);
+                        if (shipment.selectedQuote) {
+                            setSelectedQuoteId(shipment.selectedQuote.id);
+                        }
+                    }
+                }
+
+                // Load unique customers for autocomplete
+                setUniqueCustomers(await storageService.getCustomerNames());
+            } catch (err) {
+                console.error('Failed to load shipment data:', err);
+                setLoadError(err.message || 'Unexpected error');
+            }
+        };
+        loadData();
+    }, [id]);
+
+    // Smart suggestion logic
+    useEffect(() => {
+        const checkSuggestion = async () => {
+            if (!formData.destinationCountry || id) return;
+            try {
+                const suggestion = await storageService.getSuggestedPortal(formData.destinationCountry);
+                setSuggestedPortal(suggestion);
+            } catch (err) {
+                // Sugestão é opcional: falhar aqui não deve travar o formulário.
+                console.error('Failed to load portal suggestion:', err);
+            }
+        };
+        checkSuggestion();
+    }, [formData.destinationCountry, id]);
+
+    const handleAddQuote = () => {
+        setQuotes([...quotes, { id: Date.now(), portal: PORTALS[0], carrier: ALL_CARRIERS[0], price: '' }]);
+    };
+
+    const handleRemoveQuote = (quoteId) => {
+        setQuotes(quotes.filter(q => q.id !== quoteId));
+        if (selectedQuoteId === quoteId) setSelectedQuoteId(null);
+    };
+
+    const handleQuoteChange = (quoteId, field, value) => {
+        setQuotes(quotes.map(q => {
+            if (q.id !== quoteId) return q;
+
+            const updates = { [field]: value };
+
+            // Reset carrier if portal changes and current carrier is not valid for new portal
+            if (field === 'portal') {
+                const allowedCarriers = getAllowedCarriers(value);
+                if (!allowedCarriers.includes(q.carrier)) {
+                    updates.carrier = allowedCarriers[0];
+                }
+            }
+
+            return { ...q, ...updates };
+        }));
+    };
+
+    const getAllowedCarriers = (portal) => {
+        if (portal === 'My DHL') return ['DHL'];
+        if (portal === 'BRT') return ['BRT'];
+        return ALL_CARRIERS;
+    };
+
+    const analysis = useMemo(
+        () => analyzeQuotes(quotes, selectedQuoteId),
+        [quotes, selectedQuoteId]
+    );
+
+    const handleSubmit = async (e) => {
+        if (e) e.preventDefault();
+
+        console.log('handleSubmit called', { isEditing, hasAnalysis: !!analysis });
+
+        // Validate required fields
+        if (!formData.orderId || formData.orderId.trim() === '') {
+            alert(t('Please enter an Order Number'));
+            return;
+        }
+
+        if (!formData.customerName || formData.customerName.trim() === '') {
+            alert(t('Please enter a Customer Name'));
+            return;
+        }
+
+        if (!formData.destinationCountry) {
+            alert(t('Please select a Destination Country'));
+            return;
+        }
+
+        // Customer payment validation (skip if customer cost pickup is checked)
+        if (!formData.customerCostPickup) {
+            if (formData.customerPayment === '' || formData.customerPayment === null || formData.customerPayment === undefined || parseFloat(formData.customerPayment) < 0 || isNaN(parseFloat(formData.customerPayment))) {
+                alert(t('Please enter a valid Customer Payment amount'));
+                return;
+            }
+        }
+
+        // When creating new shipment, analysis is required (unless customer cost pickup)
+        if (!isEditing && !analysis && !formData.customerCostPickup) {
+            alert(t('Please add at least one quote'));
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            let shipmentData;
+
+            // Comprovante anexado é prova de entrega; sem ele, preserva o
+            // status que já estava gravado. Ver resolveStatus.
+            const status = resolveStatus(formData);
+
+            if (isEditing && !analysis) {
+                // Editing without changing quotes - keep existing data but recalculate profit
+                console.log('Editing without analysis, loading existing shipment...');
+                const existingShipment = await storageService.getShipment(id);
+                console.log('Existing shipment:', existingShipment);
+
+                if (!existingShipment) {
+                    alert('Erro: Envio não encontrado');
+                    setIsLoading(false);
+                    return;
+                }
+
+                // Recalculate profit based on new customer payment
+                const selectedQuotePrice = parseFloat(existingShipment.selectedQuote?.price || 0);
+                const newProfit = calculateProfit(formData.customerPayment, existingShipment.selectedQuote);
+
+                // Recalculate savings (difference between selected and worst quote)
+                let newSavings = existingShipment.savings || 0;
+
+                // Only recalculate savings if allQuotes exists
+                if (existingShipment.allQuotes && Array.isArray(existingShipment.allQuotes) && existingShipment.allQuotes.length > 0) {
+                    const allPrices = existingShipment.allQuotes
+                        .map(q => parseFloat(q.price))
+                        .filter(p => !isNaN(p) && p > 0);
+                    if (allPrices.length > 0) {
+                        const worstPrice = Math.max(...allPrices);
+                        newSavings = worstPrice - selectedQuotePrice;
+                    }
+                }
+
+                shipmentData = {
+                    ...existingShipment,
+                    ...formData, // Update form fields
+                    customerPayment: parseFloat(formData.customerPayment) || 0,
+                    profit: newProfit,
+                    savings: newSavings,
+                    status: resolveStatus(formData, existingShipment.status)
+                };
+                console.log('Updated shipment data with recalculated profit:', shipmentData);
+            } else {
+                // New shipment or editing with new quotes
+                console.log('Creating new or updating with new quotes');
+
+                // If customer cost pickup, set costs to zero
+                if (formData.customerCostPickup) {
+                    shipmentData = {
+                        ...formData,
+                        customerPayment: parseFloat(formData.customerPayment) || 0,
+                        selectedQuote: null,
+                        profit: 0,
+                        savings: 0,
+                        allQuotes: [],
+                        status
+                    };
+                } else {
+                    shipmentData = {
+                        ...formData,
+                        customerPayment: parseFloat(formData.customerPayment) || 0,
+                        selectedQuote: analysis.selected,
+                        profit: calculateProfit(formData.customerPayment, analysis.selected),
+                        savings: analysis.savings,
+                        allQuotes: quotes,
+                        status
+                    };
+                }
+            }
+
+            if (id) {
+                console.log('Updating shipment with id:', id);
+                await storageService.updateShipment({ ...shipmentData, id });
+                alert(t('Shipment updated successfully!'));
+            } else {
+                console.log('Saving new shipment');
+                await storageService.saveShipment(shipmentData);
+                alert(t('Shipment registered successfully!'));
+            }
+
+            console.log('Navigating to dashboard...');
+            navigate('/shipments');
+        } catch (error) {
+            console.error('Error submitting form:', error);
+            alert(`Erro ao salvar: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="space-y-6 max-w-5xl mx-auto">
+            <div className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900">
+                        {isEditing ? t('Edit Shipment') : t('New Shipment Quote')}
+                    </h1>
+                    <p className="text-gray-500 mt-1">
+                        {isEditing ? t('Update Shipment Data') : t('Compare Prices')}
+                    </p>
+                </div>
+            </div>
+
+            {loadError && (
+                <div className="flex items-start gap-2 text-sm text-error bg-error/10 border border-error/20 rounded-md p-3">
+                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>{t('Could not load data')}: {t(loadError)}</span>
+                </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Column: Form */}
+                <div className="lg:col-span-2 space-y-6">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle>{t('Order Data')}</CardTitle>
+                            {isEditing && (
+                                <Button
+                                    onClick={handleSubmit}
+                                    variant="outlined"
+                                    size="sm"
+                                    type="button"
+                                >
+                                    <Save className="h-4 w-4 mr-2" /> {t('Save')}
+                                </Button>
+                            )}
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Input
+                                    label={t('Order Number')}
+                                    placeholder="Ex: ORD-2024-001"
+                                    value={formData.orderId}
+                                    onChange={(e) => setFormData({ ...formData, orderId: e.target.value })}
+                                />
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('Order Type')}</label>
+                                    <select
+                                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                                        value={formData.orderType}
+                                        onChange={(e) => setFormData({ ...formData, orderType: e.target.value })}
+                                    >
+                                        <option value="">{t('Select...')}</option>
+                                        {ORDER_TYPES.map(type => (
+                                            <option key={type} value={type}>{t(type)}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <Input
+                                    label={t('Customer')}
+                                    placeholder={t('Customer')}
+                                    value={formData.customerName}
+                                    onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                                    list="customers"
+                                />
+                                <datalist id="customers">
+                                    {uniqueCustomers.map(c => <option key={c} value={c} />)}
+                                </datalist>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('Quantity (Bicycles/Frames)')}</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="20"
+                                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                                        value={formData.quantity}
+                                        onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('Destination Country')}</label>
+                                    <select
+                                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={formData.destinationCountry}
+                                        onChange={(e) => setFormData({ ...formData, destinationCountry: e.target.value })}
+                                    >
+                                        <option value="">{t('Select Country')}</option>
+                                        {localizedCountries.map(country => (
+                                            <option key={country.code} value={country.value}>{country.label}</option>
+                                        ))}
+                                    </select>
+                                    {suggestedPortal && (
+                                        <div className="flex items-center gap-2 text-xs text-primary bg-primary/10 p-2 rounded-md">
+                                            <AlertCircle className="h-3 w-3" />
+                                            <span>{t('Suggestion')}: <strong>{suggestedPortal}</strong> {t('is popular')}</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{`${t('Customer Payment')} (€)`}</label>
+                                    <input
+                                        type="number"
+                                        placeholder="0.00"
+                                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={formData.customerPayment}
+                                        onChange={(e) => setFormData({ ...formData, customerPayment: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Input
+                                    label={`${t('Tracking Code')} (Opcional)`}
+                                    placeholder={t('Tracking Code')}
+                                    value={formData.trackingCode}
+                                    onChange={(e) => setFormData({ ...formData, trackingCode: e.target.value })}
+                                />
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('Shipment/Pickup')}</label>
+                                    <label className="flex items-center h-10 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.customerCostPickup}
+                                            onChange={(e) => setFormData({ ...formData, customerCostPickup: e.target.checked })}
+                                            className="mr-2 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                        />
+                                        <span className="text-sm text-gray-700 truncate">{t('Customer Cost/Pickup')}</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-700">{t('Photos')}</label>
+                                <PhotoUpload
+                                    photos={formData.photoUrls || []}
+                                    onPhotosChange={(urls) => setFormData({ ...formData, photoUrls: urls })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-700">{t('Proof of delivery')}</label>
+                                <PodUpload
+                                    files={formData.podFiles || []}
+                                    onFilesChange={(paths) => setFormData({ ...formData, podFiles: paths })}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle>{t('Quotes')}</CardTitle>
+                            <Button variant="outlined" size="sm" onClick={handleAddQuote} type="button">
+                                <Plus className="h-4 w-4 mr-2" /> {t('Add Quote')}
+                            </Button>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {quotes.map((quote) => (
+                                <div key={quote.id} className="flex items-end gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div className="flex-1">
+                                        <label className="text-xs font-medium text-gray-500 mb-1 block">{t('Portal')}</label>
+                                        <select
+                                            className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm focus:ring-2 focus:ring-primary"
+                                            value={quote.portal}
+                                            onChange={(e) => handleQuoteChange(quote.id, 'portal', e.target.value)}
+                                        >
+                                            {PORTALS.map(p => <option key={p} value={p}>{p}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="text-xs font-medium text-gray-500 mb-1 block">{t('Carrier')}</label>
+                                        <select
+                                            className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm focus:ring-2 focus:ring-primary"
+                                            value={quote.carrier}
+                                            onChange={(e) => handleQuoteChange(quote.id, 'carrier', e.target.value)}
+                                        >
+                                            {getAllowedCarriers(quote.portal).map(c => <option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="w-32">
+                                        <label className="text-xs font-medium text-gray-500 mb-1 block">{t('Price')} (€)</label>
+                                        <Input
+                                            type="number"
+                                            placeholder="0.00"
+                                            step="0.01"
+                                            value={quote.price}
+                                            onChange={(e) => handleQuoteChange(quote.id, 'price', e.target.value)}
+                                            className="bg-white"
+                                        />
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleRemoveQuote(quote.id)}
+                                        className="text-gray-400 hover:text-error"
+                                        type="button"
+                                    >
+                                        <Trash2 className="h-5 w-5" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Right Column: Summary */}
+                <div className="space-y-6">
+                    <Card className="bg-primary text-white border-none shadow-xl">
+                        <CardHeader>
+                            <CardTitle className="text-white flex items-center">
+                                <TrendingDown className="mr-2 h-6 w-6" />
+                                {t('Analysis')}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {analysis ? (
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="text-primary-100 text-xs font-medium mb-1 block">{t('Chosen Carrier')}</label>
+                                        <select
+                                            className="w-full bg-white/10 border border-white/20 text-white rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-white/50 focus:outline-none [&>option]:text-gray-900"
+                                            value={analysis.selected.id}
+                                            onChange={(e) => setSelectedQuoteId(parseInt(e.target.value))}
+                                        >
+                                            {quotes.filter(q => q.price).map(q => (
+                                                <option key={q.id} value={q.id}>
+                                                    {q.portal} - {q.carrier} (€ {q.price})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-primary-100 text-sm">{t('Selected Option')}</p>
+                                        <div className="flex justify-between items-end">
+                                            <span className="text-2xl font-bold">{analysis.selected.portal}</span>
+                                            <span className="text-3xl font-bold">€ {parseFloat(analysis.selected.price).toFixed(2)}</span>
+                                        </div>
+                                        <p className="text-sm text-primary-100 mt-1">{t('Via')} {analysis.selected.carrier}</p>
+                                    </div>
+
+                                    <div className="pt-4 border-t border-white/20">
+                                        <p className="text-primary-100 text-sm">{t('Estimated Savings')}</p>
+                                        <p className="text-4xl font-bold text-[#03DAC6] mt-1">
+                                            € {analysis.savings.toFixed(2)}
+                                        </p>
+                                        <p className="text-xs text-primary-100 mt-2">
+                                            {t('Compared to worst')} (€ {parseFloat(analysis.worst.price).toFixed(2)})
+                                        </p>
+                                    </div>
+
+                                    <Button
+                                        onClick={handleSubmit}
+                                        className="w-full bg-white text-primary hover:bg-gray-100 mt-4 font-bold shadow-lg"
+                                        size="lg"
+                                        disabled={isLoading}
+                                    >
+                                        <Save className="mr-2 h-5 w-5" />
+                                        {isLoading ? t('Saving...') : (isEditing ? t('Update Shipment') : t('Register Shipment'))}
+                                    </Button>
+                                </div>
+                            ) : formData.customerCostPickup ? (
+                                <div className="space-y-6">
+                                    <div className="text-center py-4">
+                                        <p className="text-primary-100 text-sm mb-2">{t('Customer Cost/Pickup Mode')}</p>
+                                        <p className="text-white text-lg font-semibold">{t('No portal costs required')}</p>
+                                        <p className="text-primary-100 text-xs mt-2">{t('Only quantity will be tracked')}</p>
+                                    </div>
+
+                                    <Button
+                                        onClick={handleSubmit}
+                                        className="w-full bg-white text-primary hover:bg-gray-100 mt-4 font-bold shadow-lg"
+                                        size="lg"
+                                        disabled={isLoading}
+                                    >
+                                        <Save className="mr-2 h-5 w-5" />
+                                        {isLoading ? t('Saving...') : (isEditing ? t('Update Shipment') : t('Register Shipment'))}
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-primary-100">
+                                    {t('Add quotes to see analysis')}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        </div>
+    );
+}
