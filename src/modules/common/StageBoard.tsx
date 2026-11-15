@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import type React from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
@@ -14,23 +15,89 @@ interface StageBoardProps<T> {
   getKey: (item: T) => string;
   /** Colunas que mostram só os N primeiros (ex.: concluídos), com "mostrar todos". */
   collapse?: Record<string, number>;
+  /**
+   * Chamado quando um cartão é arrastado para outra coluna (só no computador).
+   * Sem ele, os cartões não são arrastáveis.
+   */
+  onMove?: (item: T, toColumn: string) => void;
 }
+
+const DRAG_TYPE = "application/x-om-card";
 
 /**
  * Quadro com uma coluna por etapa. No computador as colunas ficam lado a
  * lado; no celular viram abas, uma etapa por vez.
  */
-export function StageBoard<T>({ columns, renderCard, getKey, collapse = {} }: StageBoardProps<T>) {
+export function StageBoard<T>({ columns, renderCard, getKey, collapse = {}, onMove }: StageBoardProps<T>) {
   const { t } = useTranslation();
   const [mobileColumn, setMobileColumn] = useState(columns[0]?.key);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  // Arrastar: de qual coluna saiu o cartão e sobre qual coluna ele está.
+  const [dragging, setDragging] = useState<{ key: string; from: string } | null>(null);
+  const [over, setOver] = useState<string | null>(null);
+
+  const findItem = (key: string) => {
+    for (const col of columns) {
+      const item = col.items.find((i) => getKey(i) === key);
+      if (item) return { item, from: col.key };
+    }
+    return null;
+  };
+
+  const dropProps = (colKey: string) =>
+    onMove
+      ? {
+          onDragOver: (e: React.DragEvent) => {
+            if (!dragging || dragging.from === colKey) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+            if (over !== colKey) setOver(colKey);
+          },
+          onDragLeave: (e: React.DragEvent) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver((o) => (o === colKey ? null : o));
+          },
+          onDrop: (e: React.DragEvent) => {
+            e.preventDefault();
+            const key = e.dataTransfer.getData(DRAG_TYPE) || dragging?.key;
+            setOver(null);
+            setDragging(null);
+            const found = key ? findItem(key) : null;
+            if (found && found.from !== colKey) onMove(found.item, colKey);
+          },
+        }
+      : {};
+
+  const dragProps = (item: T, colKey: string, mobile: boolean) =>
+    onMove && !mobile
+      ? {
+          draggable: true,
+          onDragStart: (e: React.DragEvent) => {
+            e.dataTransfer.setData(DRAG_TYPE, getKey(item));
+            e.dataTransfer.effectAllowed = "move";
+            setDragging({ key: getKey(item), from: colKey });
+          },
+          onDragEnd: () => {
+            setDragging(null);
+            setOver(null);
+          },
+        }
+      : {};
 
   const renderColumn = (col: BoardColumn<T>, mobile: boolean) => {
     const limit = collapse[col.key];
     const visible = limit && !expanded[col.key] ? col.items.slice(0, limit) : col.items;
     const hidden = col.items.length - visible.length;
     return (
-      <section key={col.key} className="flex flex-col gap-2.5 min-w-0" aria-label={col.title}>
+      <section
+        key={col.key}
+        aria-label={col.title}
+        className={cn(
+          "flex flex-col gap-2.5 min-w-0 rounded-lg transition-colors",
+          !mobile && "min-h-40 p-1 -m-1",
+          over === col.key && "bg-secondary outline-dashed outline-2 outline-foreground/40"
+        )}
+        {...(mobile ? {} : dropProps(col.key))}
+      >
         {!mobile && (
           <div className="flex items-center justify-between px-1 pb-1.5 border-b-2 border-foreground">
             <h2 className="text-xs font-bold uppercase tracking-[0.12em]">{col.title}</h2>
@@ -38,7 +105,13 @@ export function StageBoard<T>({ columns, renderCard, getKey, collapse = {} }: St
           </div>
         )}
         {visible.map((item) => (
-          <div key={getKey(item)}>{renderCard(item)}</div>
+          <div
+            key={getKey(item)}
+            className={cn(onMove && !mobile && "cursor-grab active:cursor-grabbing", dragging?.key === getKey(item) && "opacity-40")}
+            {...dragProps(item, col.key, mobile)}
+          >
+            {renderCard(item)}
+          </div>
         ))}
         {col.items.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">{t("Nothing here")}</p>
@@ -83,6 +156,9 @@ export function StageBoard<T>({ columns, renderCard, getKey, collapse = {} }: St
       </div>
 
       {/* Computador: colunas lado a lado */}
+      {onMove && (
+        <p className="hidden md:block -mt-2 text-xs text-muted-foreground">{t("Drag a card to another column to change its status")}</p>
+      )}
       <div className="hidden md:block overflow-x-auto pb-2">
         <div
           className="grid gap-4"

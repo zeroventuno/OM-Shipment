@@ -139,6 +139,8 @@ export const appResources = {
         "Error processing images": "Erro ao processar as imagens",
 
         // Redesign: quadro, detalhe e menu
+        "Status changed": "Status alterado",
+        "Drag a card to another column to change its status": "Arraste um cartão para outra coluna para mudar o status",
         "All tickets": "Todos os tickets",
         "All warranties": "Todas as garantias",
         "Board": "Quadro",
@@ -323,6 +325,8 @@ export const appResources = {
         "Error processing images": "Errore durante l'elaborazione delle immagini",
 
         // Redesign: quadro, detalhe e menu
+        "Status changed": "Stato aggiornato",
+        "Drag a card to another column to change its status": "Trascina una scheda in un'altra colonna per cambiarne lo stato",
         "All tickets": "Tutti i ticket",
         "All warranties": "Tutte le garanzie",
         "Board": "Quadro",

@@ -12,7 +12,7 @@ import { PageHeader, SearchBox } from "../common/PageHeader";
 import { StageBoard, AgeChip, Tag, ViewToggle, StaleBanner, useViewMode } from "../common/StageBoard";
 import WarrantyTable from "./WarrantyTable";
 import WarrantyModal from "./WarrantyModal";
-import { warrantiesQuery, WARRANTIES_QUERY_KEY, createWarranty, deleteWarranty, warrantyAge } from "./api";
+import { warrantiesQuery, WARRANTIES_QUERY_KEY, createWarranty, deleteWarranty, updateWarranty, warrantyAge } from "./api";
 
 export default function WarrantiesPage() {
   const { t } = useTranslation();
@@ -47,6 +47,29 @@ export default function WarrantiesPage() {
       toast({ title: t("Warranty deleted") });
     },
     onError,
+  });
+
+  // Arrastar para outra coluna: muda o status na hora e grava no banco.
+  const moveMutation = useMutation({
+    mutationFn: ({ warranty, status }: { warranty: Warranty; status: string }) => updateWarranty(warranty, { status }),
+    onMutate: async ({ warranty, status }) => {
+      await queryClient.cancelQueries({ queryKey: WARRANTIES_QUERY_KEY });
+      const previous = queryClient.getQueryData<Warranty[]>(WARRANTIES_QUERY_KEY);
+      queryClient.setQueryData<Warranty[]>(WARRANTIES_QUERY_KEY, (list = []) =>
+        list.map((w) => (w.id === warranty.id ? { ...w, status } : w))
+      );
+      return { previous };
+    },
+    onSuccess: (_saved, { warranty, status }) =>
+      toast({
+        title: t("Status changed"),
+        description: `${warranty.protocolNumber ?? warranty.customerName} → ${t(WARRANTY_STATUS_LABELS[status] ?? status)}`,
+      }),
+    onError: (error: Error, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(WARRANTIES_QUERY_KEY, context.previous);
+      onError(error);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: WARRANTIES_QUERY_KEY }),
   });
 
   const withAge = useMemo(() => warranties.map((w) => ({ w, age: warrantyAge(w) })), [warranties]);
@@ -123,7 +146,13 @@ export default function WarrantiesPage() {
       ) : error ? (
         <div className="py-16 text-center text-destructive">{t("Could not load warranties")}: {(error as Error).message}</div>
       ) : view === "board" ? (
-        <StageBoard columns={columns} renderCard={card} getKey={(x) => x.w.id} collapse={{ Completato: 6 }} />
+        <StageBoard
+          columns={columns}
+          renderCard={card}
+          getKey={(x) => x.w.id}
+          collapse={{ Completato: 6 }}
+          onMove={(x, status) => moveMutation.mutate({ warranty: x.w, status })}
+        />
       ) : (
         <div className="bg-card border border-border rounded-lg overflow-x-auto">
           <WarrantyTable

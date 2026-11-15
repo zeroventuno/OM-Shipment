@@ -12,7 +12,7 @@ import { PageHeader, SearchBox } from "../common/PageHeader";
 import { StageBoard, AgeChip, Tag, ViewToggle, StaleBanner, useViewMode } from "../common/StageBoard";
 import TicketTable from "./TicketTable";
 import TicketModal from "./TicketModal";
-import { ticketsQuery, TICKETS_QUERY_KEY, createTicket, deleteTicket, ticketAge } from "./api";
+import { ticketsQuery, TICKETS_QUERY_KEY, createTicket, deleteTicket, updateTicket, ticketAge } from "./api";
 
 export default function AssistancePage() {
   const { t } = useTranslation();
@@ -20,6 +20,8 @@ export default function AssistancePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
+  // Ticket arrastado para "Enviado" ou "Concluído": abre o formulário já na fase nova.
+  const [moving, setMoving] = useState<{ original: Ticket; draft: Ticket } | null>(null);
   const [search, setSearch] = useState("");
   const [onlyStale, setOnlyStale] = useState(false);
   const [view, setView] = useViewMode("om-view-assistance");
@@ -48,6 +50,33 @@ export default function AssistancePage() {
     },
     onError,
   });
+
+  const moveMutation = useMutation({
+    mutationFn: ({ ticket, data }: { ticket: Ticket; data: Partial<InsertTicket> }) => updateTicket(ticket, data),
+    onMutate: async ({ ticket, data }) => {
+      await queryClient.cancelQueries({ queryKey: TICKETS_QUERY_KEY });
+      const previous = queryClient.getQueryData<Ticket[]>(TICKETS_QUERY_KEY);
+      queryClient.setQueryData<Ticket[]>(TICKETS_QUERY_KEY, (list = []) =>
+        list.map((x) => (x.id === ticket.id && data.phase ? { ...x, phase: data.phase } : x))
+      );
+      return { previous };
+    },
+    onSuccess: (saved) => {
+      toast({ title: t("Status changed"), description: `${saved.clientName} → ${t(PHASE_LABELS[saved.phase] ?? saved.phase)}` });
+      setMoving(null);
+    },
+    onError: (error: Error, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(TICKETS_QUERY_KEY, context.previous);
+      onError(error);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: TICKETS_QUERY_KEY }),
+  });
+
+  const handleMove = (ticket: Ticket, phase: string) => {
+    const to = phase as InsertTicket["phase"];
+    if (to === "Spedito" || to === "Completato") setMoving({ original: ticket, draft: { ...ticket, phase: to } });
+    else moveMutation.mutate({ ticket, data: { phase: to } });
+  };
 
   const withAge = useMemo(() => tickets.map((ticket) => ({ ticket, age: ticketAge(ticket) })), [tickets]);
   const stale = withAge.filter((x) => x.age.stale);
@@ -122,7 +151,13 @@ export default function AssistancePage() {
       ) : error ? (
         <div className="py-16 text-center text-destructive">{t("Could not load tickets")}: {(error as Error).message}</div>
       ) : view === "board" ? (
-        <StageBoard columns={columns} renderCard={card} getKey={(x) => x.ticket.id} collapse={{ Completato: 6 }} />
+        <StageBoard
+          columns={columns}
+          renderCard={card}
+          getKey={(x) => x.ticket.id}
+          collapse={{ Completato: 6 }}
+          onMove={(x, phase) => handleMove(x.ticket, phase)}
+        />
       ) : (
         <div className="bg-card border border-border rounded-lg overflow-hidden">
           <TicketTable
@@ -134,6 +169,14 @@ export default function AssistancePage() {
           />
         </div>
       )}
+
+      <TicketModal
+        open={!!moving}
+        onClose={() => setMoving(null)}
+        ticket={moving?.draft ?? null}
+        onSubmit={(data) => moving && moveMutation.mutate({ ticket: moving.original, data })}
+        isLoading={moveMutation.isPending}
+      />
 
       <TicketModal
         open={modalOpen}
