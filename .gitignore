@@ -5,3 +5,6 @@ dist
 .env
 .env.*
 !.env.example
+
+# Relatórios de importação de clientes (dados pessoais)
+import-reports/

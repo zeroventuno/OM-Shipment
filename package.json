@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "migrate:assist": "node --env-file=.env scripts/migrate-assist-data.mjs",
     "partner-key": "node --env-file=.env scripts/create-partner-key.mjs",
-    "request-link": "node --env-file=.env scripts/request-link.mjs"
+    "request-link": "node --env-file=.env scripts/request-link.mjs",
+    "import-customers": "node --env-file=.env scripts/import-customers.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.2",

@@ -141,3 +141,18 @@ preenchido; salvar o envio marca o pedido como enviado e a equipe vê o rastreio
 - Migration: `supabase/migrations/20261116020000_customers_and_requests.sql`
   (também cria o cadastro de clientes, começando com os nomes dos envios)
 - Links: `npm run request-link -- create "<nome>"` · `list` · `disable <id>`
+
+### Importar clientes dos portais
+
+```bash
+npm run import-customers -- export.xlsx --portal MBE           # simulação
+npm run import-customers -- export.xlsx --portal MBE --apply   # grava
+```
+
+Lê `.xlsx` ou `.csv`. Junta as linhas repetidas e as grafias diferentes do
+mesmo cliente, normaliza maiúsculas, telefones, CEP e o país (o nome em
+italiano vira o nome em português do banco). Telefones e e-mails que aparecem
+em muitos clientes diferentes são os da conta no portal e são descartados.
+Cliente que já existe: só os campos vazios são preenchidos, e cada endereço
+diferente entra como endereço de entrega a mais. Rodar de novo com o mesmo
+arquivo não duplica nada. O relatório fica em `import-reports/` (fora do git).
