@@ -80,6 +80,8 @@ export const FIELD_LABELS: Record<string, string> = {
     startDate: "Start date",
     // Gravado pelo banco quando um envio ligado é salvo
     shipment: "Shipment",
+    // Nota gravada por um sistema parceiro (API)
+    partnerNote: "Partner note",
 };
 
 /*
