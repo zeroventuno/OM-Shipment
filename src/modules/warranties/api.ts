@@ -5,7 +5,7 @@ import { stageAge } from "../progress";
 
 const TABLE = "warranties";
 export const WARRANTY_IMAGES_BUCKET = "warranty-images";
-const DATE_COLUMNS = ["startDate", "createdAt"] as const;
+const DATE_COLUMNS = ["startDate", "createdAt", "updatedAt", "shippingDate"] as const;
 const OPTIONAL = [
     "observation", "paintDetails", "componentsDescription", "solution", "producer",
     "newSerialNumber", "orderNumber", "value", "invoice",

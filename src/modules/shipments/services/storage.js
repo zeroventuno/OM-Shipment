@@ -33,7 +33,12 @@ const mapToDb = (s) => ({
     savings: s.savings,
     photo_urls: s.photoUrls || [],
     customer_cost_pickup: s.customerCostPickup || false,
-    pod_files: s.podFiles || []
+    pod_files: s.podFiles || [],
+    // Vínculo com assistência/garantia (o banco copia os dados do envio para lá)
+    ticket_id: s.ticketId || null,
+    warranty_id: s.warrantyId || null,
+    service_level: s.serviceLevel || 'standard',
+    agent: s.agent?.trim() || null
 });
 
 const mapFromDb = (s) => ({
@@ -54,7 +59,11 @@ const mapFromDb = (s) => ({
     savings: s.savings,
     photoUrls: s.photo_urls || [],
     customerCostPickup: s.customer_cost_pickup || false,
-    podFiles: s.pod_files || []
+    podFiles: s.pod_files || [],
+    ticketId: s.ticket_id || null,
+    warrantyId: s.warranty_id || null,
+    serviceLevel: s.service_level || 'standard',
+    agent: s.agent || ''
 });
 
 // LocalStorage só é usado quando o Supabase NÃO está configurado. Quando ele
@@ -74,6 +83,27 @@ const localWrite = (shipments) => {
 };
 
 export const storageService = {
+    /** Agentes já usados em envios e garantias, sem repetir maiúsculas/minúsculas. */
+    getAgents: async () => {
+        if (!supabase) return [];
+        const [shipments, warranties] = await Promise.all([
+            supabase.from('shipments').select('agent').not('agent', 'is', null),
+            supabase.from('warranties').select('agent'),
+        ]);
+        if (shipments.error) throw shipments.error;
+        if (warranties.error) throw warranties.error;
+        const byKey = new Map();
+        for (const { agent } of [...shipments.data, ...warranties.data]) {
+            const name = (agent || '').trim();
+            if (!name) continue;
+            const key = name.toLowerCase();
+            // Prefere a grafia "Michele" a "MICHELE" ou "michele".
+            const pretty = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+            if (!byKey.has(key)) byKey.set(key, pretty);
+        }
+        return [...byKey.values()].sort((a, b) => a.localeCompare(b));
+    },
+
     getShipments: async () => {
         if (!supabase) return localRead();
 

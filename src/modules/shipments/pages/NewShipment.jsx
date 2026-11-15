@@ -11,8 +11,12 @@ import { useTranslation } from 'react-i18next';
 import { COUNTRIES, countryLabel } from '../data/countries';
 import { analyzeQuotes, calculateProfit } from '../utils/quotes';
 import { resolveStatus } from '../utils/shipmentStatus';
+import { listTickets } from '@/modules/assistance/api';
+import { listWarranties } from '@/modules/warranties/api';
 
-const PORTALS = ['MBE', 'My Parcel', 'My DHL', 'BRT'];
+// Pallet/caminhão e tarifas spot são cotados por e-mail: entram como "portal"
+// para poderem ser comparados com os outros.
+const PORTALS = ['MBE', 'My Parcel', 'My DHL', 'BRT', 'Pallet / Truck', 'Spot / Last minute'];
 const ALL_CARRIERS = ['TNT', 'Fedex', 'DHL', 'BRT', 'SDA', 'UPS'];
 const ORDER_TYPES = ['Bicycle', 'Frame Kit', 'Components', 'Warranty', 'Clothing/Accessories', 'Gift', 'Rental', 'Other'];
 
@@ -35,8 +39,17 @@ export default function NewShipment() {
         podFiles: [],
         // Carregado junto com o envio: sem isso, salvar uma edição gravaria
         // status undefined, que vira NULL no banco e apagaria um 'Delivered'.
-        status: undefined
+        status: undefined,
+        // Envio de venda (só número da ordem) ou ligado a uma assistência/garantia
+        linkType: 'order',
+        ticketId: null,
+        warrantyId: null,
+        serviceLevel: 'standard',
+        agent: ''
     });
+
+    const [processes, setProcesses] = useState({ tickets: [], warranties: [] });
+    const [agents, setAgents] = useState([]);
 
     const [uniqueCustomers, setUniqueCustomers] = useState([]);
 
@@ -81,7 +94,12 @@ export default function NewShipment() {
                             photoUrls: shipment.photoUrls || [],
                             customerCostPickup: shipment.customerCostPickup || false,
                             podFiles: shipment.podFiles || [],
-                            status: shipment.status
+                            status: shipment.status,
+                            linkType: shipment.ticketId ? 'ticket' : shipment.warrantyId ? 'warranty' : 'order',
+                            ticketId: shipment.ticketId,
+                            warrantyId: shipment.warrantyId,
+                            serviceLevel: shipment.serviceLevel || 'standard',
+                            agent: shipment.agent || ''
                         });
                         setQuotes(shipment.allQuotes || []);
                         if (shipment.selectedQuote) {
@@ -92,6 +110,18 @@ export default function NewShipment() {
 
                 // Load unique customers for autocomplete
                 setUniqueCustomers(await storageService.getCustomerNames());
+
+                // Assistências, garantias e agentes para o vínculo. Opcional: se
+                // falhar, o formulário continua funcionando como antes.
+                try {
+                    const [tickets, warranties, agentList] = await Promise.all([
+                        listTickets(), listWarranties(), storageService.getAgents()
+                    ]);
+                    setProcesses({ tickets, warranties });
+                    setAgents(agentList);
+                } catch (err) {
+                    console.error('Failed to load assistance/warranties:', err);
+                }
             } catch (err) {
                 console.error('Failed to load shipment data:', err);
                 setLoadError(err.message || 'Unexpected error');
@@ -145,7 +175,51 @@ export default function NewShipment() {
     const getAllowedCarriers = (portal) => {
         if (portal === 'My DHL') return ['DHL'];
         if (portal === 'BRT') return ['BRT'];
+        if (portal === 'Pallet / Truck' || portal === 'Spot / Last minute') return [...ALL_CARRIERS, 'Other'];
         return ALL_CARRIERS;
+    };
+
+    // Opções do vínculo: abertas primeiro, depois as concluídas.
+    const linkOptions = useMemo(() => {
+        const open = (done) => (done ? 1 : 0);
+        const tickets = [...processes.tickets]
+            .sort((a, b) => open(a.phase === 'Completato') - open(b.phase === 'Completato'))
+            .map((tk) => ({
+                id: tk.id,
+                code: tk.protocolNumber || `#${tk.id.slice(0, 8)}`,
+                label: `${tk.protocolNumber ? tk.protocolNumber + ' · ' : ''}${tk.clientName} · ${tk.component}`,
+                customer: tk.clientName,
+            }));
+        const warranties = [...processes.warranties]
+            .sort((a, b) => open(a.status === 'Completato') - open(b.status === 'Completato'))
+            .map((w) => ({
+                id: w.id,
+                code: w.protocolNumber || w.id.slice(0, 8),
+                label: `${w.protocolNumber} · ${w.customerName} · ${w.bikeModel}`,
+                customer: w.customerName,
+            }));
+        return { ticket: tickets, warranty: warranties };
+    }, [processes]);
+
+    const setLinkType = (linkType) => {
+        setFormData({ ...formData, linkType, ticketId: null, warrantyId: null });
+    };
+
+    // Escolher a assistência/garantia preenche ordem, cliente e tipo.
+    const pickProcess = (processId) => {
+        const option = linkOptions[formData.linkType]?.find((o) => o.id === processId);
+        if (!option) {
+            setFormData({ ...formData, ticketId: null, warrantyId: null });
+            return;
+        }
+        setFormData({
+            ...formData,
+            ticketId: formData.linkType === 'ticket' ? option.id : null,
+            warrantyId: formData.linkType === 'warranty' ? option.id : null,
+            orderId: option.code,
+            customerName: formData.customerName || option.customer,
+            orderType: formData.orderType || (formData.linkType === 'warranty' ? 'Warranty' : 'Components'),
+        });
     };
 
     const analysis = useMemo(
@@ -159,6 +233,11 @@ export default function NewShipment() {
         console.log('handleSubmit called', { isEditing, hasAnalysis: !!analysis });
 
         // Validate required fields
+        if (formData.linkType !== 'order' && !formData.ticketId && !formData.warrantyId) {
+            alert(t('Select the assistance or warranty this shipment carries'));
+            return;
+        }
+
         if (!formData.orderId || formData.orderId.trim() === '') {
             alert(t('Please enter an Order Number'));
             return;
@@ -322,9 +401,47 @@ export default function NewShipment() {
                             )}
                         </CardHeader>
                         <CardContent className="space-y-4">
+                            <div className="space-y-3 pb-4 border-b border-border">
+                                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t('This shipment is for')}</span>
+                                <div role="radiogroup" aria-label={t('This shipment is for')} className="flex flex-wrap gap-2">
+                                    {[['order', t('Sales order')], ['ticket', t('Assistance ticket')], ['warranty', t('Warranty')]].map(([value, label]) => (
+                                        <button
+                                            key={value}
+                                            type="button"
+                                            role="radio"
+                                            aria-checked={formData.linkType === value}
+                                            onClick={() => setLinkType(value)}
+                                            className={`h-10 px-4 rounded-full border text-[11px] font-semibold uppercase tracking-[0.1em] ${formData.linkType === value ? 'bg-primary text-primary-foreground border-primary' : 'border-border bg-card hover:border-foreground'}`}
+                                        >
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
+                                {formData.linkType !== 'order' && (
+                                    <div>
+                                        <label htmlFor="link-process" className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-2">
+                                            {formData.linkType === 'ticket' ? t('Assistance ticket') : t('Warranty process')}
+                                        </label>
+                                        <select
+                                            id="link-process"
+                                            className="flex h-11 w-full rounded-md border border-input bg-card px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
+                                            value={(formData.linkType === 'ticket' ? formData.ticketId : formData.warrantyId) || ''}
+                                            onChange={(e) => pickProcess(e.target.value)}
+                                        >
+                                            <option value="">{t('Select...')}</option>
+                                            {(linkOptions[formData.linkType] || []).map((o) => (
+                                                <option key={o.id} value={o.id}>{o.label}</option>
+                                            ))}
+                                        </select>
+                                        <p className="mt-2 text-xs text-muted-foreground">
+                                            {t('When saved, the date, carrier, tracking and cost are recorded in the linked process.')}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Input
-                                    label={t('Order Number')}
+                                    label={formData.linkType === 'order' ? t('Order Number') : t('Reference')}
                                     placeholder="Ex: ORD-2024-001"
                                     value={formData.orderId}
                                     onChange={(e) => setFormData({ ...formData, orderId: e.target.value })}
@@ -413,6 +530,37 @@ export default function NewShipment() {
                                         />
                                         <span className="text-sm text-gray-700 truncate">{t('Customer Cost/Pickup')}</span>
                                     </label>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-2">{t('Service')}</span>
+                                    <div role="radiogroup" aria-label={t('Service')} className="flex gap-2">
+                                        {[['standard', t('Standard')], ['express', t('Express')]].map(([value, label]) => (
+                                            <button
+                                                key={value}
+                                                type="button"
+                                                role="radio"
+                                                aria-checked={formData.serviceLevel === value}
+                                                onClick={() => setFormData({ ...formData, serviceLevel: value })}
+                                                className={`flex-1 h-11 rounded-full border text-[11px] font-semibold uppercase tracking-[0.1em] ${formData.serviceLevel === value ? 'bg-primary text-primary-foreground border-primary' : 'border-border bg-card hover:border-foreground'}`}
+                                            >
+                                                {label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <Input
+                                        label={t('Sales agent')}
+                                        placeholder={t('Agent name')}
+                                        value={formData.agent}
+                                        onChange={(e) => setFormData({ ...formData, agent: e.target.value })}
+                                        list="agents"
+                                    />
+                                    <datalist id="agents">
+                                        {agents.map((a) => <option key={a} value={a} />)}
+                                    </datalist>
                                 </div>
                             </div>
                             <div className="space-y-2">

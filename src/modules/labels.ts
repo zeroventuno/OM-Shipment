@@ -78,6 +78,8 @@ export const FIELD_LABELS: Record<string, string> = {
     value: "Value",
     invoice: "Invoice",
     startDate: "Start date",
+    // Gravado pelo banco quando um envio ligado é salvo
+    shipment: "Shipment",
 };
 
 /*

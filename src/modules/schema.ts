@@ -36,8 +36,13 @@ export interface Ticket {
   trackingNumber: string | null;
   shippingCompany: string | null;
   completionDate: Date | null;
+  /** Custo do último envio ligado (preenchido pelo banco a partir do envio). */
+  shippingCost: number | null;
+  /** Último envio ligado a esta assistência. */
+  shipmentId: string | null;
   history: HistoryEntry[] | null;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const required = (msg = "Required field") => z.string().trim().min(1, msg);
@@ -103,8 +108,15 @@ export interface Warranty {
   value: string | null;
   invoice: string | null;
   images: string[] | null;
+  /** Dados do último envio ligado (preenchidos pelo banco a partir do envio). */
+  shippingDate: Date | null;
+  shippingCompany: string | null;
+  trackingNumber: string | null;
+  shippingCost: number | null;
+  shipmentId: string | null;
   history: HistoryEntry[] | null;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const optionalText = z.string().nullable().optional();

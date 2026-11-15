@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
@@ -173,6 +173,25 @@ export default function WarrantyDetailPage() {
                 ...(warranty.newSerialNumber ? [{ label: t("New serial number"), value: warranty.newSerialNumber }] : []),
               ]}
             />
+          </DetailCard>
+          <DetailCard title={t("Shipping information")}>
+            {warranty.shipmentId ? (
+              <>
+                <FactList
+                  facts={[
+                    { label: t("Shipping date"), value: dateFmt(warranty.shippingDate) },
+                    { label: t("Courier"), value: warranty.shippingCompany },
+                    { label: t("Tracking"), value: warranty.trackingNumber },
+                    { label: t("Shipping cost"), value: warranty.shippingCost != null ? `€ ${Number(warranty.shippingCost).toFixed(2)}` : null },
+                  ]}
+                />
+                <Link to={`/shipments/${warranty.shipmentId}`} className="self-start text-[11px] font-semibold uppercase tracking-[0.12em] underline-offset-4 hover:underline">
+                  {t("Open shipment")}
+                </Link>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t("Not shipped yet. Create the shipment in Shipments and link it to this warranty.")}</p>
+            )}
           </DetailCard>
           <DetailCard title={t("Finance / administration")}>
             <FactList

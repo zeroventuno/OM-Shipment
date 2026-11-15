@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
@@ -151,9 +151,15 @@ export default function TicketDetailPage() {
                 { label: t("Courier"), value: ticket.shippingCompany },
                 { label: t("Tracking"), value: ticket.trackingNumber },
                 { label: t("Shipping date"), value: dateFmt(ticket.shippingDate) },
+                { label: t("Shipping cost"), value: ticket.shippingCost != null ? `€ ${Number(ticket.shippingCost).toFixed(2)}` : null },
                 { label: t("Completion date"), value: dateFmt(ticket.completionDate) },
               ]}
             />
+            {ticket.shipmentId && (
+              <Link to={`/shipments/${ticket.shipmentId}`} className="self-start text-[11px] font-semibold uppercase tracking-[0.12em] underline-offset-4 hover:underline">
+                {t("Open shipment")}
+              </Link>
+            )}
           </DetailCard>
           <button
             type="button"
