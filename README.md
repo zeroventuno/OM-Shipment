@@ -117,3 +117,15 @@ cadastro público fica desligado — usuários são criados em
 O comprovante assinado é anexado à mão (baixado do portal da transportadora):
 até 3 arquivos por envio, PDF ou imagem, 10 MB cada. Nos Relatórios, o botão
 **Comprovante de entrega** gera um PDF único para arquivamento físico.
+
+## API de parceiros e MCP
+
+Outros sistemas da Officine Mattio (ex.: o de ordens de venda) podem ler
+garantias, assistências e envios, e gravar notas e dados administrativos, por
+funções do Supabase protegidas por chave. Tudo está descrito em
+[docs/integracao-parceiros.md](docs/integracao-parceiros.md), escrito para ser
+entregue ao parceiro (ou ao assistente de IA dele).
+
+- Migration: `supabase/migrations/20261116010000_partner_api.sql`
+- Chaves: `npm run partner-key -- create "<nome>" read,write` · `list` · `revoke <id>`
+- Servidor MCP (as mesmas funções como ferramentas de IA): `mcp/server.mjs`
