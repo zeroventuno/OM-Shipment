@@ -62,7 +62,18 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
 export const formInfo = (token: string) => rpc<{ name: string }>("request_form_info", { token });
 export const formCustomers = (token: string) => rpc<CustomerOption[]>("request_form_customers", { token });
 export const formCreateCustomer = (token: string, customer: CustomerInput) =>
-  rpc<{ id: string; name: string }>("request_form_create_customer", { token, customer });
+  rpc<{ id: string; name: string; existed: boolean }>("request_form_create_customer", { token, customer });
+
+/** Caixa padrão da Officine Mattio (medidas em cm, peso médio em kg). */
+export interface BoxPreset {
+  id: string;
+  name: string;
+  width: number;
+  height: number;
+  depth: number;
+  avg_weight: number | null;
+}
+export const formBoxPresets = (token: string) => rpc<BoxPreset[]>("request_form_box_presets", { token });
 export const formSubmit = (
   token: string,
   request: { customer_id: string; boxes: Box[]; service_level: string; order_ref?: string; notes?: string; requested_by: string },

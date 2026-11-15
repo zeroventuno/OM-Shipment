@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { useDateLocale } from "@/i18n/dateLocale";
 import { COUNTRIES, countryLabel } from "@/modules/shipments/data/countries";
 import {
-  formInfo, formCustomers, formCreateCustomer, formSubmit, formList, boxSummary, totalWeight,
+  formInfo, formCustomers, formCreateCustomer, formSubmit, formList, formBoxPresets, boxSummary, totalWeight,
   type Box, type CustomerInput, type CustomerOption,
 } from "./api";
 
@@ -23,7 +23,7 @@ import {
 
 const NAME_KEY = "om-request-name";
 const emptyBox = (): BoxDraft => ({ width: "", height: "", depth: "", weight: "" });
-type BoxDraft = Record<keyof Box, string>;
+type BoxDraft = Record<keyof Box, string> & { presetId?: string };
 const emptyCustomer: CustomerInput = { name: "", address_line1: "", city: "", country: "" };
 
 function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
@@ -36,16 +36,84 @@ function Field({ label, children, hint }: { label: string; children: ReactNode; 
   );
 }
 
+
+type Country = { code: string; value: string; label: string };
+
+/** Campos do cadastro de cliente (usados no pedido e na aba "Cadastrar cliente"). */
+function CustomerFields({ value, onChange, countries }: {
+  value: CustomerInput;
+  onChange: (field: keyof CustomerInput, value: string) => void;
+  countries: Country[];
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col gap-4">
+        <Field label={`${t("Company / customer name")} *`}>
+          <Input value={value.name} onChange={(e) => onChange("name", e.target.value)} />
+        </Field>
+        <Field label={`${t("Address line 1")} *`}>
+          <Input value={value.address_line1} onChange={(e) => onChange("address_line1", e.target.value)} autoComplete="address-line1" />
+        </Field>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label={t("Address line 2")}>
+            <Input value={value.address_line2 ?? ""} onChange={(e) => onChange("address_line2", e.target.value)} autoComplete="address-line2" />
+          </Field>
+          <Field label={t("Address line 3")}>
+            <Input value={value.address_line3 ?? ""} onChange={(e) => onChange("address_line3", e.target.value)} autoComplete="address-line3" />
+          </Field>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-4">
+          <Field label={t("Postal code")}>
+            <Input value={value.postal_code ?? ""} onChange={(e) => onChange("postal_code", e.target.value)} autoComplete="postal-code" />
+          </Field>
+          <Field label={`${t("City")} *`}>
+            <Input value={value.city} onChange={(e) => onChange("city", e.target.value)} autoComplete="address-level2" />
+          </Field>
+          <Field label={t("Region")}>
+            <Input value={value.region ?? ""} onChange={(e) => onChange("region", e.target.value)} autoComplete="address-level1" />
+          </Field>
+        </div>
+        <Field label={`${t("Country")} *`}>
+          <select
+            value={value.country}
+            onChange={(e) => onChange("country", e.target.value)}
+            className="flex h-11 w-full rounded-md border border-input bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="">{t("Select...")}</option>
+            {countries.map((c: { code: string; value: string; label: string }) => (
+              <option key={c.code} value={c.value}>{c.label}</option>
+            ))}
+          </select>
+        </Field>
+        <div className="grid sm:grid-cols-3 gap-4">
+          <Field label={t("Contact name")}>
+            <Input value={value.contact_name ?? ""} onChange={(e) => onChange("contact_name", e.target.value)} />
+          </Field>
+          <Field label={t("Phone")}>
+            <Input type="tel" value={value.phone ?? ""} onChange={(e) => onChange("phone", e.target.value)} autoComplete="tel" />
+          </Field>
+          <Field label={t("Email")}>
+            <Input type="email" value={value.email ?? ""} onChange={(e) => onChange("email", e.target.value)} autoComplete="email" />
+          </Field>
+        </div>
+        <Field label={t("Tax ID / VAT number")} hint={t("Fiscal code, partita IVA, VAT or EORI — used for customs and invoicing.")}>
+          <Input value={value.tax_id ?? ""} onChange={(e) => onChange("tax_id", e.target.value)} />
+        </Field>
+    </div>
+  );
+}
+
 export default function RequestFormPage() {
   const { token = "" } = useParams();
   const { t, i18n } = useTranslation();
   const locale = useDateLocale();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<"new" | "list">("new");
+  const [tab, setTab] = useState<"new" | "customer" | "list">("new");
 
   const info = useQuery({ queryKey: ["request-form", token, "info"], queryFn: () => formInfo(token), retry: false });
   const customers = useQuery({ queryKey: ["request-form", token, "customers"], queryFn: () => formCustomers(token), enabled: info.isSuccess });
   const requests = useQuery({ queryKey: ["request-form", token, "list"], queryFn: () => formList(token), enabled: info.isSuccess });
+  const presets = useQuery({ queryKey: ["request-form", token, "boxes"], queryFn: () => formBoxPresets(token), enabled: info.isSuccess });
 
   // --- formulário
   const [requestedBy, setRequestedBy] = useState(() => {
@@ -60,6 +128,9 @@ export default function RequestFormPage() {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
+  // Aba "Cadastrar cliente"
+  const [standalone, setStandalone] = useState<CustomerInput>(emptyCustomer);
+  const [customerDone, setCustomerDone] = useState<{ name: string; existed: boolean } | null>(null);
 
   useEffect(() => {
     try { localStorage.setItem(NAME_KEY, requestedBy); } catch { /* sem localStorage */ }
@@ -103,6 +174,25 @@ export default function RequestFormPage() {
     },
     onError: (e: Error) => setError(e.message),
   });
+
+  const registerCustomer = useMutation({
+    mutationFn: () => formCreateCustomer(token, standalone),
+    onSuccess: (r) => {
+      setCustomerDone({ name: r.name, existed: r.existed });
+      setStandalone(emptyCustomer);
+      queryClient.invalidateQueries({ queryKey: ["request-form", token, "customers"] });
+    },
+    onError: (e: Error) => setError(e.message),
+  });
+
+  const onRegisterCustomer = (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!standalone.name.trim() || !standalone.address_line1.trim() || !standalone.city.trim() || !standalone.country) {
+      return setError(t("Fill in the customer's name, address, city and country"));
+    }
+    registerCustomer.mutate();
+  };
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -167,15 +257,15 @@ export default function RequestFormPage() {
           <h1 className="page-title">{t("Shipment request")}</h1>
         </div>
 
-        <div role="tablist" className="flex p-1 rounded-full bg-secondary self-start">
-          {([["new", t("New request")], ["list", `${t("Requests")} · ${requests.data?.length ?? 0}`]] as const).map(([value, label]) => (
+        <div role="tablist" className="flex flex-wrap p-1 rounded-full bg-secondary self-start">
+          {([["new", t("New request")], ["customer", t("Register customer")], ["list", `${t("Requests")} · ${requests.data?.length ?? 0}`]] as const).map(([value, label]) => (
             <button
               key={value}
               type="button"
               role="tab"
               aria-selected={tab === value}
-              onClick={() => { setTab(value); setSent(false); }}
-              className={cn("h-10 px-5 rounded-full text-[11px] font-semibold uppercase tracking-[0.12em]",
+              onClick={() => { setTab(value); setSent(false); setCustomerDone(null); setError(""); }}
+              className={cn("h-10 px-4 sm:px-5 rounded-full text-[11px] font-semibold uppercase tracking-[0.12em]",
                 tab === value ? "bg-card shadow-sm" : "text-foreground/70")}
             >
               {label}
@@ -221,57 +311,7 @@ export default function RequestFormPage() {
                       {t("Cancel")}
                     </button>
                   </div>
-                  <Field label={`${t("Company / customer name")} *`}>
-                    <Input value={newCustomer.name} onChange={(e) => setCustomerField("name", e.target.value)} />
-                  </Field>
-                  <Field label={`${t("Address line 1")} *`}>
-                    <Input value={newCustomer.address_line1} onChange={(e) => setCustomerField("address_line1", e.target.value)} autoComplete="address-line1" />
-                  </Field>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <Field label={t("Address line 2")}>
-                      <Input value={newCustomer.address_line2 ?? ""} onChange={(e) => setCustomerField("address_line2", e.target.value)} autoComplete="address-line2" />
-                    </Field>
-                    <Field label={t("Address line 3")}>
-                      <Input value={newCustomer.address_line3 ?? ""} onChange={(e) => setCustomerField("address_line3", e.target.value)} autoComplete="address-line3" />
-                    </Field>
-                  </div>
-                  <div className="grid sm:grid-cols-3 gap-4">
-                    <Field label={t("Postal code")}>
-                      <Input value={newCustomer.postal_code ?? ""} onChange={(e) => setCustomerField("postal_code", e.target.value)} autoComplete="postal-code" />
-                    </Field>
-                    <Field label={`${t("City")} *`}>
-                      <Input value={newCustomer.city} onChange={(e) => setCustomerField("city", e.target.value)} autoComplete="address-level2" />
-                    </Field>
-                    <Field label={t("Region")}>
-                      <Input value={newCustomer.region ?? ""} onChange={(e) => setCustomerField("region", e.target.value)} autoComplete="address-level1" />
-                    </Field>
-                  </div>
-                  <Field label={`${t("Country")} *`}>
-                    <select
-                      value={newCustomer.country}
-                      onChange={(e) => setCustomerField("country", e.target.value)}
-                      className="flex h-11 w-full rounded-md border border-input bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      <option value="">{t("Select...")}</option>
-                      {countries.map((c: { code: string; value: string; label: string }) => (
-                        <option key={c.code} value={c.value}>{c.label}</option>
-                      ))}
-                    </select>
-                  </Field>
-                  <div className="grid sm:grid-cols-3 gap-4">
-                    <Field label={t("Contact name")}>
-                      <Input value={newCustomer.contact_name ?? ""} onChange={(e) => setCustomerField("contact_name", e.target.value)} />
-                    </Field>
-                    <Field label={t("Phone")}>
-                      <Input type="tel" value={newCustomer.phone ?? ""} onChange={(e) => setCustomerField("phone", e.target.value)} autoComplete="tel" />
-                    </Field>
-                    <Field label={t("Email")}>
-                      <Input type="email" value={newCustomer.email ?? ""} onChange={(e) => setCustomerField("email", e.target.value)} autoComplete="email" />
-                    </Field>
-                  </div>
-                  <Field label={t("Tax ID / VAT number")} hint={t("Fiscal code, partita IVA, VAT or EORI — used for customs and invoicing.")}>
-                    <Input value={newCustomer.tax_id ?? ""} onChange={(e) => setCustomerField("tax_id", e.target.value)} />
-                  </Field>
+                  <CustomerFields value={newCustomer} onChange={setCustomerField} countries={countries} />
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
@@ -318,13 +358,37 @@ export default function RequestFormPage() {
                 <span className="text-sm text-muted-foreground">{t("Size in cm, weight in kg")}</span>
               </div>
               {boxes.map((b, i) => (
-                <div key={i} className="grid grid-cols-2 sm:grid-cols-[repeat(4,minmax(0,1fr))_auto] gap-3 items-end pb-4 border-b border-muted last:border-0 last:pb-0">
+                <div key={i} className="flex flex-col gap-3 pb-4 border-b border-muted last:border-0 last:pb-0">
+                {(presets.data?.length ?? 0) > 0 && (
+                  <Field label={t("Standard box")}>
+                    <select
+                      value={b.presetId ?? ""}
+                      onChange={(e) => {
+                        const preset = presets.data?.find((p) => p.id === e.target.value);
+                        setBoxes((list) => list.map((x, j) => (j !== i ? x : preset ? {
+                          presetId: preset.id,
+                          width: String(preset.width), height: String(preset.height), depth: String(preset.depth),
+                          weight: preset.avg_weight != null ? String(preset.avg_weight) : x.weight,
+                        } : { ...x, presetId: undefined })));
+                      }}
+                      className="flex h-11 w-full rounded-md border border-input bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="">{t("Other size (type below)")}</option>
+                      {presets.data?.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} — {p.width}×{p.height}×{p.depth} cm{p.avg_weight != null ? ` · ~${p.avg_weight} kg` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                )}
+                <div className="grid grid-cols-2 sm:grid-cols-[repeat(4,minmax(0,1fr))_auto] gap-3 items-end">
                   {(["width", "height", "depth", "weight"] as const).map((field) => (
                     <Field key={field} label={`${t(field === "width" ? "Width" : field === "height" ? "Height" : field === "depth" ? "Depth" : "Weight")}${field === "weight" ? " (kg)" : " (cm)"}`}>
                       <Input
                         inputMode="decimal"
                         value={b[field]}
-                        onChange={(e) => setBoxes((list) => list.map((x, j) => (j === i ? { ...x, [field]: e.target.value } : x)))}
+                        onChange={(e) => setBoxes((list) => list.map((x, j) => (j === i ? { ...x, [field]: e.target.value, ...(field !== "weight" ? { presetId: undefined } : {}) } : x)))}
                       />
                     </Field>
                   ))}
@@ -338,6 +402,7 @@ export default function RequestFormPage() {
                       <Trash2 className="h-4 w-4" />
                     </button>
                   )}
+                </div>
                 </div>
               ))}
               <Button type="button" variant="outline" size="sm" className="self-start" onClick={() => setBoxes((l) => [...l, emptyBox()])} disabled={boxes.length >= 20}>
@@ -376,6 +441,37 @@ export default function RequestFormPage() {
             <Button type="submit" size="lg" disabled={submit.isPending} className="self-stretch sm:self-start">
               {submit.isPending ? <Loader2 className="animate-spin" /> : null}
               {t("Send request")}
+            </Button>
+          </form>
+        )}
+
+        {tab === "customer" && customerDone && (
+          <div role="status" className="flex flex-col items-start gap-4 p-6 bg-card border border-border rounded-lg">
+            <CheckCircle2 className="h-8 w-8" />
+            <p className="text-lg font-semibold">
+              {customerDone.existed
+                ? t("{{name}} was already registered.", { name: customerDone.name })
+                : t("{{name}} registered. Thank you!", { name: customerDone.name })}
+            </p>
+            {customerDone.existed && <p className="text-sm text-muted-foreground">{t("If the address was missing, it was added now.")}</p>}
+            <Button type="button" variant="outline" onClick={() => setCustomerDone(null)}>{t("Register another customer")}</Button>
+          </div>
+        )}
+
+        {tab === "customer" && !customerDone && (
+          <form onSubmit={onRegisterCustomer} className="flex flex-col gap-5" noValidate>
+            <section className="bg-card border border-border rounded-lg p-5 md:p-6 flex flex-col gap-4">
+              <h2 className="text-xs font-bold uppercase tracking-[0.12em]">{t("New customer")}</h2>
+              <CustomerFields
+                value={standalone}
+                onChange={(field, value) => setStandalone((c) => ({ ...c, [field]: value }))}
+                countries={countries}
+              />
+            </section>
+            {error && <p role="alert" className="text-sm font-semibold text-destructive">{error}</p>}
+            <Button type="submit" size="lg" disabled={registerCustomer.isPending} className="self-stretch sm:self-start">
+              {registerCustomer.isPending ? <Loader2 className="animate-spin" /> : null}
+              {t("Register customer")}
             </Button>
           </form>
         )}

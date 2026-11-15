@@ -140,6 +140,14 @@ export const appResources = {
 
         // Redesign: quadro, detalhe e menu
         // Pedidos de envio (formulário aberto)
+        "Register customer": "Cadastrar cliente",
+        "Fill in the customer's name, address, city and country": "Preencha nome, endereço, cidade e país do cliente",
+        "{{name}} was already registered.": "{{name}} já estava cadastrado.",
+        "{{name}} registered. Thank you!": "{{name}} cadastrado. Obrigado!",
+        "If the address was missing, it was added now.": "Se faltava o endereço, ele foi incluído agora.",
+        "Register another customer": "Cadastrar outro cliente",
+        "Standard box": "Caixa padrão",
+        "Other size (type below)": "Outra medida (digite abaixo)",
         "Select...": "Selecione...",
         "Shipment request": "Pedido de envio",
         "Shipment requests": "Pedidos de envio",
@@ -403,6 +411,14 @@ export const appResources = {
 
         // Redesign: quadro, detalhe e menu
         // Pedidos de envio (formulário aberto)
+        "Register customer": "Registra cliente",
+        "Fill in the customer's name, address, city and country": "Compila nome, indirizzo, città e paese del cliente",
+        "{{name}} was already registered.": "{{name}} era già registrato.",
+        "{{name}} registered. Thank you!": "{{name}} registrato. Grazie!",
+        "If the address was missing, it was added now.": "Se mancava l'indirizzo, è stato aggiunto ora.",
+        "Register another customer": "Registra un altro cliente",
+        "Standard box": "Scatola standard",
+        "Other size (type below)": "Altra misura (scrivi sotto)",
         "Select...": "Seleziona...",
         "Shipment request": "Richiesta di spedizione",
         "Shipment requests": "Richieste di spedizione",
