@@ -3,8 +3,9 @@
 @tailwind utilities;
 
 /*
- * Tema único do sistema. Todas as cores ficam aqui como variáveis HSL;
- * para trocar a cor da marca, mude --primary e --primary-variant.
+ * Tema único do sistema, baseado na identidade de officinemattio.com:
+ * preto e branco sobre off-white quente, vermelho italiano só para alerta.
+ * Todas as cores ficam aqui como variáveis HSL.
  */
 :root {
   --button-outline: rgba(0, 0, 0, .10);
@@ -13,39 +14,43 @@
   --elevate-1: rgba(0, 0, 0, .03);
   --elevate-2: rgba(0, 0, 0, .08);
 
-  --background: 0 0% 96%;
-  --foreground: 0 0% 9%;
+  /* Off-white (#F3F3F1), preto (#0A0A0A) e branco */
+  --background: 60 8% 95%;
+  --foreground: 0 0% 4%;
   --surface: 0 0% 100%;
-  --border: 0 0% 89%;
+  --border: 60 5% 85%;
 
   --card: 0 0% 100%;
-  --card-foreground: 0 0% 9%;
-  --card-border: 0 0% 91%;
+  --card-foreground: 0 0% 4%;
+  --card-border: 60 5% 85%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 9%;
-  --popover-border: 0 0% 88%;
+  --popover-foreground: 0 0% 4%;
+  --popover-border: 60 5% 85%;
 
-  /* Roxo da marca (#6200EE) e a variante escura (#3700B3) */
-  --primary: 265 100% 47%;
-  --primary-variant: 258 100% 35%;
+  /* Preto da marca e o grafite (#292D30) */
+  --primary: 0 0% 4%;
+  --primary-variant: 206 8% 17%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 260 10% 92%;
-  --secondary-foreground: 0 0% 9%;
-  --muted: 260 10% 94%;
-  --muted-foreground: 0 0% 40%;
-  --accent: 260 14% 92%;
-  --accent-foreground: 0 0% 9%;
+  --secondary: 60 6% 89%;
+  --secondary-foreground: 0 0% 4%;
+  --muted: 60 6% 93%;
+  --muted-foreground: 206 4% 37%;
+  --accent: 60 6% 91%;
+  --accent-foreground: 0 0% 4%;
 
-  /* Vermelho de erro (#B00020) */
-  --destructive: 351 100% 35%;
+  /* Vermelho da bandeira italiana (#CD212A): erros e atrasos */
+  --destructive: 357 72% 47%;
   --destructive-foreground: 0 0% 100%;
 
-  --input: 0 0% 80%;
-  --ring: 265 100% 47%;
+  /* Verde da bandeira (#008C45), só no filete tricolor */
+  --italy-green: 150 100% 27%;
 
-  --font-sans: Inter, Roboto, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --input: 60 4% 78%;
+  --ring: 0 0% 4%;
+
+  --font-sans: 'Inter Tight', Helvetica, Arial, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', Menlo, monospace;
   --radius: .5rem;
 
@@ -88,6 +93,23 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+@layer components {
+  /* Rótulo pequeno em caixa alta, a "voz" de navegação da marca */
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground;
+  }
+
+  /* Título de página: grande, negrito e apertado */
+  .page-title {
+    @apply text-3xl md:text-[44px] font-bold leading-[1.05] tracking-[-0.03em];
+  }
+
+  /* Filete com as cores da Itália */
+  .tricolor {
+    background: linear-gradient(90deg, hsl(var(--italy-green)) 0 33.33%, #fff 33.33% 66.66%, hsl(var(--destructive)) 66.66%);
+  }
 }
 
 @layer utilities {

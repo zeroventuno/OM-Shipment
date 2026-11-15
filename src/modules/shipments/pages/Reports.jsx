@@ -390,8 +390,8 @@ export default function Reports() {
         <div className="space-y-4">
             <div className="flex flex-wrap gap-3 justify-between items-center animate-in fade-in slide-in-from-top-4 duration-500">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">{t('Reports')}</h1>
-                    <p className="text-gray-500 mt-1">{t('Complete History')}</p>
+                    <h1 className="page-title">{t('Reports')}</h1>
+                    <p className="text-muted-foreground mt-2">{t('Complete History')}</p>
                 </div>
                 <Button variant="ghost" onClick={handleNormalizeCustomers} title={t("Normalize Customers")}>
                     <Wrench className="h-4 w-4 mr-2" />
@@ -456,7 +456,7 @@ export default function Reports() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Total Savings')}</CardTitle>
-                        <DollarSign className="h-6 w-6 text-green-500" />
+                        <DollarSign className="h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">€ {stats.totalSavings.toFixed(2)}</div>
@@ -465,28 +465,28 @@ export default function Reports() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Total Profit')}</CardTitle>
-                        <TrendingUp className="h-6 w-6 text-blue-500" />
+                        <TrendingUp className="h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className={`text-2xl font-bold ${stats.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <div className={`text-2xl font-bold ${stats.totalProfit >= 0 ? 'text-foreground' : 'text-destructive'}`}>
                             € {stats.totalProfit.toFixed(2)}
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="bg-purple-50 border-purple-100">
+                <Card className="bg-card">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-700">{t('Best Customer (Profit)')}</CardTitle>
-                        <User className="h-6 w-6 text-purple-600" />
+                        <User className="h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-lg font-bold truncate text-purple-900" title={stats.bestCustomer}>{stats.bestCustomer}</div>
+                        <div className="text-lg font-bold truncate text-foreground" title={stats.bestCustomer}>{stats.bestCustomer}</div>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Current Month Savings')}</CardTitle>
-                        <DollarSign className="h-6 w-6 text-green-500" />
+                        <DollarSign className="h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">€ {stats.monthSavings.toFixed(2)}</div>
@@ -495,21 +495,21 @@ export default function Reports() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Current Month Profit')}</CardTitle>
-                        <TrendingUp className="h-6 w-6 text-blue-500" />
+                        <TrendingUp className="h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className={`text-2xl font-bold ${stats.monthProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <div className={`text-2xl font-bold ${stats.monthProfit >= 0 ? 'text-foreground' : 'text-destructive'}`}>
                             € {stats.monthProfit.toFixed(2)}
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="bg-purple-50 border-purple-100">
+                <Card className="bg-card">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-700">{t('Worst Customer (Loss)')}</CardTitle>
-                        <TrendingDown className="h-6 w-6 text-red-500" />
+                        <TrendingDown className="h-6 w-6 text-destructive" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-lg font-bold truncate text-purple-900" title={stats.worstCustomer}>{stats.worstCustomer}</div>
+                        <div className="text-lg font-bold truncate text-foreground" title={stats.worstCustomer}>{stats.worstCustomer}</div>
                     </CardContent>
                 </Card>
             </div>
@@ -602,7 +602,7 @@ export default function Reports() {
                                                 {shipment.trackingCode ? (
                                                     <button
                                                         id={`track-${shipment.id}`}
-                                                        className="tracking-trigger text-blue-600 hover:text-blue-800 transition-colors p-1"
+                                                        className="tracking-trigger text-foreground hover:text-muted-foreground transition-colors p-1"
                                                         data-num={shipment.trackingCode}
                                                         title={shipment.trackingCode}
                                                     >
@@ -637,7 +637,7 @@ export default function Reports() {
                                                     <button
                                                         onClick={() => openPod(shipment.podFiles[0])}
                                                         title={t('Proof of delivery')}
-                                                        className="text-green-600 hover:text-green-800 transition-colors p-1"
+                                                        className="text-foreground hover:text-muted-foreground transition-colors p-1"
                                                     >
                                                         <FileCheck className="h-4 w-4" />
                                                     </button>
@@ -651,7 +651,7 @@ export default function Reports() {
                                                 <Link to={`/shipments/${shipment.id}`}>
                                                     <div
                                                         className={`p-1 rounded-full border transition-colors ${shipment.orderType
-                                                            ? 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-300'
+                                                            ? 'border-foreground bg-card text-foreground hover:bg-secondary'
                                                             : 'border-gray-200 bg-gray-50 text-gray-300 hover:bg-gray-100 hover:border-gray-300'
                                                             }`}
                                                         title={shipment.orderType ? t(shipment.orderType) : t('Uncategorized')}
@@ -666,10 +666,10 @@ export default function Reports() {
                                         <td className="hidden md:table-cell px-2 py-2">{shipment.selectedQuote ? `${shipment.selectedQuote.portal} / ${shipment.selectedQuote.carrier}` : t('Customer Cost/Pickup')}</td>
                                         <td className="hidden md:table-cell px-2 py-2">€ {shipment.selectedQuote ? shipment.selectedQuote.price : '0.00'}</td>
                                         <td className="hidden md:table-cell px-2 py-2">€ {shipment.customerPayment}</td>
-                                        <td className={`px-2 py-2 font-semibold ${shipment.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        <td className={`px-2 py-2 font-semibold ${shipment.profit >= 0 ? 'text-foreground' : 'text-destructive'}`}>
                                             € {(shipment.profit || 0).toFixed(2)}
                                         </td>
-                                        <td className="hidden md:table-cell px-2 py-2 text-green-600 font-semibold">€ {(shipment.savings || 0).toFixed(2)}</td>
+                                        <td className="hidden md:table-cell px-2 py-2 text-foreground font-semibold">€ {(shipment.savings || 0).toFixed(2)}</td>
                                         <td className="hidden md:table-cell px-2 py-2 text-nowrap">{new Date(shipment.createdAt).toLocaleDateString()}</td>
                                         <td className="px-2 py-2">
                                             <div className="flex gap-2">
@@ -682,7 +682,7 @@ export default function Reports() {
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => handleDelete(shipment.id)}
-                                                    className="text-red-500 hover:text-red-700 h-7 w-7"
+                                                    className="text-destructive hover:text-destructive/80 h-7 w-7"
                                                 >
                                                     <Trash2 className="h-3.5 w-3.5" />
                                                 </Button>

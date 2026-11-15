@@ -12,6 +12,8 @@ const NewShipment = lazy(() => import('@/modules/shipments/pages/NewShipment'))
 const Reports = lazy(() => import('@/modules/shipments/pages/Reports'))
 const AssistancePage = lazy(() => import('@/modules/assistance/AssistancePage'))
 const WarrantiesPage = lazy(() => import('@/modules/warranties/WarrantiesPage'))
+const TicketDetailPage = lazy(() => import('@/modules/assistance/TicketDetailPage'))
+const WarrantyDetailPage = lazy(() => import('@/modules/warranties/WarrantyDetailPage'))
 
 function PageFallback() {
     return (
@@ -45,7 +47,9 @@ export default function App() {
                 <Route path="shipments/:id" element={page(<NewShipment />)} />
 
                 <Route path="assistance" element={page(<AssistancePage />)} />
+                <Route path="assistance/:id" element={page(<TicketDetailPage />)} />
                 <Route path="warranties" element={page(<WarrantiesPage />)} />
+                <Route path="warranties/:id" element={page(<WarrantyDetailPage />)} />
 
                 {/* Endereços antigos do OM-Shipment, para favoritos continuarem funcionando */}
                 <Route path="dashboard" element={<Navigate to="/shipments" replace />} />

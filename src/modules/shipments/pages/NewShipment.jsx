@@ -288,10 +288,10 @@ export default function NewShipment() {
         <div className="space-y-6 max-w-5xl mx-auto">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">
+                    <h1 className="page-title">
                         {isEditing ? t('Edit Shipment') : t('New Shipment Quote')}
                     </h1>
-                    <p className="text-gray-500 mt-1">
+                    <p className="text-muted-foreground mt-2">
                         {isEditing ? t('Update Shipment Data') : t('Compare Prices')}
                     </p>
                 </div>
@@ -490,7 +490,7 @@ export default function NewShipment() {
 
                 {/* Right Column: Summary */}
                 <div className="space-y-6">
-                    <Card className="bg-primary text-white border-none shadow-xl">
+                    <Card className="bg-primary text-white border-none ">
                         <CardHeader>
                             <CardTitle className="text-white flex items-center">
                                 <TrendingDown className="mr-2 h-6 w-6" />
@@ -501,7 +501,7 @@ export default function NewShipment() {
                             {analysis ? (
                                 <div className="space-y-6">
                                     <div>
-                                        <label className="text-primary-100 text-xs font-medium mb-1 block">{t('Chosen Carrier')}</label>
+                                        <label className="text-white/70 text-xs font-medium mb-1 block">{t('Chosen Carrier')}</label>
                                         <select
                                             className="w-full bg-white/10 border border-white/20 text-white rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-white/50 focus:outline-none [&>option]:text-gray-900"
                                             value={analysis.selected.id}
@@ -516,20 +516,20 @@ export default function NewShipment() {
                                     </div>
 
                                     <div>
-                                        <p className="text-primary-100 text-sm">{t('Selected Option')}</p>
+                                        <p className="text-white/70 text-sm">{t('Selected Option')}</p>
                                         <div className="flex justify-between items-end">
                                             <span className="text-2xl font-bold">{analysis.selected.portal}</span>
                                             <span className="text-3xl font-bold">€ {parseFloat(analysis.selected.price).toFixed(2)}</span>
                                         </div>
-                                        <p className="text-sm text-primary-100 mt-1">{t('Via')} {analysis.selected.carrier}</p>
+                                        <p className="text-sm text-white/70 mt-1">{t('Via')} {analysis.selected.carrier}</p>
                                     </div>
 
                                     <div className="pt-4 border-t border-white/20">
-                                        <p className="text-primary-100 text-sm">{t('Estimated Savings')}</p>
-                                        <p className="text-4xl font-bold text-[#03DAC6] mt-1">
+                                        <p className="text-white/70 text-sm">{t('Estimated Savings')}</p>
+                                        <p className="text-4xl font-bold text-white mt-1">
                                             € {analysis.savings.toFixed(2)}
                                         </p>
-                                        <p className="text-xs text-primary-100 mt-2">
+                                        <p className="text-xs text-white/70 mt-2">
                                             {t('Compared to worst')} (€ {parseFloat(analysis.worst.price).toFixed(2)})
                                         </p>
                                     </div>
@@ -547,9 +547,9 @@ export default function NewShipment() {
                             ) : formData.customerCostPickup ? (
                                 <div className="space-y-6">
                                     <div className="text-center py-4">
-                                        <p className="text-primary-100 text-sm mb-2">{t('Customer Cost/Pickup Mode')}</p>
+                                        <p className="text-white/70 text-sm mb-2">{t('Customer Cost/Pickup Mode')}</p>
                                         <p className="text-white text-lg font-semibold">{t('No portal costs required')}</p>
-                                        <p className="text-primary-100 text-xs mt-2">{t('Only quantity will be tracked')}</p>
+                                        <p className="text-white/70 text-xs mt-2">{t('Only quantity will be tracked')}</p>
                                     </div>
 
                                     <Button
@@ -563,7 +563,7 @@ export default function NewShipment() {
                                     </Button>
                                 </div>
                             ) : (
-                                <div className="text-center py-8 text-primary-100">
+                                <div className="text-center py-8 text-white/70">
                                     {t('Add quotes to see analysis')}
                                 </div>
                             )}

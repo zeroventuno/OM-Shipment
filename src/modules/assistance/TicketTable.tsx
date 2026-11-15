@@ -43,7 +43,7 @@ export default function TicketTable({ tickets, onEdit, onDelete }: TicketTablePr
     
     if (status === "Approvato") {
       return (
-        <Badge className="bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300 border-green-200 dark:border-green-800 border">
+        <Badge className="bg-card text-foreground border-foreground">
           {t(APPROVAL_LABELS.Approvato)}
         </Badge>
       );
@@ -51,7 +51,7 @@ export default function TicketTable({ tickets, onEdit, onDelete }: TicketTablePr
     
     if (status === "Rifiutato") {
       return (
-        <Badge className="bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 border-red-200 dark:border-red-800 border">
+        <Badge className="bg-card text-destructive border-destructive">
           {t(APPROVAL_LABELS.Rifiutato)}
         </Badge>
       );

@@ -32,9 +32,9 @@ export default function WarrantyTable({ warranties, onEdit, onDelete }: Warranty
             case "In attesa":
                 return <Badge variant="outline">{label}</Badge>;
             case "In lavorazione":
-                return <Badge variant="secondary" className="bg-orange-100 text-orange-700 hover:bg-orange-100">{label}</Badge>;
+                return <Badge variant="secondary">{label}</Badge>;
             case "Completato":
-                return <Badge className="bg-green-100 text-green-700 hover:bg-green-100">{label}</Badge>;
+                return <Badge>{label}</Badge>;
             default:
                 return <Badge variant="outline">{label}</Badge>;
         }

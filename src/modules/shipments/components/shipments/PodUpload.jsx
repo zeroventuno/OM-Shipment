@@ -95,7 +95,7 @@ export function PodUpload({ files = [], onFilesChange }) {
                             key={path}
                             className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2"
                         >
-                            <Icon className={`h-5 w-5 shrink-0 ${isPdf ? 'text-red-500' : 'text-blue-500'}`} />
+                            <Icon className={`h-5 w-5 shrink-0 ${isPdf ? 'text-destructive' : 'text-muted-foreground'}`} />
                             <button
                                 type="button"
                                 onClick={() => openFile(path)}

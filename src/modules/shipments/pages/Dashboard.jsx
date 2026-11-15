@@ -13,7 +13,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import { countryLabel } from '../data/countries';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#4caf50'];
+// Tons de preto a cinza-claro, do mais usado ao menos usado (identidade da marca).
+const COLORS = ['#0A0A0A', '#3D4144', '#5C6063', '#7D8184', '#9EA1A3', '#BDBFC0', '#D6D7D7', '#292D30'];
 
 export default function Dashboard() {
     const { t, i18n } = useTranslation();
@@ -73,11 +74,11 @@ export default function Dashboard() {
         <div className="space-y-8 pb-8">
             <div className="flex flex-wrap gap-3 justify-between items-center">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('Dashboard')}</h1>
-                    <p className="text-gray-500 mt-1">{t('Dashboard Overview')}</p>
+                    <h1 className="page-title">{t('Dashboard')}</h1>
+                    <p className="text-muted-foreground mt-2">{t('Dashboard Overview')}</p>
                 </div>
                 <Link to="/shipments/new">
-                    <Button className="shadow-lg">
+                    <Button>
                         {t('New Shipment')} <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                 </Link>
@@ -94,11 +95,11 @@ export default function Dashboard() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Total Savings')}</CardTitle>
-                        <DollarSign className="h-6 w-6 text-emerald-500" />
+                        <DollarSign className="h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-gray-900">€ {stats.totalSavings.toFixed(2)}</div>
-                        <p className="text-xs text-[#03DAC6] mt-1 font-medium">{t('Efficient shipping')}</p>
+                        <div className="text-4xl font-bold tracking-tight text-foreground">€ {stats.totalSavings.toFixed(2)}</div>
+                        <p className="text-xs text-muted-foreground mt-1 font-medium">{t('Efficient shipping')}</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -107,17 +108,17 @@ export default function Dashboard() {
                         <Package className="h-6 w-6 text-primary" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-gray-900">{stats.totalShipments}</div>
+                        <div className="text-4xl font-bold tracking-tight text-foreground">{stats.totalShipments}</div>
                         <p className="text-xs text-gray-500 mt-1">{stats.pendingShipments} {t('Pending')}</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Total Bikes')}</CardTitle>
-                        <Bike className="h-6 w-6 text-indigo-500" />
+                        <Bike className="h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent className="flex flex-col">
-                        <div className="text-2xl font-bold text-gray-900">{stats.totalBikes || 0}</div>
+                        <div className="text-4xl font-bold tracking-tight text-foreground">{stats.totalBikes || 0}</div>
                         <div className="flex items-center text-xs text-gray-500 mt-1">
                             <span className="font-medium mr-1">{stats.avgBikesPerMonth?.toFixed(1) || 0}</span> {t('Bikes / month average')}
                         </div>
@@ -126,10 +127,10 @@ export default function Dashboard() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Best Option')}</CardTitle>
-                        <Truck className="h-6 w-6 text-blue-500" />
+                        <Truck className="h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-gray-900">{stats.favoriteCarrier}</div>
+                        <div className="text-4xl font-bold tracking-tight text-foreground">{stats.favoriteCarrier}</div>
                         <p className="text-xs text-gray-500 mt-1">{stats.favoriteCarrierPercentage}% {t('usage')}</p>
                     </CardContent>
                 </Card>
@@ -207,7 +208,7 @@ export default function Dashboard() {
                                     />
                                     <Bar
                                         dataKey="count"
-                                        fill="#4F46E5"
+                                        fill="#0A0A0A"
                                         radius={[4, 4, 0, 0]}
                                         barSize={40}
                                     />
@@ -259,13 +260,13 @@ export default function Dashboard() {
                                                 </div>
                                             </td>
                                             <td className="hidden md:table-cell px-6 py-4">€ {shipment.selectedQuote ? parseFloat(shipment.selectedQuote.price).toFixed(2) : '0.00'}</td>
-                                            <td className="hidden md:table-cell px-6 py-4 text-green-600 font-medium">
+                                            <td className="hidden md:table-cell px-6 py-4 text-foreground font-medium">
                                                 € {(shipment.savings || 0).toFixed(2)}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${trackingUpdates[shipment.id]?.status === 'Delivered'
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-yellow-100 text-yellow-800'
+                                                    ? 'bg-primary text-primary-foreground'
+                                                    : 'border border-foreground text-foreground'
                                                     }`}>
                                                     {trackingUpdates[shipment.id]?.status || shipment.status}
                                                 </span>

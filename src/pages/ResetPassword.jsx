@@ -62,7 +62,7 @@ export default function ResetPassword() {
                     </div>
 
                     {done ? (
-                        <div className="flex items-start gap-2 text-sm text-green-800 bg-green-50 border border-green-200 rounded-md p-3">
+                        <div className="flex items-start gap-2 text-sm text-foreground bg-secondary border border-border rounded-md p-3">
                             <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
                             <span>{t('Password updated. Redirecting...')}</span>
                         </div>

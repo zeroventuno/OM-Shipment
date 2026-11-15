@@ -1,6 +1,7 @@
 import { requireSupabase } from "@/lib/supabase";
 import type { InsertWarranty, Warranty } from "../schema";
 import { createdEntry, diffHistory, emptyToNull, fromRow, toRow } from "../records";
+import { stageAge } from "../progress";
 
 const TABLE = "warranties";
 export const WARRANTY_IMAGES_BUCKET = "warranty-images";
@@ -64,4 +65,20 @@ export async function uploadWarrantyImage(file: File | Blob, extension: string):
     const { error } = await supabase.storage.from(WARRANTY_IMAGES_BUCKET).upload(path, file);
     if (error) throw error;
     return supabase.storage.from(WARRANTY_IMAGES_BUCKET).getPublicUrl(path).data.publicUrl;
+}
+
+// --- Uso nas telas ---------------------------------------------------------
+
+export const WARRANTIES_QUERY_KEY = ["warranties"];
+export const warrantiesQuery = { queryKey: WARRANTIES_QUERY_KEY, queryFn: listWarranties };
+
+export async function getWarranty(id: string): Promise<Warranty> {
+    const { data, error } = await requireSupabase().from(TABLE).select("*").eq("id", id).single();
+    if (error) throw error;
+    return parse(data);
+}
+
+/** Há quanto tempo a garantia está no status atual. */
+export function warrantyAge(warranty: Warranty, now = new Date()) {
+    return stageAge(warranty.history, ["status", "Stato"], warranty.startDate ?? warranty.createdAt, warranty.status === "Completato", now);
 }

@@ -4,10 +4,10 @@ import { cn } from "@/lib/utils";
 import { PHASE_LABELS } from "../labels";
 
 const PHASE_STYLES: Record<string, string> = {
-  "Ingresso": "bg-blue-100 text-blue-800 border-blue-200",
-  "Spedito": "bg-purple-100 text-purple-800 border-purple-200",
-  "In lavorazione": "bg-amber-100 text-amber-800 border-amber-200 animate-pulse",
-  "Completato": "bg-muted text-muted-foreground border-muted",
+  "Ingresso": "bg-card text-foreground border-foreground",
+  "Spedito": "bg-secondary text-foreground border-secondary",
+  "In lavorazione": "bg-primary-variant text-white border-primary-variant",
+  "Completato": "bg-primary text-primary-foreground border-primary",
 };
 
 export default function StatusBadge({ phase }: { phase: string }) {

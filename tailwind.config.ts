@@ -9,9 +9,9 @@ export default {
   theme: {
     extend: {
       borderRadius: {
-        lg: ".5625rem",
-        md: ".375rem",
-        sm: ".1875rem",
+        lg: "6px",
+        md: "4px",
+        sm: "3px",
       },
       colors: {
         background: token("background"),

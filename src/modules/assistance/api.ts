@@ -1,6 +1,7 @@
 import { requireSupabase } from "@/lib/supabase";
 import type { InsertTicket, Ticket } from "../schema";
 import { createdEntry, diffHistory, emptyToNull, fromRow, toRow } from "../records";
+import { stageAge } from "../progress";
 
 const TABLE = "tickets";
 const DATE_COLUMNS = ["shippingDate", "completionDate", "createdAt"] as const;
@@ -50,4 +51,20 @@ export async function updateTicket(current: Ticket, input: Partial<InsertTicket>
 export async function deleteTicket(id: string): Promise<void> {
     const { error } = await requireSupabase().from(TABLE).delete().eq("id", id);
     if (error) throw error;
+}
+
+// --- Uso nas telas ---------------------------------------------------------
+
+export const TICKETS_QUERY_KEY = ["tickets"];
+export const ticketsQuery = { queryKey: TICKETS_QUERY_KEY, queryFn: listTickets };
+
+export async function getTicket(id: string): Promise<Ticket> {
+    const { data, error } = await requireSupabase().from(TABLE).select("*").eq("id", id).single();
+    if (error) throw error;
+    return parse(data);
+}
+
+/** Há quanto tempo o ticket está na fase atual. */
+export function ticketAge(ticket: Ticket, now = new Date()) {
+    return stageAge(ticket.history, ["phase", "Fase"], ticket.createdAt, ticket.phase === "Completato", now);
 }
