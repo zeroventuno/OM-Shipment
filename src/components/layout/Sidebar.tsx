@@ -6,12 +6,13 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { ticketsQuery, ticketAge } from '@/modules/assistance/api';
 import { warrantiesQuery, warrantyAge } from '@/modules/warranties/api';
+import { listRequests, REQUESTS_QUERY_KEY } from '@/modules/requests/api';
 
 export interface Area {
     icon: LucideIcon;
     label: string;
     to: string;
-    sub?: { label: string; to: string; end?: boolean }[];
+    sub?: { label: string; to: string; end?: boolean; countKey?: string }[];
 }
 
 // As três áreas do sistema. Envios tem subpáginas.
@@ -24,6 +25,7 @@ export const AREAS: Area[] = [
             { label: 'Dashboard', to: '/shipments', end: true },
             { label: 'New Shipment', to: '/shipments/new' },
             { label: 'Reports', to: '/shipments/reports' },
+            { label: 'Shipment requests', to: '/shipments/requests', countKey: 'requests' },
         ],
     },
     { icon: Wrench, label: 'nav.assistance', to: '/assistance' },
@@ -35,9 +37,14 @@ export function useStaleCounts() {
     const { session } = useAuth();
     const tickets = useQuery({ ...ticketsQuery, enabled: !!session });
     const warranties = useQuery({ ...warrantiesQuery, enabled: !!session });
+    // Pedidos de envio aguardando: atualiza a cada 2 minutos.
+    const requests = useQuery({ queryKey: REQUESTS_QUERY_KEY, queryFn: listRequests, enabled: !!session, refetchInterval: 120_000 });
+    const pendingRequests = (requests.data ?? []).filter((r) => r.status === 'pending').length;
     return {
         '/assistance': (tickets.data ?? []).filter((t) => ticketAge(t).stale).length,
         '/warranties': (warranties.data ?? []).filter((w) => warrantyAge(w).stale).length,
+        '/shipments': pendingRequests,
+        requests: pendingRequests,
     } as Record<string, number>;
 }
 
@@ -104,8 +111,11 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
                                     <span className="flex-1">{t(area.label)}</span>
                                     {count > 0 && (
                                         <span
-                                            className="min-w-6 h-5 px-2 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center"
-                                            title={t('{{count}} stalled for more than 30 days', { count })}
+                                            className={cn(
+                                                'min-w-6 h-5 px-2 rounded-full text-[11px] font-bold flex items-center justify-center',
+                                                area.to === '/shipments' ? (inArea ? 'bg-primary text-primary-foreground' : 'bg-white text-primary') : 'bg-destructive text-destructive-foreground'
+                                            )}
+                                            title={area.to === '/shipments' ? t('{{count}} shipment requests waiting', { count }) : t('{{count}} stalled for more than 30 days', { count })}
                                         >
                                             {count}
                                         </span>
@@ -123,7 +133,14 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
                                                     cn('py-2 text-[13px] transition-colors', isActive ? 'text-white font-semibold' : 'text-white/60 hover:text-white')
                                                 }
                                             >
-                                                {t(item.label)}
+                                                <span className="flex items-center justify-between gap-2">
+                                                    {t(item.label)}
+                                                    {item.countKey && (stale[item.countKey] ?? 0) > 0 && (
+                                                        <span className="min-w-5 h-5 px-1.5 rounded-full bg-white text-primary text-[11px] font-bold flex items-center justify-center">
+                                                            {stale[item.countKey]}
+                                                        </span>
+                                                    )}
+                                                </span>
                                             </NavLink>
                                         ))}
                                     </div>

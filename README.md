@@ -129,3 +129,15 @@ entregue ao parceiro (ou ao assistente de IA dele).
 - Migration: `supabase/migrations/20261116010000_partner_api.sql`
 - Chaves: `npm run partner-key -- create "<nome>" read,write` · `list` · `revoke <id>`
 - Servidor MCP (as mesmas funções como ferramentas de IA): `mcp/server.mjs`
+
+## Pedidos de envio (formulário aberto)
+
+A equipe da oficina pede envios por um link sem login (`/pedido/<token>`):
+escolhe ou cadastra o cliente, informa as caixas (medidas e peso) e o serviço.
+Quem tem o link vê só o formulário e os pedidos feitos com ele. Os pedidos
+chegam em **Envios → Pedidos de envio**, de onde "Criar envio" abre o envio já
+preenchido; salvar o envio marca o pedido como enviado e a equipe vê o rastreio.
+
+- Migration: `supabase/migrations/20261116020000_customers_and_requests.sql`
+  (também cria o cadastro de clientes, começando com os nomes dos envios)
+- Links: `npm run request-link -- create "<nome>"` · `list` · `disable <id>`

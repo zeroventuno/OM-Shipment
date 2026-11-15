@@ -38,7 +38,10 @@ const mapToDb = (s) => ({
     ticket_id: s.ticketId || null,
     warranty_id: s.warrantyId || null,
     service_level: s.serviceLevel || 'standard',
-    agent: s.agent?.trim() || null
+    agent: s.agent?.trim() || null,
+    // Pedido de envio de origem (o banco marca o pedido como enviado) e caixas
+    request_id: s.requestId || null,
+    parcels: s.parcels || null
 });
 
 const mapFromDb = (s) => ({
@@ -63,7 +66,9 @@ const mapFromDb = (s) => ({
     ticketId: s.ticket_id || null,
     warrantyId: s.warranty_id || null,
     serviceLevel: s.service_level || 'standard',
-    agent: s.agent || ''
+    agent: s.agent || '',
+    requestId: s.request_id || null,
+    parcels: s.parcels || null
 });
 
 // LocalStorage só é usado quando o Supabase NÃO está configurado. Quando ele

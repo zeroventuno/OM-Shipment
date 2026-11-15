@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Plus, Trash2, Save, TrendingDown, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
@@ -13,6 +13,7 @@ import { analyzeQuotes, calculateProfit } from '../utils/quotes';
 import { resolveStatus } from '../utils/shipmentStatus';
 import { listTickets } from '@/modules/assistance/api';
 import { listWarranties } from '@/modules/warranties/api';
+import { getRequest, boxSummary, totalWeight, formatAddress } from '@/modules/requests/api';
 
 // Pallet/caminhão e tarifas spot são cotados por e-mail: entram como "portal"
 // para poderem ser comparados com os outros.
@@ -25,6 +26,10 @@ export default function NewShipment() {
     const navigate = useNavigate();
     const { id } = useParams();
     const isEditing = !!id;
+    const [searchParams] = useSearchParams();
+    const requestParam = searchParams.get('request');
+    // Pedido de envio de origem (feito pela equipe no formulário aberto)
+    const [request, setRequest] = useState(null);
 
     const [formData, setFormData] = useState({
         orderId: '',
@@ -45,7 +50,9 @@ export default function NewShipment() {
         ticketId: null,
         warrantyId: null,
         serviceLevel: 'standard',
-        agent: ''
+        agent: '',
+        requestId: null,
+        parcels: null
     });
 
     const [processes, setProcesses] = useState({ tickets: [], warranties: [] });
@@ -99,13 +106,31 @@ export default function NewShipment() {
                             ticketId: shipment.ticketId,
                             warrantyId: shipment.warrantyId,
                             serviceLevel: shipment.serviceLevel || 'standard',
-                            agent: shipment.agent || ''
+                            agent: shipment.agent || '',
+                            requestId: shipment.requestId,
+                            parcels: shipment.parcels
                         });
                         setQuotes(shipment.allQuotes || []);
                         if (shipment.selectedQuote) {
                             setSelectedQuoteId(shipment.selectedQuote.id);
                         }
                     }
+                }
+
+                // Novo envio a partir de um pedido: preenche cliente, país, caixas e serviço.
+                if (!id && requestParam) {
+                    const req = await getRequest(requestParam);
+                    setRequest(req);
+                    setFormData((f) => ({
+                        ...f,
+                        requestId: req.id,
+                        parcels: req.boxes,
+                        customerName: req.customer?.name || f.customerName,
+                        destinationCountry: req.customer?.country || f.destinationCountry,
+                        serviceLevel: req.service_level,
+                        orderId: req.order_ref || f.orderId,
+                        quantity: req.boxes?.length || f.quantity
+                    }));
                 }
 
                 // Load unique customers for autocomplete
@@ -128,7 +153,7 @@ export default function NewShipment() {
             }
         };
         loadData();
-    }, [id]);
+    }, [id, requestParam]);
 
     // Smart suggestion logic
     useEffect(() => {
@@ -375,6 +400,18 @@ export default function NewShipment() {
                     </p>
                 </div>
             </div>
+
+            {request && (
+                <div className="bg-card border border-foreground rounded-lg p-4 flex flex-col gap-1.5 text-sm">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        {t('From shipment request')} · {request.requested_by}
+                    </span>
+                    <p className="font-semibold text-base">{request.customer?.name}</p>
+                    <p>{formatAddress(request.customer || {}) || t('No address registered')}</p>
+                    <p>{request.boxes.map(boxSummary).join(' · ')} — {t('Total')} {totalWeight(request.boxes)} kg</p>
+                    {request.notes && <p className="text-muted-foreground whitespace-pre-line">{request.notes}</p>}
+                </div>
+            )}
 
             {loadError && (
                 <div className="flex items-start gap-2 text-sm text-error bg-error/10 border border-error/20 rounded-md p-3">

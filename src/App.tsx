@@ -14,6 +14,9 @@ const AssistancePage = lazy(() => import('@/modules/assistance/AssistancePage'))
 const WarrantiesPage = lazy(() => import('@/modules/warranties/WarrantiesPage'))
 const TicketDetailPage = lazy(() => import('@/modules/assistance/TicketDetailPage'))
 const WarrantyDetailPage = lazy(() => import('@/modules/warranties/WarrantyDetailPage'))
+const RequestsPage = lazy(() => import('@/modules/requests/RequestsPage'))
+// Formulário público de pedido de envio: fora do login (link com token).
+const RequestFormPage = lazy(() => import('@/modules/requests/RequestFormPage'))
 
 function PageFallback() {
     return (
@@ -30,6 +33,7 @@ export default function App() {
         <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/pedido/:token" element={page(<RequestFormPage />)} />
 
             <Route
                 path="/"
@@ -44,6 +48,7 @@ export default function App() {
                 <Route path="shipments" element={page(<ShipmentsDashboard />)} />
                 <Route path="shipments/new" element={page(<NewShipment />)} />
                 <Route path="shipments/reports" element={page(<Reports />)} />
+                <Route path="shipments/requests" element={page(<RequestsPage />)} />
                 <Route path="shipments/:id" element={page(<NewShipment />)} />
 
                 <Route path="assistance" element={page(<AssistancePage />)} />
