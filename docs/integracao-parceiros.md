@@ -1,42 +1,262 @@
-# Integração com o OM Gestionale — guia para sistemas parceiros
+# OM Gestionale ↔ sistema de ordens de venda — guia para desenhar a integração
 
 > **Para o assistente de IA (Codex, Claude etc.) que receber este arquivo:**
-> você está ajudando a integrar um sistema da Officine Mattio (o "sistema
-> parceiro", que acompanha ordens de venda) com o **OM Gestionale** (envios,
-> assistências e garantias). A parte do OM Gestionale **já está pronta e no ar**
-> (seções 2 a 5). A seção 6 descreve **o que deve ser construído no sistema
-> parceiro**. Siga os nomes de campos, formatos e regras exatamente como estão
-> aqui. Na dúvida, pergunte em vez de inventar um campo.
+> este documento apresenta o **OM Gestionale** (envios, assistências e garantias
+> da Officine Mattio) para você, que conhece o **sistema de ordens de venda**.
+> O objetivo **não** é seguir uma receita pronta. O sistema de vendas é o mais
+> complexo dos dois, por isso **a decisão é sua**: como os sistemas se
+> comunicam, que dados cada lado vê, quem pode alterar o quê, os limites de
+> acesso e como ficam sincronizados. O OM Gestionale se adapta à sua proposta.
+>
+> - As seções 1 a 4 explicam o OM Gestionale e onde os dois sistemas se encontram.
+> - A seção 5 lista as perguntas que você precisa responder sobre o sistema de vendas.
+> - A seção 6 diz o que devolver: uma proposta, que do lado do OM Gestionale
+>   será implementada a partir dela.
+> - O **Anexo** documenta a API que já existe e está no ar (v1). Ela é um
+>   ponto de partida, não um limite: pode ser ampliada conforme a proposta.
 
 ---
 
-## 1. Contexto
+## 1. Os dois sistemas e onde eles se encontram
 
-A Officine Mattio (fábrica de bicicletas, Itália) tem vários sistemas internos.
-Dois deles passam a conversar:
-
-| Sistema | Responsável | O que guarda |
+| | **Sistema de ordens de venda** | **OM Gestionale** |
 |---|---|---|
-| **OM Gestionale** | logística / pós-venda | envios (cotações, transportadora, rastreio, custo), assistências (componentes enviados ao fabricante) e garantias (processos de garantia de quadros/bicicletas) |
-| **Sistema parceiro** | vendas | ordens de venda e o andamento delas |
+| Quem usa | vendas | logística e pós-venda |
+| O que acompanha | a ordem de venda: do pedido do cliente até a conclusão | o que acontece **fisicamente** depois: pedido de envio, cotação, despacho, rastreio; consertos com fabricantes; processos de garantia |
+| Pergunta que responde | "o que foi vendido, a quem, por quanto, em que etapa está a ordem?" | "já foi enviado? por qual transportadora? quanto custou? onde está? a garantia está em que fase?" |
 
-O que a integração resolve:
+Os dois se encontram em **dois lugares**:
 
-1. **Garantias:** o sistema de vendas acompanha o andamento das ordens de
-   garantia (status, solução, fabricante, envio) e devolve ao OM Gestionale o
-   número da ordem de venda, a fatura e o valor.
-2. **Envios:** o sistema de vendas sabe quando e como cada ordem foi enviada
-   (transportadora, rastreio, custo, standard/express), sem digitar de novo.
-3. **Notas:** cada lado pode deixar observações no histórico de uma garantia
-   ou assistência.
+1. **Ordem de venda → envio.** Toda ordem que sai fisicamente da fábrica vira
+   um envio no OM Gestionale. O sistema de vendas precisa saber se e quando a
+   ordem foi enviada, como e onde está. O OM Gestionale precisa dos dados da
+   ordem para enviar (cliente, endereço, o que vai, valor).
+2. **Garantia → ordem de acompanhamento.** Cada processo de garantia tem um
+   protocolo no OM Gestionale (`OMW-26-012`) **e** uma ordem de venda criada
+   no sistema de vendas para acompanhá-lo. Os dois registros falam do mesmo
+   caso e deveriam ficar sincronizados: andamento, solução, envio, fatura e valor.
 
-A ligação entre os dois sistemas é feita pelo **número da ordem de venda**:
-- no envio, campo `order_id`;
-- na garantia, campo `order_number`.
+Há um terceiro ponto, menor: **clientes**. Os dois sistemas têm cadastro de
+clientes (ver 2.3); vale decidir se um deles é a fonte.
+
+Hoje a ligação entre os dois é feita **pelo número da ordem de venda**,
+digitado à mão no OM Gestionale. Não há sincronização automática ainda.
 
 ---
 
-## 2. Como acessar a API
+## 2. O OM Gestionale, área por área
+
+Aplicação web (React + Supabase/Postgres), em italiano e português. Banco
+protegido: só usuários logados acessam as tabelas; sistemas externos entram
+apenas por funções específicas (ver Anexo).
+
+### 2.1 Pedidos de envio (*Richieste di spedizione*)
+
+Porta de entrada dos envios. Qualquer pessoa da equipe abre um **link de
+formulário** (sem login) e pede um envio:
+
+- cliente (escolhido do cadastro ou cadastrado na hora) e **endereço de
+  entrega** (um cliente pode ter vários);
+- caixas: medidas (cm) e peso (kg), com caixas padrão (bici completa,
+  frameset, caixas de uso geral);
+- serviço: `standard` ou `express`;
+- **número da ordem de venda** (opcional hoje);
+- **valor faturado** (€, obrigatório) e **valor para seguro** (€; 0 = sem seguro);
+- observações e o nome de quem pediu.
+
+Etapas: `pending` (aguardando) → `shipped` (virou envio) ou `cancelled`.
+Na logística, o botão "Criar envio" abre o envio já preenchido com esses dados;
+ao salvar, o pedido passa a `shipped` e quem pediu vê transportadora e rastreio
+na lista do link.
+
+### 2.2 Envios (*Spedizioni*)
+
+Cada despacho real. Guarda:
+
+- número da ordem (`order_id`) e tipo (`Bicycle`, `Frame Kit`, `Components`,
+  `Warranty`, `Clothing/Accessories`, `Gift`, `Rental`, `Other`);
+- cliente, país de destino, quantidade, agente comercial;
+- **cotações** de vários portais (MBE, MyParcel, DHL, BRT, caminhão/pallet,
+  spot) e a escolhida: portal, transportadora, **custo**;
+- serviço `standard`/`express`, **código de rastreio**;
+- se o cliente retira/paga o frete (aí não há cotação nem custo);
+- ligação opcional com uma assistência ou garantia (ver 2.4 e 2.5).
+
+Etapas: `Pending` (criado, ainda não saiu) → `In Transit` (despachado) →
+`Delivered` (entregue). A etapa é atualizada pela equipe.
+
+Ao ligar um envio a uma garantia ou assistência, data, transportadora, rastreio
+e custo são gravados automaticamente no processo e no histórico dele.
+
+### 2.3 Clientes
+
+Cadastro único usado pelos pedidos de envio: razão social, contato, telefone,
+e-mail, código fiscal/partita IVA, endereço principal (faturação) e **vários
+endereços de entrega**, um padrão. Cerca de 1.450 clientes, a maior parte
+importada das exportações dos portais de envio (MBE). Não há código de cliente
+compartilhado com outros sistemas: o cliente é reconhecido pelo nome.
+
+### 2.4 Assistências (*Assistenze*)
+
+Componentes de clientes enviados aos fabricantes para conserto/garantia do
+fabricante (freios, câmbios, rodas…): cliente, componente, marca, número de
+série, problema, protocolo do fabricante, aprovação (`Approvato`/`Rifiutato`).
+
+Etapas: `Ingresso` (recebido) → `Spedito` (enviado ao fabricante) →
+`In lavorazione` → `Completato`. Histórico completo de alterações.
+
+### 2.5 Garantias (*Garanzie*)
+
+Processos de garantia de quadros e bicicletas Officine Mattio. Guarda:
+
+- **protocolo** gerado automaticamente (`OMW-AA-NNN`);
+- tipo: `Garantia` (coberto) ou `A pagamento` (pago pelo cliente);
+- cliente, agente, modelo, tamanho, número de série (e o novo, se trocar);
+- problema, fotos, **solução** (`Pintura`, `Reparação + Pintura`,
+  `Substituição`) e fabricante/fornecedor envolvido;
+- **número da ordem de venda de acompanhamento**, **fatura** e **valor**;
+- envio de retorno (data, transportadora, rastreio, custo).
+
+Etapas: `In attesa` (aguardando) → `In lavorazione` (em andamento) →
+`Completato`. Histórico completo; alertas para processos parados há mais de
+30 dias.
+
+---
+
+## 3. Pontos de encontro em detalhe
+
+### 3.1 Ordem de venda ↔ pedido de envio ↔ envio
+
+Fluxo hoje:
+
+```
+[vendas]  ordem criada → … → pronta para enviar
+                                   │  (alguém preenche o formulário à mão)
+[OM]                     pedido de envio (pending)
+                                   │  logística cota e cria
+[OM]                     envio Pending → In Transit → Delivered
+                                   │
+[vendas]  (não fica sabendo automaticamente)
+```
+
+O que poderia passar a fluir:
+
+| Direção | Dado | Para quê |
+|---|---|---|
+| vendas → OM | ordem "pronta para enviar" com cliente, endereço, itens, valor faturado | criar o **pedido de envio** sozinho, sem digitar de novo |
+| vendas → OM | consulta de uma ordem pelo número | preencher/conferir o envio a partir da ordem |
+| OM → vendas | pedido recebido / cancelado | a ordem mostra "envio pedido" |
+| OM → vendas | envio criado: data, portal/transportadora, serviço, custo, rastreio | a ordem mostra "enviada" com rastreio |
+| OM → vendas | mudança de etapa do envio (`In Transit`, `Delivered`) | a ordem avança de etapa sozinha |
+
+### 3.2 Garantia ↔ ordem de acompanhamento
+
+Fluxo hoje: o processo de garantia nasce no OM Gestionale; a ordem de
+acompanhamento é criada no sistema de vendas; o número dela é digitado no
+campo `order_number` da garantia.
+
+| Direção | Dado | Para quê |
+|---|---|---|
+| OM → vendas | etapa, tipo, solução, fabricante, envio de retorno | a ordem de acompanhamento reflete o andamento |
+| vendas → OM | número da ordem, fatura, valor (sobretudo `A pagamento`) | a garantia fica completa sem digitar |
+| os dois | notas | comunicação no histórico do caso |
+| a decidir | quem cria o quê | ex.: abrir a garantia no OM cria a ordem no sistema de vendas, ou o contrário |
+
+### 3.3 Clientes
+
+Os dois sistemas têm cadastro. Cabe à proposta decidir se cada um mantém o
+seu, se o sistema de vendas passa a ser a fonte (o OM recebe clientes e
+endereços dele, com um código de cliente comum) ou se sincronizam nos dois
+sentidos.
+
+---
+
+## 4. Tudo o que o OM Gestionale tem e pode ser aberto
+
+A tabela mostra o que **já existe** na API v1 (Anexo). Todo o resto **pode
+ser aberto** — para leitura, escrita ou as duas — se a proposta pedir. Os
+limites (o que cada lado vê e altera, e para quais usuários) são definidos
+pela proposta, não por este documento.
+
+| Dado no OM Gestionale | Já disponível na v1 | Pode ser aberto |
+|---|---|---|
+| Envios: etapa, cotações, transportadora, rastreio, custo, serviço | leitura | escrita (ex.: atualizar etapa), criação |
+| Pedidos de envio | — | leitura, criação, cancelamento |
+| Garantias: andamento, tipo, solução, fabricante, envio, histórico | leitura | escrita de qualquer campo, criação |
+| Garantias: ordem de venda, fatura, valor | leitura e escrita | — |
+| Notas no histórico de garantias e assistências | leitura e acréscimo | — |
+| Assistências | leitura | escrita, criação |
+| Clientes e endereços de entrega | — | leitura, escrita, criação |
+| Fotos das garantias | — | leitura (links temporários), envio de fotos |
+| Avisos de mudança (webhooks) | — | o OM avisa o sistema de vendas a cada mudança |
+
+E o inverso — o que o OM Gestionale gostaria de ver no sistema de vendas
+(sugestões; a proposta decide o que e como expor):
+
+| Dado | Para quê |
+|---|---|
+| Ordem pelo número: cliente, endereço de entrega, itens, valor, agente, etapa | preencher pedido de envio e envio |
+| Lista de ordens alteradas desde uma data | sincronizar |
+| Ordens prontas para enviar | fila de trabalho da logística |
+| Ordem de acompanhamento de uma garantia | conferir fatura e valor |
+
+Formas de conexão possíveis (escolher na proposta):
+
+- **Consulta periódica** (a cada 5–15 min, pelo `updated_at`): já suportada
+  pelo OM Gestionale; mais simples.
+- **Avisos imediatos (webhooks)**: um lado avisa o outro quando algo muda; o
+  OM Gestionale pode passar a enviar, se a proposta pedir.
+- **MCP**: o OM Gestionale já tem um servidor MCP com as funções v1 (Anexo A.6),
+  útil para assistentes de IA consultarem os dois sistemas.
+
+---
+
+## 5. Perguntas sobre o sistema de vendas
+
+Responda (com o dono do sistema) antes de propor:
+
+1. **Etapas da ordem:** quais são, e qual delas significa "pronta para enviar"?
+2. **Número da ordem:** formato (ex.: `SO-2026-0456`)? É único e nunca muda?
+3. **Uma ordem, vários envios?** Ordens enviadas em partes acontecem? E um
+   envio com várias ordens?
+4. **Clientes:** tem código de cliente? Guarda endereço de entrega, contato,
+   partita IVA? Um cliente pode ter vários endereços?
+5. **Valores:** onde ficam o valor faturado e a fatura? O valor do seguro faz
+   sentido vir de lá?
+6. **Garantias:** como a ordem de acompanhamento é criada hoje, e que campos
+   ela tem? Teria um campo para o protocolo `OMW-…`?
+7. **Tecnologia:** linguagem, banco, onde roda. Já expõe alguma API? Pode
+   chamar APIs externas e receber webhooks?
+8. **Quem pode ver o quê:** que perfis de usuário existem no sistema de
+   vendas, e quais deles deveriam ver ou alterar dados do OM Gestionale
+   (ex.: custo de frete, fotos das garantias)?
+
+---
+
+## 6. O que devolver
+
+Um documento curto (Markdown) com:
+
+1. **Mapa dos pontos de encontro** escolhidos (3.1, 3.2, 3.3) e os campos de
+   cada lado que se correspondem.
+2. **Quem é o dono de cada dado** e os **limites**: o que cada lado vê e
+   altera no outro, e para quais usuários.
+3. **Forma de comunicação**, direção e frequência de cada fluxo (consulta
+   periódica, webhook, MCP, ação do usuário — o que você julgar melhor).
+4. **O que o sistema de vendas vai expor** (endpoints, formato, autenticação).
+5. **O que o OM Gestionale precisa acrescentar ou mudar** além da v1 (inclusive
+   mudar a v1, se ela não servir).
+6. Dúvidas em aberto.
+
+Com esse documento, o lado do OM Gestionale é implementado do jeito proposto
+e a v2 da API é publicada aqui. A rota sugerida na v1 para o sistema de vendas
+(`GET /api/om/orders/{order_number}`, Anexo A.5) é só uma sugestão de formato.
+
+---
+
+# Anexo — API v1 (já no ar)
+
+## A.1 Como acessar a API
 
 O OM Gestionale roda sobre o **Supabase** (Postgres). A API de parceiros é um
 conjunto de funções chamadas por HTTP:
@@ -111,7 +331,7 @@ O corpo do erro é `{ "code": "...", "message": "...", "details": null, "hint": 
 
 ---
 
-## 3. Funções de leitura (permissão `read`)
+## A.2 Funções de leitura (permissão `read`)
 
 Todas as listas vêm **ordenadas por `updated_at` crescente**. Para sincronizar,
 guarde o maior `updated_at` recebido e passe-o como `updated_since` na próxima
@@ -126,7 +346,7 @@ chamada. Repita até a lista vir vazia ou menor que `max_rows`.
 | `status` | `"In attesa"` \| `"In lavorazione"` \| `"Completato"` | não |
 | `max_rows` | inteiro | não |
 
-Devolve: lista de **Garantia** (seção 5.1), sem histórico.
+Devolve: lista de **Garantia** (A.4.1), sem histórico.
 
 ### `partner_get_warranty`
 | Parâmetro | Tipo | Obrigatório |
@@ -134,7 +354,7 @@ Devolve: lista de **Garantia** (seção 5.1), sem histórico.
 | `protocol` | texto, ex.: `"OMW-26-012"` | um dos dois |
 | `order_number` | texto (nº da ordem de venda) | um dos dois |
 
-Devolve: **Garantia** com `history` (5.4) e `shipments` (lista de **Envio**, 5.3).
+Devolve: **Garantia** com `history` (A.4.4) e `shipments` (lista de **Envio**, A.4.3).
 
 ### `partner_list_tickets`
 | Parâmetro | Tipo | Obrigatório |
@@ -142,7 +362,7 @@ Devolve: **Garantia** com `history` (5.4) e `shipments` (lista de **Envio**, 5.3
 | `updated_since` | timestamp ISO | não |
 | `max_rows` | inteiro | não |
 
-Devolve: lista de **Assistência** (5.2).
+Devolve: lista de **Assistência** (A.4.2).
 
 ### `partner_list_shipments`
 | Parâmetro | Tipo | Obrigatório |
@@ -151,12 +371,12 @@ Devolve: lista de **Assistência** (5.2).
 | `order_id` | texto (nº da ordem / referência) | não |
 | `max_rows` | inteiro | não |
 
-Devolve: lista de **Envio** (5.3). Para achar o envio de uma ordem de venda,
+Devolve: lista de **Envio** (A.4.3). Para achar o envio de uma ordem de venda,
 passe `order_id`.
 
 ---
 
-## 4. Funções de escrita (permissão `write`)
+## A.3 Funções de escrita (permissão `write`)
 
 ### `partner_add_note`
 Registra uma nota no histórico de uma garantia ou assistência. Na tela, ela
@@ -185,9 +405,9 @@ Devolve: a **Garantia** atualizada.
 
 ---
 
-## 5. Formato dos dados
+## A.4 Formato dos dados
 
-### 5.1 Garantia
+### A.4.1 Garantia
 ```json
 {
   "protocol": "OMW-26-012",
@@ -229,7 +449,7 @@ Devolve: a **Garantia** atualizada.
 Os valores de `status`, `process_type` e `solution` são códigos fixos (em
 italiano/português, como o sistema grava). Traduza só na tela.
 
-### 5.2 Assistência
+### A.4.2 Assistência
 ```json
 {
   "id": "a1b2c3d4-…",
@@ -253,7 +473,7 @@ italiano/português, como o sistema grava). Traduza só na tela.
 | `approval_status` | `"Approvato"`, `"Rifiutato"` ou `null` |
 | `producer_protocol` | protocolo informado pelo fabricante |
 
-### 5.3 Envio
+### A.4.3 Envio
 ```json
 {
   "id": "13bfd569-7852-4543-9c1d-1d5ceca155c6",
@@ -285,7 +505,7 @@ italiano/português, como o sistema grava). Traduza só na tela.
 | `customer_pickup` | `true` quando o cliente retira ou paga o frete; aí não há cotação nem custo |
 | `warranty_protocol` / `ticket_id` | preenchidos quando o envio leva uma garantia/assistência |
 
-### 5.4 Histórico
+### A.4.4 Histórico
 Lista de alterações, da mais antiga para a mais recente:
 ```json
 { "date": "2026-04-02T09:15:00.000Z", "action": "updated", "field": "status", "oldValue": "In attesa", "newValue": "In lavorazione" }
@@ -296,45 +516,12 @@ Lista de alterações, da mais antiga para a mais recente:
   - `"partnerNote"`: nota de um parceiro.
 - Registros antigos podem ter `field` com o rótulo em italiano (ex.: `"Stato"`).
 
----
+## A.5 Sugestão de formato: consulta de ordem no sistema de vendas
 
-## 6. O que construir no sistema parceiro
-
-### 6.1 Configuração
-Variáveis de ambiente, **no servidor**:
-```
-OM_SUPABASE_URL=https://alavoontnhooxttuvqky.supabase.co
-OM_ANON_KEY=<enviada pela Officine Mattio>
-OM_PARTNER_KEY=<enviada pela Officine Mattio, começa com omp_>
-```
-
-### 6.2 Cliente da API
-Um módulo com uma função por chamada da seção 3 e 4, usando `omRpc` (seção 2)
-ou equivalente na linguagem do sistema.
-- Tipar as respostas conforme a seção 5.
-- Tratar os erros da tabela da seção 2.
-- Tentar de novo só em falha de rede ou HTTP 5xx, com espera crescente.
-
-### 6.3 Sincronização (a cada 5–15 minutos)
-1. Chamar `partner_list_shipments` com `updated_since` = última sincronização.
-   Para cada envio cujo `order_id` corresponda a uma ordem de venda do sistema
-   parceiro, gravar na ordem: data, transportadora (`portal` / `carrier`),
-   `tracking_code`, `cost`, `service_level` e `status` do envio.
-2. Chamar `partner_list_warranties` da mesma forma. Para cada garantia com
-   `order_number` conhecido, atualizar na ordem: o andamento (`status`,
-   `solution`, `producer`) e o envio (`shipping`).
-3. Guardar o maior `updated_at` recebido de cada lista como a nova "última
-   sincronização" (separada para envios e garantias).
-
-### 6.4 Ações do usuário no sistema parceiro
-- Ao ligar uma ordem de venda a uma garantia, ou ao emitir a fatura, chamar
-  `partner_update_warranty_admin` com `protocol` e o que mudou (`order_number`,
-  `invoice`, `value`).
-- Botão "Enviar nota ao OM Gestionale" na ordem: chama `partner_add_note`.
-
-### 6.5 API do sistema parceiro (para o OM Gestionale chamar)
+Sugestão feita na v1, mantida como referência. A proposta pode trocar por
+outro formato ou outra forma de comunicação.
 O OM Gestionale também vai consultar o sistema parceiro, para preencher o
-envio a partir da ordem de venda. Por favor, exponha:
+envio a partir da ordem de venda. Uma forma possível de expor a ordem:
 
 ```
 GET /api/om/orders/{order_number}
@@ -372,22 +559,9 @@ GET /api/om/orders?updated_since=<ISO>&limit=100
 ```
 Mesma resposta, em lista, ordenada por `updated_at` crescente.
 
-### 6.6 Critérios de aceite
-- [ ] Com uma chave válida, `partner_get_warranty` de um protocolo real
-      devolve a garantia e é exibida na ordem de venda correspondente.
-- [ ] Um envio criado no OM Gestionale com `order_id` igual a uma ordem de
-      venda aparece nessa ordem, com rastreio, em até 15 minutos.
-- [ ] Ligar uma ordem a uma garantia grava `order_number` no OM Gestionale
-      (aparece no histórico da garantia).
-- [ ] Uma nota enviada aparece no histórico da garantia como `<nome>: <nota>`.
-- [ ] Sem chave, ou com chave errada, as chamadas falham com 403 e o sistema
-      mostra o erro sem travar.
-- [ ] A chave não aparece em nenhum arquivo versionado nem no navegador.
-- [ ] `GET /api/om/orders/{order_number}` responde no formato da seção 6.5.
-
 ---
 
-## 7. Servidor MCP (opcional, para assistentes de IA)
+## A.6 Servidor MCP (opcional, para assistentes de IA)
 
 O repositório do OM Gestionale tem um servidor MCP em `mcp/server.mjs`, com as
 mesmas funções como ferramentas:
@@ -412,13 +586,11 @@ Para usar num cliente MCP (Claude Desktop, Codex, Cursor):
 ```
 Antes de usar, rodar `npm install` dentro de `mcp/`. Se o sistema parceiro
 também expuser um servidor MCP, o ideal é que siga a mesma ideia: ferramentas
-que espelham a API HTTP da seção 6.5.
+que espelham a API HTTP dele.
 
 ---
 
-## 8. Versões
+## Versões
 - **v1 (16/11/2026):** leitura de garantias, assistências e envios; notas;
-  dados administrativos da garantia.
-- Próximas (a combinar):
-  - avisos automáticos (webhook) quando um envio ou garantia muda;
-  - criação de envio a partir da ordem de venda.
+  dados administrativos da garantia (Anexo).
+- **v2:** a definir a partir da proposta da seção 6.
