@@ -509,7 +509,7 @@ italiano/português, como o sistema grava). Traduza só na tela.
   "order_id": "SO-2026-0456",
   "order_type": "Bicycle",
   "customer_name": "Bike Point",
-  "destination_country": "Germania",
+  "destination_country": "Alemanha",
   "quantity": 1,
   "status": "In Transit",
   "service_level": "express",
@@ -533,6 +533,9 @@ italiano/português, como o sistema grava). Traduza só na tela.
 | `portal` | `"MBE"`, `"My Parcel"`, `"My DHL"`, `"BRT"`, `"Pallet / Truck"`, `"Spot / Last minute"` |
 | `customer_pickup` | `true` quando o cliente retira ou paga o frete; aí não há cotação nem custo |
 | `warranty_protocol` / `ticket_id` | preenchidos quando o envio leva uma garantia/assistência |
+
+> Nota: `destination_country` é gravado com o nome do país em português
+> (ex.: `"Itália"`, `"Holanda"`), como no resto do sistema.
 
 ### A.4.4 Histórico
 Lista de alterações, da mais antiga para a mais recente:
