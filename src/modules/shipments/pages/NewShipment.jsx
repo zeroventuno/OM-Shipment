@@ -6,6 +6,8 @@ import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { PhotoUpload } from '../components/shipments/PhotoUpload';
 import { PodUpload } from '../components/shipments/PodUpload';
+import { ExportDocsCard } from '../components/shipments/ExportDocsCard';
+import { isExtraEu } from '../services/exportDocs';
 import { storageService } from '../services/storage';
 import { useTranslation } from 'react-i18next';
 import { COUNTRIES, countryLabel } from '../data/countries';
@@ -775,6 +777,14 @@ export default function NewShipment() {
                             )}
                         </CardContent>
                     </Card>
+
+                    {isExtraEu(formData.destinationCountry) && (
+                        <ExportDocsCard
+                            tracking={formData.trackingCode}
+                            customerName={formData.customerName}
+                            invoiceValue={request?.invoice_value}
+                        />
+                    )}
                 </div>
             </div>
         </div>
