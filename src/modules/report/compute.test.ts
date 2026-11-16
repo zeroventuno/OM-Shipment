@@ -257,10 +257,29 @@ describe("saldo per cliente", () => {
 describe("quota dei 10 peggiori", () => {
   it("è positiva anche con saldi negativi", () => {
     const base = { created_at: "2026-03-10T10:00:00Z", order_type: "Bicycle", quantity: 1, destination_country: "Itália", tracking_code: "x", savings: 0, customer_cost_pickup: false, ticket_id: null, warranty_id: null, service_level: "standard", agent: null };
-    const shipments = Array.from({ length: 12 }, (_, i) => ({ ...base, id: `s${i}`, customer_name: `Cliente ${i}`, customer_payment: 0, selected_quote: { portal: "MBE", carrier: "DHL", price: i === 0 ? 1000 : 10 } })) as ShipmentRow[];
+    const shipments = Array.from({ length: 24 }, (_, j) => { const i = j % 12; return { ...base, id: `s${j}`, customer_name: `Cliente ${i}`, customer_payment: 0, selected_quote: { portal: "MBE", carrier: "DHL", price: (i === 0 ? 1000 : 10) / 2 } }; }) as ShipmentRow[];
     const input = { shipments, prevShipments: [], olderNames: [], tickets: [], warranties: [], requests: [] } as unknown as ReportInput;
     const r = buildReport(input, { year: 2026, today: "2026-11-16", country });
     expect(r.balance.inLoss).toBe(12);
     expect(r.balance.worst10Share).toBeCloseTo((1000 + 9 * 10) / 1110, 5);
+  });
+});
+
+describe("ranking per cliente", () => {
+  it("esclude i clienti con una sola spedizione, ma li conta nei totali", () => {
+    const base = { created_at: "2026-03-10T10:00:00Z", order_type: "Bicycle", quantity: 1, destination_country: "Itália", tracking_code: "x", savings: 0, customer_cost_pickup: false, ticket_id: null, warranty_id: null, service_level: "standard", agent: null };
+    const row = (id: string, name: string, price: number, paid: number) => ({ ...base, id, customer_name: name, customer_payment: paid, selected_quote: { portal: "MBE", carrier: "DHL", price } });
+    const shipments = [
+      row("a", "Una Volta", 500, 0),
+      row("b", "Due Volte", 50, 0), row("c", "Due Volte", 50, 0),
+      row("d", "Utile Singolo", 10, 300),
+      row("e", "Utile Doppio", 10, 30), row("f", "Utile Doppio", 10, 30),
+    ] as ShipmentRow[];
+    const input = { shipments, prevShipments: [], olderNames: [], tickets: [], warranties: [], requests: [] } as unknown as ReportInput;
+    const r = buildReport(input, { year: 2026, today: "2026-11-16", country });
+    expect(r.balance.worst.map((b) => b.name)).toEqual(["Due Volte"]);
+    expect(r.balance.best.map((b) => b.name)).toEqual(["Utile Doppio"]);
+    expect(r.balance.inLoss).toBe(2);
+    expect(r.balance.lossTotal).toBe(-600);
   });
 });

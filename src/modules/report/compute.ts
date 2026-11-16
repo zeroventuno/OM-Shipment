@@ -160,6 +160,9 @@ export interface CustomerBalance {
 }
 
 /** Saldo per cliente (pagato − costo). Le spedizioni ritirate dal cliente valgono zero. */
+/** Minimo di spedizioni nell'anno per entrare nel ranking utile/perdita per cliente. */
+export const MIN_RANK_SHIPMENTS = 2;
+
 export function customerBalances(ships: ShipmentRow[], nameOf: (s: ShipmentRow) => string, keyOf: (s: ShipmentRow) => string): CustomerBalance[] {
   const map = new Map<string, CustomerBalance & { agents: Map<string, number> }>();
   for (const s of ships) {
@@ -483,15 +486,18 @@ export function buildReport(input: ReportInput, opts: { year: number; today: str
   const gains = balances.filter((b) => b.balance >= 0.5).sort((a, b) => b.balance - a.balance);
   const losses = balances.filter((b) => b.balance <= -0.5).sort((a, b) => a.balance - b.balance);
   const lossTotal = losses.reduce((s, b) => s + b.balance, 0);
+  // il ranking conta solo i clienti con almeno MIN_RANK_SHIPMENTS spedizioni (una sola non fa un accordo)
+  const ranked = (list: CustomerBalance[]) => list.filter((b) => b.n >= MIN_RANK_SHIPMENTS).slice(0, 10);
+  const worst = ranked(losses);
   const balance = {
     inProfit: gains.length,
     inLoss: losses.length,
     profitTotal: gains.reduce((s, b) => s + b.balance, 0),
     lossTotal,
     // valores positivos: share() ignora totais negativos
-    worst10Share: share(-losses.slice(0, 10).reduce((s, b) => s + b.balance, 0), -lossTotal),
-    best: gains.slice(0, 10),
-    worst: losses.slice(0, 10),
+    worst10Share: share(-worst.reduce((s, b) => s + b.balance, 0), -lossTotal),
+    best: ranked(gains),
+    worst,
   };
 
   // assistenze
