@@ -16,10 +16,10 @@
  * Precisa de TARGET_DATABASE_URL no .env.
  */
 import postgres from 'postgres';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { readSpreadsheet } from './lib/spreadsheet.mjs';
-import { normalizeRow, dropSharedContacts, groupRows, planImport, addressKey } from './lib/customer-import.mjs';
+import { parseSpreadsheet } from '../src/modules/customers/spreadsheet.js';
+import { normalizeRow, dropSharedContacts, groupRows, planImport, addressKey, toImportPayload } from '../src/modules/customers/importer.js';
 
 const args = process.argv.slice(2);
 const file = args.find((a) => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--portal');
@@ -36,14 +36,14 @@ if (!url) {
 }
 
 const source = `csv:${portal.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-const rows = readSpreadsheet(file);
+const rows = await parseSpreadsheet(readFileSync(file));
 const { records, shared } = dropSharedContacts(rows.map(normalizeRow));
 const groups = groupRows(records);
 const problems = records.map((r, i) => ({ line: i + 2, ...r })).filter((r) => r.skip || r.problem);
 
 const sql = postgres(url, { ssl: 'require', max: 1, onnotice: () => {} });
 try {
-    const existing = await sql`SELECT id, name, address_line1, contact_name, phone, email FROM public.customers`;
+    const existing = await sql`SELECT id, name, address_line1, contact_name, phone, email, tax_id FROM public.customers`;
     const existingAddresses = (await sql`
         SELECT customer_id, address_line1, address_line2, address_line3, postal_code, city, country
         FROM public.customer_addresses`).map((a) => ({ customer_id: a.customer_id, key: addressKey(a) }));
@@ -77,32 +77,9 @@ try {
     if (!apply) {
         console.log('\nSimulação: nada foi gravado. Rode de novo com --apply para importar.');
     } else {
-        await sql.begin(async (tx) => {
-            const ids = new Map();
-            const cols = ['name', 'address_line1', 'address_line2', 'address_line3', 'postal_code', 'city', 'region',
-                'country', 'contact_name', 'phone', 'email', 'source'];
-            for (let i = 0; i < plan.newCustomers.length; i += 500) {
-                const chunk = plan.newCustomers.slice(i, i + 500);
-                const inserted = await tx`
-                    INSERT INTO public.customers ${tx(chunk.map((c) => Object.fromEntries(cols.map((k) => [k, c[k] ?? null]))), cols)}
-                    RETURNING id`;
-                chunk.forEach((c, j) => ids.set(c.key, inserted[j].id));
-            }
-            for (const u of plan.updates) {
-                await tx`UPDATE public.customers SET ${tx(u.patch, Object.keys(u.patch))} WHERE id = ${u.id}`;
-            }
-            const acols = ['customer_id', 'address_line1', 'address_line2', 'address_line3', 'postal_code', 'city',
-                'region', 'country', 'contact_name', 'phone', 'is_default'];
-            const addrRows = plan.newAddresses.map((a) => ({
-                ...Object.fromEntries(acols.map((k) => [k, a[k] ?? null])),
-                customer_id: a.customerId ?? ids.get(a.customerKey),
-                is_default: a.is_default,
-            }));
-            for (let i = 0; i < addrRows.length; i += 500) {
-                await tx`INSERT INTO public.customer_addresses ${tx(addrRows.slice(i, i + 500), acols)}`;
-            }
-        });
-        console.log(`\nImportado: ${plan.newCustomers.length} clientes novos, ${plan.updates.length} completados, ${plan.newAddresses.length} endereços.`);
+        // Mesma função do botão "Importa" da área Clienti: tudo numa transação.
+        const [{ result }] = await sql`SELECT public.import_customers(${sql.json(toImportPayload(plan, source))}) AS result`;
+        console.log(`\nImportado: ${result.customers} clientes novos, ${result.updated} completados, ${result.addresses} endereços.`);
     }
 } finally {
     await sql.end();

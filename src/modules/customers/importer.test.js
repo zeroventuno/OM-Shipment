@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clean, dropSharedContacts, parseAddress, smartCase, cleanPhone, cleanEmail, key, resolveCountry, normalizeRow, groupRows, planImport, addressKey } from './customer-import.mjs';
+import { detectColumns, toImportPayload, clean, dropSharedContacts, parseAddress, smartCase, cleanPhone, cleanEmail, key, resolveCountry, normalizeRow, groupRows, planImport, addressKey } from './importer.js';
 
 describe('normalização', () => {
     it('reconhece o mesmo nome escrito de jeitos diferentes', () => {
@@ -116,5 +116,32 @@ describe('junção e plano', () => {
         expect(plan2.newCustomers).toHaveLength(0);
         expect(plan2.newAddresses).toHaveLength(0);
         expect(plan2.updates).toHaveLength(0);
+    });
+});
+
+describe('colunas separadas e ida e volta', () => {
+    it('lê endereço em colunas (formato DHL/Excel) com partita IVA', () => {
+        const r = normalizeRow({
+            'Company Name': 'BIKE POINT GMBH', 'Address Line 1': 'HAUPTSTRASSE 5', 'Postal Code': '80331',
+            City: 'MÜNCHEN', 'State': 'Bayern', Country: 'DE', 'VAT Number': 'de 123 456 789', Phone: '0049 89 123456',
+        });
+        expect(r.name).toBe('Bike Point GmbH');
+        expect(r.address).toMatchObject({ address_line1: 'Hauptstrasse 5', postal_code: '80331', city: 'München', region: 'Bayern', country: 'Alemanha' });
+        expect(r.tax_id).toBe('DE123456789');
+        expect(r.phone).toBe('+4989123456');
+    });
+
+    it('reconhece os cabeçalhos do arquivo exportado pela área Clienti', () => {
+        const headers = ['Ragione sociale', 'Indirizzo 1', 'Indirizzo 2', 'Indirizzo 3', 'CAP', 'Città', 'Provincia', 'Paese', 'Referente', 'Telefono', 'E-mail', 'Partita IVA'];
+        const found = detectColumns(headers);
+        expect(Object.keys(found).sort()).toEqual(['city', 'contact', 'country', 'email', 'line1', 'line2', 'line3', 'name', 'phone', 'postal', 'region', 'tax'].sort());
+    });
+
+    it('monta o corpo da função de importação do banco', () => {
+        const groups = groupRows([normalizeRow({ 'Ragione Sociale': 'Nuovo', 'Indirizzo Principale': 'Via Roma 1 - 12100 - CUNEO (CN) - Italia', 'Partita IVA': 'IT0123' })]);
+        const payload = toImportPayload(planImport(groups, [], [], { source: 'csv:x' }), 'csv:x');
+        expect(payload.customers[0]).toMatchObject({ key: 'nuovo', name: 'Nuovo', tax_id: 'IT0123', source: 'csv:x' });
+        expect(payload.addresses[0]).toMatchObject({ customer_key: 'nuovo', customer_id: null, city: 'Cuneo', is_default: true });
+        expect(payload.addresses[0].customerName).toBeUndefined();
     });
 });

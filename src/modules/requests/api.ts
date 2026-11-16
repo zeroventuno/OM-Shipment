@@ -1,4 +1,6 @@
 import { requireSupabase } from "@/lib/supabase";
+import i18n from "i18next";
+import { countryLabel } from "@/modules/shipments/data/countries";
 
 /*
  * Pedidos de envio.
@@ -204,8 +206,10 @@ export async function listCustomerAddresses(customerId: string): Promise<(Custom
 }
 
 /** Endereço em uma linha, para mostrar e copiar. */
+/** Endereço numa linha; o país sai no idioma da tela (o banco guarda em português). */
 export function formatAddress(c: Partial<Customer> | Partial<AddressInput>): string {
-  return [c.address_line1, c.address_line2, c.address_line3, [c.postal_code, c.city].filter(Boolean).join(" "), c.region, c.country]
+  const country = c.country ? countryLabel(c.country, i18n.language || "it") : null;
+  return [c.address_line1, c.address_line2, c.address_line3, [c.postal_code, c.city].filter(Boolean).join(" "), c.region, country]
     .filter((part) => part && String(part).trim())
     .join(", ");
 }

@@ -15,6 +15,10 @@ const WarrantiesPage = lazy(() => import('@/modules/warranties/WarrantiesPage'))
 const TicketDetailPage = lazy(() => import('@/modules/assistance/TicketDetailPage'))
 const WarrantyDetailPage = lazy(() => import('@/modules/warranties/WarrantyDetailPage'))
 const RequestsPage = lazy(() => import('@/modules/requests/RequestsPage'))
+const CustomersPage = lazy(() => import('@/modules/customers/CustomersPage'))
+const CustomerDetailPage = lazy(() => import('@/modules/customers/CustomerDetailPage'))
+// Relatório anual: página inteira (sem menu), feita para imprimir/salvar em PDF.
+const ReportPage = lazy(() => import('@/modules/report/ReportPage'))
 // Formulário público de pedido de envio: fora do login (link com token).
 const RequestFormPage = lazy(() => import('@/modules/requests/RequestFormPage'))
 
@@ -34,6 +38,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pedido/:token" element={page(<RequestFormPage />)} />
+            <Route path="/report" element={<ProtectedRoute>{page(<ReportPage />)}</ProtectedRoute>} />
 
             <Route
                 path="/"
@@ -55,6 +60,9 @@ export default function App() {
                 <Route path="assistance/:id" element={page(<TicketDetailPage />)} />
                 <Route path="warranties" element={page(<WarrantiesPage />)} />
                 <Route path="warranties/:id" element={page(<WarrantyDetailPage />)} />
+
+                <Route path="customers" element={page(<CustomersPage />)} />
+                <Route path="customers/:id" element={page(<CustomerDetailPage />)} />
 
                 {/* Endereços antigos do OM-Shipment, para favoritos continuarem funcionando */}
                 <Route path="dashboard" element={<Navigate to="/shipments" replace />} />

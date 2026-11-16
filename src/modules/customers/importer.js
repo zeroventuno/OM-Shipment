@@ -10,14 +10,14 @@
  *  - Cliente que já existe no banco: nada é sobrescrito. Só se preenche o que
  *    está vazio e se acrescentam os endereços que ainda não existem.
  */
-import { COUNTRIES } from '../../src/modules/shipments/data/countries.js';
+import { COUNTRIES } from '../shipments/data/countries.js';
 
 // ---------------------------------------------------------------------------
 // Texto
 // ---------------------------------------------------------------------------
 
 export function clean(value) {
-    let s = String(value ?? '').replace(/[ \t\r\n]+/g, ' ').replace(/\s{2,}/g, ' ').trim()
+    let s = String(value ?? '').replace(/[\u00a0\t\r\n]+/g, ' ').replace(/\s{2,}/g, ' ').trim()
         .replace(/^[-,;.\s]+|[-,;\s]+$/g, '')
         // "Bellini ,24" / "Bellini,24" -> "Bellini, 24"
         .replace(/\s+,/g, ',').replace(/,(?=[\p{L}\d])/gu, ', ');
@@ -183,27 +183,69 @@ export const addressKey = (a) => a && [
 // Colunas de cada portal
 // ---------------------------------------------------------------------------
 
-const COLUMNS = {
-    name: ['Ragione Sociale', 'Company', 'Azienda', 'Nome', 'Name', 'Destinatario'],
-    address: ['Indirizzo Principale', 'Indirizzo', 'Address'],
-    email: ['e-Mail', 'Email', 'E-mail'],
-    contact: ['Riferimento', 'Contatto', 'Contact', 'Referente'],
-    phone: ['Telefono', 'Phone', 'Cellulare', 'Tel'],
+// Nomes de coluna aceitos (comparados sem maiúsculas, espaços e pontuação).
+// Inclui os cabeçalhos do arquivo exportado pela área Clienti, para o
+// arquivo poder voltar depois de editado no Excel.
+export const COLUMNS = {
+    name: ['Ragione Sociale', 'Ragione Sociale Destinatario', 'Company', 'Company Name', 'Azienda', 'Nome', 'Name', 'Destinatario', 'Cliente', 'Customer', 'Receiver', 'Recipient', 'Empresa'],
+    // Endereço inteiro numa célula: "Rua - CEP - Cidade (Prov) - País" (MBE)
+    address: ['Indirizzo Principale', 'Indirizzo', 'Address', 'Endereço', 'Full Address'],
+    line1: ['Indirizzo 1', 'Indirizzo riga 1', 'Address 1', 'Address Line 1', 'Address1', 'Street', 'Street Address', 'Via', 'Endereço 1'],
+    line2: ['Indirizzo 2', 'Indirizzo riga 2', 'Address 2', 'Address Line 2', 'Address2', 'Endereço 2'],
+    line3: ['Indirizzo 3', 'Indirizzo riga 3', 'Address 3', 'Address Line 3', 'Address3', 'Endereço 3'],
+    postal: ['CAP', 'Postal Code', 'Postcode', 'Zip', 'ZIP Code', 'Zip Code', 'CEP', 'Codice Postale', 'PLZ'],
+    city: ['Città', 'Citta', 'City', 'Località', 'Localita', 'Comune', 'Cidade', 'Town', 'Ort'],
+    region: ['Provincia', 'Prov', 'Regione', 'Region', 'State', 'State/Province', 'County', 'Estado'],
+    country: ['Paese', 'Nazione', 'Stato', 'Country', 'Country Code', 'Codice Paese', 'País', 'Pais', 'Land'],
+    email: ['e-Mail', 'Email', 'E-mail', 'Email Address', 'Posta elettronica'],
+    contact: ['Riferimento', 'Contatto', 'Contact', 'Contact Name', 'Referente', 'Nome contatto', 'Persona di contatto', 'Contato'],
+    phone: ['Telefono', 'Phone', 'Phone Number', 'Cellulare', 'Tel', 'Mobile', 'Telefone'],
+    tax: ['Partita IVA', 'Numero Partita Iva', 'P.IVA', 'P. IVA', 'PIVA', 'Codice Fiscale', 'Codice fiscale / Partita IVA', 'VAT', 'VAT Number', 'Tax ID', 'EORI', 'CNPJ', 'NIF'],
 };
 const pick = (row, names) => {
-    for (const n of names) {
-        const hit = Object.keys(row).find((k) => k.toLowerCase() === n.toLowerCase());
-        if (hit && clean(row[hit])) return row[hit];
-    }
+    const wanted = new Set(names.map(key));
+    for (const k of Object.keys(row)) if (wanted.has(key(k)) && clean(row[k])) return row[k];
     return null;
 };
+
+/** Quais grupos de colunas (name, address, city…) aparecem no cabeçalho. */
+export function detectColumns(headers) {
+    return Object.fromEntries(Object.entries(COLUMNS)
+        .map(([field, names]) => [field, headers.find((h) => names.some((n) => key(n) === key(h))) ?? null])
+        .filter(([, h]) => h));
+}
+
+/** Endereço em colunas separadas (rua, CEP, cidade, país). */
+function addressFromColumns(row) {
+    const line1 = pick(row, COLUMNS.line1) ?? pick(row, COLUMNS.address);
+    const city = pick(row, COLUMNS.city);
+    const countryRaw = pick(row, COLUMNS.country);
+    if (!clean(line1) && !clean(city)) return { address: null };
+    if (!clean(line1) || !clean(city) || !clean(countryRaw)) return { address: null, problem: 'endereço incompleto' };
+    const country = resolveCountry(countryRaw);
+    if (!country) return { address: null, problem: `país não reconhecido: ${clean(countryRaw)}` };
+    const region = clean(pick(row, COLUMNS.region));
+    return {
+        address: {
+            address_line1: smartCase(line1),
+            address_line2: smartCase(pick(row, COLUMNS.line2)) ?? null,
+            address_line3: smartCase(pick(row, COLUMNS.line3)) ?? null,
+            postal_code: cleanPostal(pick(row, COLUMNS.postal)),
+            city: smartCase(city),
+            region: region ? (region.length <= 3 ? region.toUpperCase() : smartCase(region)) : null,
+            country: country.name,
+        },
+    };
+}
 
 /** Linha crua da planilha -> registro normalizado (ou motivo para pular). */
 export function normalizeRow(row) {
     const rawName = clean(pick(row, COLUMNS.name));
     if (!rawName) return { skip: 'sem nome' };
     const name = smartCase(rawName, { names: true });
-    const { address, problem } = parseAddress(pick(row, COLUMNS.address));
+    // Com coluna de cidade, o endereço vem separado; sem ela, numa célula só.
+    const separate = Object.keys(row).some((k) => COLUMNS.city.some((n) => key(n) === key(k)));
+    const { address, problem } = separate ? addressFromColumns(row) : parseAddress(pick(row, COLUMNS.address));
     const contact = smartCase(pick(row, COLUMNS.contact));
     return {
         name,
@@ -214,6 +256,7 @@ export function normalizeRow(row) {
         contact: contact && key(contact) !== key(name) ? contact : null,
         phone: cleanPhone(pick(row, COLUMNS.phone)),
         email: cleanEmail(pick(row, COLUMNS.email)),
+        tax_id: clean(pick(row, COLUMNS.tax))?.toUpperCase().replace(/\s+/g, '') ?? null,
     };
 }
 
@@ -261,10 +304,10 @@ export function groupRows(records) {
     for (const r of records) {
         if (r.skip) continue;
         let g = groups.get(r.key);
-        if (!g) groups.set(r.key, (g = { key: r.key, names: [], contacts: [], phones: [], emails: [], addresses: new Map(), rows: 0 }));
+        if (!g) groups.set(r.key, (g = { key: r.key, names: [], contacts: [], phones: [], emails: [], taxes: [], addresses: new Map(), rows: 0 }));
         g.rows++;
         g.names.push(r.name);
-        g.contacts.push(r.contact); g.phones.push(r.phone); g.emails.push(r.email);
+        g.contacts.push(r.contact); g.phones.push(r.phone); g.emails.push(r.email); g.taxes.push(r.tax_id);
         if (r.address) {
             const k = addressKey(r.address);
             let a = g.addresses.get(k);
@@ -283,6 +326,7 @@ export function groupRows(records) {
             contact_name: mostCommon(g.contacts),
             phone: mostCommon(g.phones),
             email: mostCommon(g.emails),
+            tax_id: mostCommon(g.taxes),
             rows: g.rows,
             addresses,
         };
@@ -293,6 +337,12 @@ export function groupRows(records) {
  * Compara com o banco e decide o que inserir.
  * existing: [{ id, name, address_line1, contact_name, phone, email }]
  * existingAddresses: [{ customer_id, key }]
+ */
+/**
+ * @param {any[]} groups
+ * @param {any[]} existing
+ * @param {{ customer_id: string, key: string }[]} existingAddresses
+ * @param {{ source?: string, maxAddresses?: number }} [options]
  */
 export function planImport(groups, existing, existingAddresses, { source, maxAddresses = 30 } = {}) {
     const byKey = new Map();
@@ -320,7 +370,7 @@ export function planImport(groups, existing, existingAddresses, { source, maxAdd
         if (!found) {
             plan.newCustomers.push({
                 key: g.key, name: g.name, ...mainFields,
-                contact_name: main?.contact_name ?? g.contact_name, phone: main?.phone ?? g.phone, email: g.email, source,
+                contact_name: main?.contact_name ?? g.contact_name, phone: main?.phone ?? g.phone, email: g.email, tax_id: g.tax_id, source,
             });
             addresses.forEach((a, i) => plan.newAddresses.push({ customerKey: g.key, customerName: g.name, ...addr(a), is_default: i === 0 }));
             continue;
@@ -328,7 +378,7 @@ export function planImport(groups, existing, existingAddresses, { source, maxAdd
 
         const patch = {};
         if (!found.address_line1 && main) Object.assign(patch, mainFields);
-        for (const [f, v] of [['contact_name', main?.contact_name ?? g.contact_name], ['phone', main?.phone ?? g.phone], ['email', g.email]]) {
+        for (const [f, v] of [['contact_name', main?.contact_name ?? g.contact_name], ['phone', main?.phone ?? g.phone], ['email', g.email], ['tax_id', g.tax_id]]) {
             if (!found[f] && v) patch[f] = v;
         }
         const known = addrByCustomer.get(found.id) ?? new Set();
@@ -347,3 +397,16 @@ const addr = (a) => ({
     postal_code: a.postal_code, city: a.city, region: a.region, country: a.country,
     contact_name: a.contact_name, phone: a.phone,
 });
+
+/** Plano -> corpo da função import_customers do banco (usada pela tela e pelo terminal). */
+export function toImportPayload(plan, source) {
+    return {
+        source,
+        customers: plan.newCustomers,
+        updates: plan.updates.map((u) => ({ id: u.id, patch: u.patch })),
+        addresses: plan.newAddresses.map(({ customerId, customerKey, ...a }) => {
+            delete a.customerName;
+            return { ...a, customer_id: customerId ?? null, customer_key: customerKey ?? null };
+        }),
+    };
+}

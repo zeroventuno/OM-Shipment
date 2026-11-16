@@ -27,7 +27,7 @@ function BottomNav() {
     return (
         <nav
             aria-label={t('Main menu')}
-            className="lg:hidden fixed bottom-0 inset-x-0 z-20 grid grid-cols-3 bg-card border-t border-border pb-[env(safe-area-inset-bottom)]"
+            className="lg:hidden fixed bottom-0 inset-x-0 z-20 grid grid-cols-4 bg-card border-t border-border pb-[env(safe-area-inset-bottom)]"
         >
             {AREAS.map((area) => {
                 const active = pathname.startsWith(area.to);
@@ -37,7 +37,7 @@ function BottomNav() {
                         key={area.to}
                         to={area.to}
                         className={cn(
-                            'relative flex flex-col items-center gap-1 py-2.5 text-[11px] uppercase tracking-[0.08em]',
+                            'relative flex flex-col items-center gap-1 py-2.5 text-[10px] uppercase tracking-[0.06em]',
                             active ? 'text-foreground font-bold' : 'text-muted-foreground font-semibold'
                         )}
                     >

@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { LogOut, X, Truck, Wrench, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { LogOut, X, Truck, Wrench, ShieldCheck, Users, FileBarChart, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,7 +15,7 @@ export interface Area {
     sub?: { label: string; to: string; end?: boolean; countKey?: string }[];
 }
 
-// As três áreas do sistema. Envios tem subpáginas.
+// As áreas do sistema. Envios tem subpáginas.
 export const AREAS: Area[] = [
     {
         icon: Truck,
@@ -30,6 +30,7 @@ export const AREAS: Area[] = [
     },
     { icon: Wrench, label: 'nav.assistance', to: '/assistance' },
     { icon: ShieldCheck, label: 'nav.warranties', to: '/warranties' },
+    { icon: Users, label: 'nav.customers', to: '/customers' },
 ];
 
 /** Quantos processos estão parados há mais de 30 dias em cada área. */
@@ -151,6 +152,14 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
                 </nav>
 
                 <div className="p-4 space-y-4">
+                    <NavLink
+                        to="/report"
+                        onClick={onClose}
+                        className="flex items-center justify-center gap-2 h-10 rounded-full border border-white/25 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/80 hover:text-white hover:border-white"
+                    >
+                        <FileBarChart className="h-4 w-4" />
+                        {t('rep.menu')}
+                    </NavLink>
                     <div className="flex gap-1.5" role="group" aria-label={t('Language')}>
                         {(['pt', 'it'] as const).map((lng) => (
                             <button

@@ -3,33 +3,46 @@
  * ou .csv. Sem dependências — a biblioteca mais usada para xlsx tem falhas de
  * segurança abertas e quebraria o `npm audit` do CI.
  *
+ * Funciona no navegador (botão "Importar" da área Clienti) e no Node
+ * (`npm run import-customers`). A descompactação do .xlsx usa o
+ * DecompressionStream do navegador/Node 18+, ou a função passada em `inflateRaw`.
+ *
  * Devolve uma lista de objetos { "Cabeçalho": "valor" }.
  */
-import { readFileSync } from 'node:fs';
-import { inflateRawSync } from 'node:zlib';
 
-/** Arquivos de um .zip (o .xlsx é um zip de XMLs). */
-function unzip(buf) {
+async function defaultInflateRaw(bytes) {
+    if (typeof DecompressionStream === 'undefined') throw new Error('Este navegador não consegue abrir .xlsx: salve como .csv');
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+const utf8 = new TextDecoder('utf-8');
+
+/** Arquivos de um .zip (o .xlsx é um zip de XMLs): nome -> função que devolve o texto. */
+function unzip(bytes, inflateRaw) {
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const u32 = (o) => view.getUint32(o, true);
+    const u16 = (o) => view.getUint16(o, true);
     let eocd = -1;
-    for (let i = buf.length - 22; i >= Math.max(0, buf.length - 65557); i--) {
-        if (buf.readUInt32LE(i) === 0x06054b50) { eocd = i; break; }
+    for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i--) {
+        if (u32(i) === 0x06054b50) { eocd = i; break; }
     }
-    if (eocd < 0) throw new Error('Arquivo não é um .xlsx válido (zip sem diretório central)');
-    const count = buf.readUInt16LE(eocd + 10);
-    let p = buf.readUInt32LE(eocd + 16);
+    if (eocd < 0) throw new Error('Arquivo não é um .xlsx válido');
+    const count = u16(eocd + 10);
+    let p = u32(eocd + 16);
     const files = new Map();
     for (let n = 0; n < count; n++) {
-        if (buf.readUInt32LE(p) !== 0x02014b50) throw new Error('Zip corrompido');
-        const method = buf.readUInt16LE(p + 10);
-        const size = buf.readUInt32LE(p + 20);
-        const nameLen = buf.readUInt16LE(p + 28);
-        const extraLen = buf.readUInt16LE(p + 30);
-        const commentLen = buf.readUInt16LE(p + 32);
-        const local = buf.readUInt32LE(p + 42);
-        const name = buf.toString('utf8', p + 46, p + 46 + nameLen);
-        const start = local + 30 + buf.readUInt16LE(local + 26) + buf.readUInt16LE(local + 28);
-        const raw = buf.subarray(start, start + size);
-        files.set(name, () => (method === 8 ? inflateRawSync(raw) : raw).toString('utf8'));
+        if (u32(p) !== 0x02014b50) throw new Error('Arquivo .xlsx corrompido');
+        const method = u16(p + 10);
+        const size = u32(p + 20);
+        const nameLen = u16(p + 28);
+        const extraLen = u16(p + 30);
+        const commentLen = u16(p + 32);
+        const local = u32(p + 42);
+        const name = utf8.decode(bytes.subarray(p + 46, p + 46 + nameLen));
+        const start = local + 30 + u16(local + 26) + u16(local + 28);
+        const raw = bytes.subarray(start, start + size);
+        files.set(name, async () => utf8.decode(method === 8 ? await inflateRaw(raw) : raw));
         p += 46 + nameLen + extraLen + commentLen;
     }
     return files;
@@ -51,14 +64,14 @@ const colIndex = (ref) => {
     return n - 1;
 };
 
-function readXlsx(buf) {
-    const files = unzip(buf);
+async function readXlsx(bytes, inflateRaw) {
+    const files = unzip(bytes, inflateRaw);
     const shared = files.has('xl/sharedStrings.xml')
-        ? [...files.get('xl/sharedStrings.xml')().matchAll(/<si>([\s\S]*?)<\/si>/g)].map((m) => textOf(m[1]))
+        ? [...(await files.get('xl/sharedStrings.xml')()).matchAll(/<si>([\s\S]*?)<\/si>/g)].map((m) => textOf(m[1]))
         : [];
     const sheetName = [...files.keys()].filter((k) => /^xl\/worksheets\/sheet\d+\.xml$/.test(k)).sort()[0];
     if (!sheetName) throw new Error('Nenhuma aba encontrada no .xlsx');
-    const xml = files.get(sheetName)();
+    const xml = await files.get(sheetName)();
     const rows = [];
     for (const r of xml.matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/g)) {
         const row = [];
@@ -80,13 +93,11 @@ function readXlsx(buf) {
     return rows;
 }
 
-function readCsv(buf) {
-    let text = buf.toString('utf8');
-    // Exportações antigas vêm em Latin-1: o UTF-8 inválido vira "�".
-    if ((text.match(/�/g) || []).length > 3) text = buf.toString('latin1');
-    text = text.replace(/^﻿/, '');
+export function parseCsvText(input) {
+    const text = input.replace(/^\uFEFF/, '');
     const firstLine = text.split(/\r?\n/, 1)[0];
-    const sep = (firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length ? ';' : ',';
+    const sep = (firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length ? ';'
+        : (firstLine.match(/\t/g) || []).length > (firstLine.match(/,/g) || []).length ? '\t' : ',';
     const rows = [];
     let row = [], field = '', quoted = false;
     for (let i = 0; i < text.length; i++) {
@@ -106,9 +117,18 @@ function readCsv(buf) {
     return rows;
 }
 
-export function readSpreadsheet(path) {
-    const buf = readFileSync(path);
-    const rows = buf.readUInt32LE(0) === 0x04034b50 ? readXlsx(buf) : readCsv(buf);
+function readCsv(bytes) {
+    let text = utf8.decode(bytes);
+    // Exportações antigas vêm em Latin-1: o UTF-8 inválido vira "�".
+    if ((text.match(/�/g) || []).length > 3) text = new TextDecoder('windows-1252').decode(bytes);
+    return parseCsvText(text);
+}
+
+/** bytes do arquivo (.xlsx ou .csv) -> linhas como objetos pelo cabeçalho. */
+export async function parseSpreadsheet(input, { inflateRaw = defaultInflateRaw } = {}) {
+    const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
+    const isZip = bytes.length > 4 && bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04;
+    const rows = isZip ? await readXlsx(bytes, inflateRaw) : readCsv(bytes);
     const [header = [], ...body] = rows;
     const names = header.map((h) => String(h ?? '').trim());
     return body
