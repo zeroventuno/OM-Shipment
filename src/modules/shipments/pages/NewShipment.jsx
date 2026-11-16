@@ -780,7 +780,6 @@ export default function NewShipment() {
 
                     {isExtraEu(formData.destinationCountry) && (
                         <ExportDocsCard
-                            tracking={formData.trackingCode}
                             customerName={formData.customerName}
                             invoiceValue={request?.invoice_value}
                         />

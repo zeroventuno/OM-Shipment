@@ -12,13 +12,12 @@ const MAX_BYTES = 15 * 1024 * 1024;
  * Documentos de alfândega de um envio fora da UE. A fatura vem do gestionale
  * (PDF enviado aqui, não fica salvo); o resto é gerado e tudo sai num PDF só.
  */
-export function ExportDocsCard({ tracking, customerName, invoiceValue }) {
+export function ExportDocsCard({ customerName, invoiceValue }) {
     const { t } = useTranslation();
     const fileRef = useRef(null);
     const [invoice, setInvoice] = useState(null); // { name, bytes }
     const [number, setNumber] = useState('');
     const [date, setDate] = useState('');
-    const [track, setTrack] = useState(tracking || '');
     const [value, setValue] = useState(invoiceValue ? String(invoiceValue) : '');
     const [eur1, setEur1] = useState(Number(invoiceValue) > EUR1_THRESHOLD);
     const [eur1Touched, setEur1Touched] = useState(false);
@@ -26,8 +25,6 @@ export function ExportDocsCard({ tracking, customerName, invoiceValue }) {
     const [producer, setProducer] = useState('eu');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
-
-    useEffect(() => { if (tracking) setTrack(tracking); }, [tracking]);
 
     const amount = Number(String(value).replace(/\./g, '').replace(',', '.'));
     useEffect(() => {
@@ -56,7 +53,7 @@ export function ExportDocsCard({ tracking, customerName, invoiceValue }) {
             const logo = await fetch('/logo.png').then((r) => (r.ok ? r.arrayBuffer() : null)).catch(() => null);
             const bytes = await buildExportPdf({
                 invoiceBytes: invoice.bytes, logoBytes: logo, invoiceNumber: number.trim(), invoiceDate: date,
-                tracking: track.trim(), includeEur1: eur1, origin, producer,
+                includeEur1: eur1, origin, producer,
             });
             const who = (customerName || '').replace(/[^\w-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
             downloadBytes(bytes, `Export_FT${number.trim()}${who ? `_${who}` : ''}.pdf`);
@@ -106,8 +103,7 @@ export function ExportDocsCard({ tracking, customerName, invoiceValue }) {
                     <Input label={t('exp.number')} value={number} onChange={(e) => setNumber(e.target.value)} placeholder="1255" />
                     <Input label={t('exp.date')} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                    <Input label={t('Tracking Code')} value={track} onChange={(e) => setTrack(e.target.value)} />
+                <div>
                     <Input label={t('exp.value')} inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} placeholder="9990" />
                 </div>
 

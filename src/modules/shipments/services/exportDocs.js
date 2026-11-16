@@ -7,7 +7,8 @@ import { countryCode } from '../data/countries';
  *   3. o mandato para o EUR.1 (italiano), quando o valor passa de €6.000.
  *
  * Os textos reproduzem os modelos que a OM já usa (fatura FT 1255). Só mudam
- * número e data da fatura, tracking e a data de hoje. pdf-lib entra por
+ * número e data da fatura e a data de hoje. O tracking não entra: os
+ * documentos são anexados no portal antes de o envio gerar o tracking. pdf-lib entra por
  * import dinâmico, como no export dos PODs.
  */
 
@@ -90,10 +91,11 @@ const FREE_EXPORT_BULLETS = [
 ];
 
 /** Blocos da declaração de livre exportação (inglês). */
-export function freeExportBlocks({ invoiceNumber, invoiceDate, tracking, today }) {
-    const ref = `invoice no. ${invoiceNumber} dated ${itDate(invoiceDate)}, tracking no. ${tracking || '________________'}`;
+export function freeExportBlocks({ invoiceNumber, invoiceDate, today }) {
+    const ref = `invoice no. ${invoiceNumber} dated ${itDate(invoiceDate)}`;
     const signature = [
         { type: 'gap', h: 6 },
+        { type: 'keep', h: 66 },
         { type: 'p', text: `Place: ${COMPANY.place}, IT` },
         { type: 'p', text: `Date: ${enDate(today)}` },
         { type: 'signature', label: 'Signature:' },
@@ -152,7 +154,7 @@ export function eur1Blocks({ invoiceNumber, invoiceDate, today, origin = 'wholly
 // ---------------------------------------------------------------------------
 
 const A4 = { width: 595.28, height: 841.89 };
-const M = { left: 56, right: 56, top: 48, bottom: 56 };
+const M = { left: 56, right: 56, top: 40, bottom: 46 };
 const INK = [0.1, 0.1, 0.12];
 const MUTED = [0.4, 0.4, 0.45];
 const ACCENT = [0.17, 0.33, 0.55];
@@ -162,7 +164,7 @@ const ACCENT = [0.17, 0.33, 0.55];
  * logoBytes: PNG do logo (opcional). Devolve Uint8Array.
  */
 export async function buildExportPdf({
-    invoiceBytes, logoBytes, invoiceNumber, invoiceDate, tracking, includeEur1,
+    invoiceBytes, logoBytes, invoiceNumber, invoiceDate, includeEur1,
     origin, producer, today = todayRome(),
 }) {
     const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
@@ -184,7 +186,7 @@ export async function buildExportPdf({
     const color = (c) => rgb(c[0], c[1], c[2]);
 
     const ctx = { doc, fonts, logo, color };
-    renderDocument(ctx, freeExportBlocks({ invoiceNumber, invoiceDate, tracking, today }));
+    renderDocument(ctx, freeExportBlocks({ invoiceNumber, invoiceDate, today }));
     if (includeEur1) renderDocument(ctx, eur1Blocks({ invoiceNumber, invoiceDate, today, origin, producer }));
 
     return doc.save();
@@ -220,12 +222,12 @@ function renderDocument(ctx, blocks) {
         page = doc.addPage([A4.width, A4.height]);
         pageNo += 1;
         y = drawLetterhead(ctx, page);
-        page.drawText(String(pageNo), { x: A4.width - M.right - 6, y: M.bottom - 24, size: 9, font: fonts.regular, color: color(MUTED) });
+        page.drawText(String(pageNo), { x: A4.width - M.right - 6, y: M.bottom - 20, size: 9, font: fonts.regular, color: color(MUTED) });
     };
     const ensure = (h) => {
         if (y - h < M.bottom) newPage();
     };
-    const lines = (text, { font = fonts.regular, size = 9.5, x = M.left, w = width, lead = 1.38, ink = INK, center = false } = {}) => {
+    const lines = (text, { font = fonts.regular, size = 9.2, x = M.left, w = width, lead = 1.3, ink = INK, center = false } = {}) => {
         for (const line of wrap(text, font, size, w)) {
             ensure(size * lead);
             const lx = center ? M.left + (width - font.widthOfTextAtSize(line, size)) / 2 : x;
@@ -268,7 +270,7 @@ function renderDocument(ctx, blocks) {
             case 'bullet': {
                 ensure(14);
                 page.drawCircle({ x: M.left + 3, y: y - 6.3, size: 1.8, color: color(INK) });
-                lines(b.text, { x: M.left + 14, w: width - 14, size: 9 });
+                lines(b.text, { x: M.left + 14, w: width - 14, size: 8.8 });
                 y -= 3;
                 break;
             }
@@ -303,6 +305,10 @@ function renderDocument(ctx, blocks) {
                 y -= 50;
                 break;
             }
+            case 'keep':
+                // mantém o bloco (local, data, assinatura) inteiro na mesma página
+                ensure(b.h);
+                break;
             case 'gap':
                 y -= b.h;
                 break;
@@ -325,11 +331,11 @@ function drawLetterhead({ fonts, logo, color }, page) {
     let y = top - 24;
     for (const line of COMPANY.lines) {
         page.drawText(line, { x, y, size: 8, font: fonts.regular, color: color(MUTED) });
-        y -= 10.5;
+        y -= 9.6;
     }
     y -= 8;
     page.drawLine({ start: { x: M.left, y }, end: { x: A4.width - M.right, y }, thickness: 0.6, color: color([0.82, 0.82, 0.85]) });
-    return y - 18;
+    return y - 14;
 }
 
 export function downloadBytes(bytes, filename) {

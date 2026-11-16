@@ -29,10 +29,11 @@ describe('datas', () => {
 });
 
 describe('textos', () => {
-    it('a declaração cita fatura, data e tracking', () => {
-        const text = freeExportBlocks({ invoiceNumber: '1255', invoiceDate: '2026-10-26', tracking: '1Z123', today: '2026-11-16' })
+    it('a declaração cita fatura e data, sem tracking', () => {
+        const text = freeExportBlocks({ invoiceNumber: '1255', invoiceDate: '2026-10-26', today: '2026-11-16' })
             .map((b) => b.text || '').join(' ');
-        expect(text).toContain('invoice no. 1255 dated 26/10/2026, tracking no. 1Z123');
+        expect(text).toContain('invoice no. 1255 dated 26/10/2026');
+        expect(text).not.toMatch(/tracking/i);
         expect(text).toContain('Date: 16 Nov 2026');
         expect(text).not.toContain('Decree 457');
     });
@@ -48,10 +49,10 @@ describe('textos', () => {
 
 describe('buildExportPdf', () => {
     it('junta a fatura e os documentos gerados num PDF só', async () => {
-        const base = { invoiceNumber: '1255', invoiceDate: '2026-10-26', tracking: 'X', today: '2026-11-16' };
+        const base = { invoiceNumber: '1255', invoiceDate: '2026-10-26', today: '2026-11-16' };
         const without = await PDFDocument.load(await buildExportPdf({ ...base, invoiceBytes: await fakeInvoice(2), includeEur1: false }));
         const withEur1 = await PDFDocument.load(await buildExportPdf({ ...base, invoiceBytes: await fakeInvoice(2), includeEur1: true }));
-        expect(without.getPageCount()).toBeGreaterThanOrEqual(4); // 2 da fatura + declaração
+        expect(without.getPageCount()).toBe(4); // 2 da fatura + 2 da declaração, sem página sobrando
         expect(withEur1.getPageCount()).toBe(without.getPageCount() + 1);
     });
 });
