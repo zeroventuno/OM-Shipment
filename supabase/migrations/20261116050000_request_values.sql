@@ -1,7 +1,8 @@
 -- ============================================================================
 -- Pedidos de envio: valor faturado e valor para seguro
 --
--- invoice_value: valor da fatura (EUR), obrigatório nos pedidos novos.
+-- invoice_value: valor da fatura (EUR); o formulário exige, o banco aceita sem
+--                (telas antigas em cache não mandam o campo).
 -- insured_value: valor a segurar (EUR); 0 = sem seguro. Pedidos antigos ficam NULL.
 -- ============================================================================
 
@@ -76,7 +77,8 @@ BEGIN
     -- Valor faturado: obrigatório. Seguro: 0 (ou vazio) = sem seguro.
     invoice := round(NULLIF(request->>'invoice_value', '')::NUMERIC, 2);
     insured := COALESCE(round(NULLIF(request->>'insured_value', '')::NUMERIC, 2), 0);
-    IF invoice IS NULL OR invoice NOT BETWEEN 0 AND 10000000 OR insured NOT BETWEEN 0 AND 10000000 THEN
+    -- Telas antigas (em cache) não mandam o campo: aceita sem valor; o formulário novo exige.
+    IF (request ? 'invoice_value' AND invoice IS NULL) OR invoice NOT BETWEEN 0 AND 10000000 OR insured NOT BETWEEN 0 AND 10000000 THEN
         RAISE EXCEPTION 'invalid invoice or insured value' USING ERRCODE = '22023';
     END IF;
 
