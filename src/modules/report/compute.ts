@@ -145,6 +145,44 @@ export function daysBetween(a: string, b: string): number {
 const avg = (xs: number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null);
 const share = (part: number, whole: number) => (whole > 0 ? part / whole : 0);
 
+export interface CustomerBalance {
+  key: string;
+  name: string;
+  /** spedizioni dell'anno */
+  n: number;
+  cost: number;
+  paid: number;
+  balance: number;
+  /** spedizioni con un costo e niente pagato dal cliente */
+  unpaid: number;
+  /** agente più frequente nelle sue spedizioni ("" se nessuno) */
+  agent: string;
+}
+
+/** Saldo per cliente (pagato − costo). Le spedizioni ritirate dal cliente valgono zero. */
+export function customerBalances(ships: ShipmentRow[], nameOf: (s: ShipmentRow) => string, keyOf: (s: ShipmentRow) => string): CustomerBalance[] {
+  const map = new Map<string, CustomerBalance & { agents: Map<string, number> }>();
+  for (const s of ships) {
+    const key = keyOf(s);
+    if (!key) continue;
+    const b = map.get(key) ?? { key, name: nameOf(s), n: 0, cost: 0, paid: 0, balance: 0, unpaid: 0, agent: "", agents: new Map<string, number>() };
+    const cost = costOf(s);
+    const paid = toNum(s.customer_payment);
+    b.n += 1;
+    b.cost += cost;
+    b.paid += paid;
+    if (cost > 0 && paid <= 0) b.unpaid += 1;
+    const ag = (s.agent ?? "").trim();
+    if (ag) b.agents.set(ag, (b.agents.get(ag) ?? 0) + 1);
+    map.set(key, b);
+  }
+  return [...map.values()].map(({ agents, ...b }) => ({
+    ...b,
+    balance: Math.round((b.paid - b.cost) * 100) / 100,
+    agent: [...agents].sort((x, y) => y[1] - x[1])[0]?.[0] ?? "",
+  }));
+}
+
 /** il costo del trasporto della spedizione (prezzo del preventivo scelto) */
 export function costOf(s: ShipmentRow): number {
   return Math.max(0, toNum(s.selected_quote?.price));
@@ -200,6 +238,17 @@ export type YearModel = {
     top10Share: number;
   };
   agents: Group[];
+  /** saldo trasporti per cliente: quanto ha pagato meno quanto è costato */
+  balance: {
+    inProfit: number;
+    inLoss: number;
+    profitTotal: number;
+    lossTotal: number;
+    /** quota della perdita totale fatta dai 10 clienti peggiori */
+    worst10Share: number;
+    best: CustomerBalance[];
+    worst: CustomerBalance[];
+  };
   tickets: {
     count: number;
     phases: Group[];
@@ -429,6 +478,22 @@ export function buildReport(input: ReportInput, opts: { year: number; today: str
 
   const agents = groupBy(ships, (s) => trim(s.agent), costOf).sort(byCount);
 
+  // saldo per cliente: i migliori e i peggiori (sotto 50 centesimi conta come pari)
+  const balances = customerBalances(named, (s) => nameOf.get(normName(s.customer_name)) ?? trim(s.customer_name), (s) => normName(s.customer_name));
+  const gains = balances.filter((b) => b.balance >= 0.5).sort((a, b) => b.balance - a.balance);
+  const losses = balances.filter((b) => b.balance <= -0.5).sort((a, b) => a.balance - b.balance);
+  const lossTotal = losses.reduce((s, b) => s + b.balance, 0);
+  const balance = {
+    inProfit: gains.length,
+    inLoss: losses.length,
+    profitTotal: gains.reduce((s, b) => s + b.balance, 0),
+    lossTotal,
+    // valores positivos: share() ignora totais negativos
+    worst10Share: share(-losses.slice(0, 10).reduce((s, b) => s + b.balance, 0), -lossTotal),
+    best: gains.slice(0, 10),
+    worst: losses.slice(0, 10),
+  };
+
   // assistenze
   const decided = tickets.filter((t) => t.approval_status === "Approvato" || t.approval_status === "Rifiutato");
   const approved = decided.filter((t) => t.approval_status === "Approvato").length;
@@ -486,6 +551,7 @@ export function buildReport(input: ReportInput, opts: { year: number; today: str
       top10Share,
     },
     agents,
+    balance,
     tickets: {
       count: tickets.length,
       phases: groupBy(tickets, (t) => trim(t.phase) || "—").sort((a, b) => phaseRank(a.key) - phaseRank(b.key) || byCount(a, b)),
@@ -553,7 +619,7 @@ export type InsightVar =
 export type Insight = { key: string; tone: "good" | "watch" | "info"; vars: Record<string, InsightVar> };
 
 /** la sezione di una conclusione, dal prefisso della chiave (rep.ins.<sezione>.<nome>) */
-export type InsightSection = "ship" | "carr" | "geo" | "cli" | "ass" | "war" | "req" | "q";
+export type InsightSection = "ship" | "carr" | "geo" | "cli" | "bal" | "ass" | "war" | "req" | "q";
 export const sectionOf = (key: string): InsightSection => key.split(".")[2] as InsightSection;
 
 /**
@@ -632,6 +698,22 @@ export function buildInsights(r: YearModel): Insight[] {
   }
   const namedAgents = r.agents.filter((a) => a.key);
   if (namedAgents.length > 1 && t.shipments >= 10) push("rep.ins.cli.agent", "info", { name: { text: namedAgents[0].key }, n: { n: namedAgents[0].n }, pct: { pct: namedAgents[0].n / t.shipments } });
+
+  // saldo per cliente
+  const bal = r.balance;
+  const best = bal.best[0];
+  if (best && best.balance >= 50) push("rep.ins.bal.best", "good", { name: { text: best.name }, money: { money: best.balance }, n: { n: best.n } });
+  const worst = bal.worst[0];
+  if (worst && worst.balance <= -50) {
+    push(worst.unpaid > 0 ? "rep.ins.bal.worstUnpaid" : "rep.ins.bal.worst", "watch", {
+      name: { text: worst.name }, money: { money: -worst.balance }, n: { n: worst.n }, unpaid: { n: worst.unpaid },
+    });
+  }
+  if (bal.inLoss >= 10 && bal.lossTotal < 0) {
+    push("rep.ins.bal.concentration", bal.worst10Share >= 0.5 ? "watch" : "info", {
+      n: { n: bal.inLoss }, money: { money: -bal.lossTotal }, pct: { pct: bal.worst10Share },
+    });
+  }
 
   // assistenze
   const tk = r.tickets;

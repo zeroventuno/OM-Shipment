@@ -10,10 +10,10 @@ import {
   CountRow, Cumulative, GOOD, HBars, INK, Kpi, MonthBars, Page, RED, Reading, SectionTitle, ShareBar, SubTitle, Table, eyebrow, type Delta,
 } from "./ReportParts";
 
-type Sec = "summary" | "shipments" | "carriers" | "geo" | "customers" | "assistance" | "warranties" | "requests" | "quality" | "conclusions" | "method";
+type Sec = "summary" | "shipments" | "carriers" | "geo" | "customers" | "balance" | "assistance" | "warranties" | "requests" | "quality" | "conclusions" | "method";
 
 const SECTION_OF_INSIGHT: Record<InsightSection, Sec> = {
-  ship: "shipments", carr: "carriers", geo: "geo", cli: "customers", ass: "assistance", war: "warranties", req: "requests", q: "quality",
+  ship: "shipments", carr: "carriers", geo: "geo", cli: "customers", bal: "balance", ass: "assistance", war: "warranties", req: "requests", q: "quality",
 };
 
 const ORDER_TYPE_KEY: Record<string, string> = {
@@ -174,6 +174,7 @@ function Report({ model: r, insights, lang, tag, today }: {
     ...(hasShip && r.carriers.length > 0 ? [{ id: "carriers" as const, title: t("rep.s.carriers") }] : []),
     ...(hasShip ? [{ id: "geo" as const, title: t("rep.s.geo") }] : []),
     ...(r.customers.active > 0 ? [{ id: "customers" as const, title: t("rep.s.customers") }] : []),
+    ...(r.balance.best.length + r.balance.worst.length > 0 ? [{ id: "balance" as const, title: t("rep.s.balance") }] : []),
     ...(r.tickets.count > 0 ? [{ id: "assistance" as const, title: t("rep.s.assistance") }] : []),
     ...(r.warranties.count > 0 ? [{ id: "warranties" as const, title: t("rep.s.warranties") }] : []),
     ...(r.requests.count > 0 ? [{ id: "requests" as const, title: t("rep.s.requests") }] : []),
@@ -474,6 +475,34 @@ function Report({ model: r, insights, lang, tag, today }: {
               <Reading title={t("rep.reading")} items={readingOf("customers")} />
             </Page>
           )}
+
+          {/* ── saldo trasporti per cliente: i migliori e i peggiori ── */}
+          {r.balance.best.length + r.balance.worst.length > 0 && (() => {
+            const withAgent = [...r.balance.best, ...r.balance.worst].some((b) => b.agent);
+            const head = [t("rep.col.customer"), t("rep.col.shipments"), t("rep.col.cost"), t("rep.col.paid"), t("rep.col.balance"), t("rep.col.coverage"), t("rep.col.unpaid"), ...(withAgent ? [t("rep.col.agent")] : [])];
+            const rows = (list: typeof r.balance.best) => list.map((b) => [
+              b.name, n(b.n), b.cost ? eur(b.cost) : "—", b.paid ? eur(b.paid) : "—",
+              `${b.balance > 0 ? "+" : ""}${eur(b.balance)}`, b.cost > 0 ? pct(b.paid / b.cost) : "—", b.unpaid ? n(b.unpaid) : "—",
+              ...(withAgent ? [b.agent || "—"] : []),
+            ]);
+            return (
+              <Page running={running}>
+                <SectionTitle n={num("balance")} title={titleOf("balance")} intro={t("rep.s.balance.intro")} />
+                <div className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-4 print:grid-cols-4">
+                  <Kpi label={t("rep.kpi.inProfit")} value={n(r.balance.inProfit)} sub={t("rep.kpi.inProfit.sub")} />
+                  <Kpi label={t("rep.kpi.profitTotal")} value={eur(r.balance.profitTotal)} />
+                  <Kpi label={t("rep.kpi.inLoss")} value={n(r.balance.inLoss)} sub={t("rep.kpi.inLoss.sub")} />
+                  <Kpi label={t("rep.kpi.lossTotal")} value={eur(r.balance.lossTotal)} sub={r.balance.inLoss > 10 ? t("rep.kpi.lossTotal.sub", { pct: pct(r.balance.worst10Share) }) : undefined} />
+                </div>
+                <SubTitle>{t("rep.bal.best")}</SubTitle>
+                {r.balance.best.length ? <Table head={head} rows={rows(r.balance.best)} /> : <p className="text-[11.5px] text-black/55">{t("rep.bal.none")}</p>}
+                <SubTitle>{t("rep.bal.worst")}</SubTitle>
+                {r.balance.worst.length ? <Table head={head} rows={rows(r.balance.worst)} /> : <p className="text-[11.5px] text-black/55">{t("rep.bal.none")}</p>}
+                <p className="mt-2 text-[10px] leading-relaxed text-black/50">{t("rep.bal.note")}</p>
+                <Reading title={t("rep.reading")} items={readingOf("balance")} />
+              </Page>
+            );
+          })()}
 
           {/* ── 6. assistenze ── */}
           {r.tickets.count > 0 && (

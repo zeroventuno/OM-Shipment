@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildInsights, buildReport, dayOf, normName, parseMoney, warrantyCompletion, type ReportInput, type ShipmentRow, type TicketRow, type WarrantyRow } from "./compute";
+import { buildInsights, buildReport, customerBalances, dayOf, normName, parseMoney, warrantyCompletion, type ReportInput, type ShipmentRow, type TicketRow, type WarrantyRow } from "./compute";
 import { reportResources } from "./i18n";
 
 const COUNTRY: Record<string, string> = { "Itália": "IT", Italia: "IT", Holanda: "NL", "França": "FR" };
@@ -231,5 +231,36 @@ describe("i18n", () => {
     const src = readFileSync(new URL("./compute.ts", import.meta.url), "utf8");
     const literal = Array.from(src.matchAll(/"(rep\.ins\.[a-zA-Z.]+)"/g), (m) => m[1]);
     for (const k of literal) expect(reportResources.it[k], k).toBeTruthy();
+  });
+});
+
+describe("saldo per cliente", () => {
+  const ship = (name: string, price: number | null, paid: number | null, agent: string | null = null): ShipmentRow => ({
+    id: Math.random().toString(36), created_at: "2026-03-10T10:00:00Z", order_type: "Bicycle", customer_name: name, quantity: 1,
+    destination_country: "Itália", customer_payment: paid, tracking_code: "x", selected_quote: price == null ? null : { portal: "MBE", carrier: "DHL", price },
+    savings: 0, customer_cost_pickup: price == null, ticket_id: null, warranty_id: null, service_level: "standard", agent,
+  } as ShipmentRow);
+
+  it("pagato − costo, senza pagamento e agente più frequente", () => {
+    const rows = [
+      ship("Bike Point", 50, 80, "Michele"), ship("BIKE POINT", 40, 60, "Michele"),
+      ship("Rossi", 100, 0, "Emanuele"), ship("Rossi", 60, 20), ship("Ritiro", null, null),
+    ];
+    const list = customerBalances(rows, (s) => s.customer_name ?? "", (s) => normName(s.customer_name));
+    const byName = Object.fromEntries(list.map((b) => [b.key, b]));
+    expect(byName[normName("Bike Point")]).toMatchObject({ n: 2, cost: 90, paid: 140, balance: 50, unpaid: 0, agent: "Michele" });
+    expect(byName[normName("Rossi")]).toMatchObject({ n: 2, cost: 160, paid: 20, balance: -140, unpaid: 1, agent: "Emanuele" });
+    expect(byName[normName("Ritiro")]).toMatchObject({ cost: 0, paid: 0, balance: 0 });
+  });
+});
+
+describe("quota dei 10 peggiori", () => {
+  it("è positiva anche con saldi negativi", () => {
+    const base = { created_at: "2026-03-10T10:00:00Z", order_type: "Bicycle", quantity: 1, destination_country: "Itália", tracking_code: "x", savings: 0, customer_cost_pickup: false, ticket_id: null, warranty_id: null, service_level: "standard", agent: null };
+    const shipments = Array.from({ length: 12 }, (_, i) => ({ ...base, id: `s${i}`, customer_name: `Cliente ${i}`, customer_payment: 0, selected_quote: { portal: "MBE", carrier: "DHL", price: i === 0 ? 1000 : 10 } })) as ShipmentRow[];
+    const input = { shipments, prevShipments: [], olderNames: [], tickets: [], warranties: [], requests: [] } as unknown as ReportInput;
+    const r = buildReport(input, { year: 2026, today: "2026-11-16", country });
+    expect(r.balance.inLoss).toBe(12);
+    expect(r.balance.worst10Share).toBeCloseTo((1000 + 9 * 10) / 1110, 5);
   });
 });
