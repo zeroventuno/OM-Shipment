@@ -9,13 +9,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useDateLocale } from "@/i18n/dateLocale";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "../common/PageHeader";
-import { listRequests, setRequestStatus, formatAddress, boxSummary, totalWeight, REQUESTS_QUERY_KEY, type ShipmentRequest, type Customer } from "./api";
+import { listRequests, setRequestStatus, formatAddress, formatMoney, boxSummary, totalWeight, REQUESTS_QUERY_KEY, type ShipmentRequest, type Customer } from "./api";
 import CustomerDialog from "./CustomerDialog";
 
 type Filter = "pending" | "shipped" | "cancelled";
 
 export default function RequestsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const locale = useDateLocale();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -126,6 +126,15 @@ export default function RequestsPage() {
                     <p key={i}><span className="text-muted-foreground">{t("Box")} {i + 1}:</span> {boxSummary(b)}</p>
                   ))}
                   <p className="font-semibold">{t("Total")}: {r.boxes.length} × · {totalWeight(r.boxes)} kg</p>
+                  {r.invoice_value != null && (
+                    <p>
+                      <span className="text-muted-foreground">{t("Invoiced")}:</span> {formatMoney(r.invoice_value, i18n.language)}
+                      {" · "}
+                      {r.insured_value
+                        ? <><span className="text-muted-foreground">{t("Insured")}:</span> <strong>{formatMoney(r.insured_value, i18n.language)}</strong></>
+                        : <span className="text-muted-foreground">{t("No insurance")}</span>}
+                    </p>
+                  )}
                   {r.order_ref && <p><span className="text-muted-foreground">{t("Order Number")}:</span> {r.order_ref}</p>}
                   {r.notes && <p className="whitespace-pre-line text-foreground/80">{r.notes}</p>}
                 </div>

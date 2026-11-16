@@ -13,7 +13,7 @@ import { analyzeQuotes, calculateProfit } from '../utils/quotes';
 import { resolveStatus } from '../utils/shipmentStatus';
 import { listTickets } from '@/modules/assistance/api';
 import { listWarranties } from '@/modules/warranties/api';
-import { getRequest, boxSummary, totalWeight, formatAddress } from '@/modules/requests/api';
+import { getRequest, boxSummary, totalWeight, formatAddress, formatMoney } from '@/modules/requests/api';
 
 // Pallet/caminhão e tarifas spot são cotados por e-mail: entram como "portal"
 // para poderem ser comparados com os outros.
@@ -412,6 +412,14 @@ export default function NewShipment() {
                         <p className="text-muted-foreground">{[request.address.contact_name, request.address.phone].filter(Boolean).join(' · ')}</p>
                     )}
                     <p>{request.boxes.map(boxSummary).join(' · ')} — {t('Total')} {totalWeight(request.boxes)} kg</p>
+                    {request.invoice_value != null && (
+                        <p>
+                            {t('Invoiced')}: {formatMoney(request.invoice_value, i18n.language)} ·{' '}
+                            {request.insured_value
+                                ? <strong>{t('Insured')}: {formatMoney(request.insured_value, i18n.language)}</strong>
+                                : <span className="text-muted-foreground">{t('No insurance')}</span>}
+                        </p>
+                    )}
                     {request.notes && <p className="text-muted-foreground whitespace-pre-line">{request.notes}</p>}
                 </div>
             )}

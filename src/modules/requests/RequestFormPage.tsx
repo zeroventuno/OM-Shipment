@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useDateLocale } from "@/i18n/dateLocale";
 import { COUNTRIES, countryLabel } from "@/modules/shipments/data/countries";
 import {
+  parseMoney, formatMoney,
   formInfo, formCustomers, formCreateCustomer, formSubmit, formList, formBoxPresets, formCustomerAddresses, formAddAddress,
   boxSummary, totalWeight, formatAddress,
   type Box, type CustomerInput, type CustomerOption, type AddressInput,
@@ -188,6 +189,8 @@ export default function RequestFormPage() {
   const [service, setService] = useState<"standard" | "express">("standard");
   const [orderRef, setOrderRef] = useState("");
   const [notes, setNotes] = useState("");
+  const [invoiceValue, setInvoiceValue] = useState("");
+  const [insuredValue, setInsuredValue] = useState("0");
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
   // Aba "Cadastrar cliente"
@@ -254,12 +257,15 @@ export default function RequestFormPage() {
         order_ref: orderRef || undefined,
         notes: notes || undefined,
         requested_by: requestedBy,
+        invoice_value: parseMoney(invoiceValue)!,
+        insured_value: parseMoney(insuredValue) ?? 0,
       });
     },
     onSuccess: () => {
       setSent(true);
       pickCustomer(null); setNewCustomer(null); setSearch("");
       setBoxes([emptyBox()]); setService("standard"); setOrderRef(""); setNotes("");
+      setInvoiceValue(""); setInsuredValue("0");
       queryClient.invalidateQueries({ queryKey: ["request-form", token] });
     },
     onError: (e: Error) => setError(e.message),
@@ -298,6 +304,8 @@ export default function RequestFormPage() {
     }
     const invalid = boxes.some((b) => [b.width, b.height, b.depth, b.weight].some((v) => !(Number(String(v).replace(",", ".")) > 0)));
     if (invalid) return setError(t("Fill in the size and weight of every box"));
+    if (parseMoney(invoiceValue) === null) return setError(t("Fill in the invoiced value"));
+    if (insuredValue.trim() && parseMoney(insuredValue) === null) return setError(t("Invalid value for insurance"));
     submit.mutate();
   };
 
@@ -601,6 +609,30 @@ export default function RequestFormPage() {
               </Field>
             </section>
 
+            <section className="bg-card border border-border rounded-lg p-5 md:p-6 flex flex-col gap-4">
+              <h2 className="text-xs font-bold uppercase tracking-[0.12em]">{t("Values")}</h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label={t("Invoiced value (€)")} hint={t("Total amount on the invoice.")}>
+                  <Input
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={invoiceValue}
+                    onChange={(e) => setInvoiceValue(e.target.value)}
+                    className="text-base sm:text-sm"
+                  />
+                </Field>
+                <Field label={t("Value for insurance (€)")} hint={t("Leave 0 if you don't want insurance or it isn't needed.")}>
+                  <Input
+                    inputMode="decimal"
+                    value={insuredValue}
+                    onFocus={(e) => insuredValue === "0" && e.target.select()}
+                    onChange={(e) => setInsuredValue(e.target.value)}
+                    className="text-base sm:text-sm"
+                  />
+                </Field>
+              </div>
+            </section>
+
             {error && <p role="alert" className="text-sm font-semibold text-destructive">{error}</p>}
 
             <Button type="submit" size="lg" disabled={submit.isPending} className="self-stretch sm:self-start">
@@ -661,6 +693,12 @@ export default function RequestFormPage() {
                   </span>
                 </div>
                 <p className="text-sm">{r.boxes.map(boxSummary).join(" · ")} — {t("total")} {totalWeight(r.boxes)} kg</p>
+                {r.invoice_value != null && (
+                  <p className="text-sm text-muted-foreground">
+                    {t("Invoiced")} {formatMoney(r.invoice_value, i18n.language)} ·{" "}
+                    {r.insured_value ? `${t("Insured")} ${formatMoney(r.insured_value, i18n.language)}` : t("No insurance")}
+                  </p>
+                )}
                 {r.status === "shipped" && (r.carrier || r.tracking_code) && (
                   <p className="text-sm font-semibold">{[r.carrier, r.tracking_code].filter(Boolean).join(" · ")}</p>
                 )}
