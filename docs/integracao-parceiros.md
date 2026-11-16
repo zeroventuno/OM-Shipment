@@ -10,8 +10,9 @@
 >
 > - As seções 1 a 4 explicam o OM Gestionale e onde os dois sistemas se encontram.
 > - A seção 5 lista as perguntas que você precisa responder sobre o sistema de vendas.
-> - A seção 6 diz o que devolver: uma proposta, que do lado do OM Gestionale
->   será implementada a partir dela.
+> - A seção 6 diz o que devolver: uma **visão do sistema de vendas** (para o
+>   OM Gestionale ajustar o fluxo de garantias ao de vocês) e a **proposta de
+>   integração**, que do lado do OM Gestionale será implementada a partir dela.
 > - O **Anexo** documenta a API que já existe e está no ar (v1). Ela é um
 >   ponto de partida, não um limite: pode ser ampliada conforme a proposta.
 
@@ -235,7 +236,34 @@ Responda (com o dono do sistema) antes de propor:
 
 ## 6. O que devolver
 
-Um documento curto (Markdown) com:
+Dois documentos em Markdown.
+
+### 6.1 Visão do sistema de vendas
+
+Do mesmo jeito que a seção 2 apresenta o OM Gestionale, apresente o sistema
+de vendas para quem não o conhece. O objetivo é que o OM Gestionale possa
+**ajustar o próprio fluxo** (sobretudo o das garantias) ao de vocês, e não só
+trocar dados.
+
+1. **Visão geral:** para que serve, quem usa, os principais módulos.
+2. **Ciclo de vida da ordem de venda:** todas as etapas, quem muda cada uma e
+   o que dispara a mudança. Marque onde entram envio, fatura e pagamento.
+3. **Garantias, em detalhe:**
+   - como a ordem de acompanhamento de uma garantia é criada, por quem e quando;
+   - que campos ela tem e que etapas percorre (são as mesmas de uma ordem
+     comum ou há um fluxo próprio?);
+   - como vocês tratam garantia coberta e garantia paga (`A pagamento`):
+     orçamento, aprovação do cliente, fatura;
+   - troca de peça ou quadro: como aparece na ordem (itens, número de série novo);
+   - em que momento a garantia é considerada encerrada para vocês.
+4. **Comparação com o fluxo de garantias do OM Gestionale** (seção 2.5):
+   etapas que se correspondem, etapas que faltam de um lado ou de outro, dados
+   digitados duas vezes e o que você mudaria no fluxo do OM Gestionale para os
+   dois andarem juntos.
+5. **Clientes e envios:** como aparecem no sistema de vendas (cadastro,
+   endereços, quem decide enviar e quando).
+
+### 6.2 Proposta de integração
 
 1. **Mapa dos pontos de encontro** escolhidos (3.1, 3.2, 3.3) e os campos de
    cada lado que se correspondem.
@@ -248,7 +276,8 @@ Um documento curto (Markdown) com:
    mudar a v1, se ela não servir).
 6. Dúvidas em aberto.
 
-Com esse documento, o lado do OM Gestionale é implementado do jeito proposto
+Com esses documentos, o fluxo de garantias do OM Gestionale é ajustado e o lado
+do OM Gestionale da integração é implementado do jeito proposto
 e a v2 da API é publicada aqui. A rota sugerida na v1 para o sistema de vendas
 (`GET /api/om/orders/{order_number}`, Anexo A.5) é só uma sugestão de formato.
 
