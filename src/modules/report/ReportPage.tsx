@@ -7,7 +7,7 @@ import { canonicalCountry, countryLabel } from "@/modules/shipments/data/countri
 import { buildInsights, buildReport, dayOf, sectionOf, STALLED_DAYS, type Insight, type InsightSection, type InsightVar, type Totals } from "./compute";
 import { loadReportData, loadReportYears } from "./data";
 import {
-  CountRow, Cumulative, GRAPHITE, HBars, INK, Kpi, MonthBars, Page, RED, Reading, SectionTitle, ShareBar, SubTitle, Table, eyebrow, type Delta,
+  CountRow, Cumulative, GOOD, HBars, INK, Kpi, MonthBars, Page, RED, Reading, SectionTitle, ShareBar, SubTitle, Table, eyebrow, type Delta,
 } from "./ReportParts";
 
 type Sec = "summary" | "shipments" | "carriers" | "geo" | "customers" | "assistance" | "warranties" | "requests" | "quality" | "conclusions" | "method";
@@ -596,7 +596,7 @@ function Report({ model: r, insights, lang, tag, today }: {
             <SectionTitle n={num("conclusions")} title={titleOf("conclusions")} intro={t("rep.s.conclusions.intro")} />
             <div className="grid gap-10 sm:grid-cols-2 print:grid-cols-2">
               {[
-                { id: "good", title: t("rep.highlights"), items: highlights, color: GRAPHITE, empty: t("rep.highlights.none") },
+                { id: "good", title: t("rep.highlights"), items: highlights, color: GOOD, empty: t("rep.highlights.none") },
                 { id: "watch", title: t("rep.watch"), items: watch, color: RED, empty: t("rep.watch.none") },
               ].map((col) => (
                 <div key={col.id}>

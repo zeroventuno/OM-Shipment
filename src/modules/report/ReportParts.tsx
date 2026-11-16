@@ -10,12 +10,27 @@ import { cn } from "@/lib/utils";
 export const INK = "#0A0A0A";
 export const GRAPHITE = "#292D30";
 export const RED = "#CD212A";
-const SOFT = "#9DA1A5";
 const GRID = "rgba(0,0,0,0.09)";
 const LABEL = "rgba(0,0,0,0.55)";
 
 /** i colori delle fette, dal più scuro al più chiaro */
-export const SERIES = [INK, "#4A4F53", SOFT, "#C6C9CC", "#6E7378", "#E1E3E5"];
+/*
+ * Cores dos gráficos (paleta validada para daltonismo, ordem fixa):
+ * azul = a série do ano; laranja tracejado = o ano anterior; as divisões usam
+ * as cores na ordem abaixo, e "Altri"/"Non indicato" ficam em cinza.
+ * O vermelho (RED) é reservado aos pontos de atenção — nunca é uma série.
+ */
+export const BLUE = "#2a78d6";
+export const ORANGE = "#eb6834";
+export const GOOD = "#1f7a3d";
+const OTHER = "#B4B8BC";
+export const SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6"];
+const isOther = (label: string) => /^(altri|altro|altre|outros|outro|outras|non |não |nao |sem |senza |—|-$)/i.test(label.trim());
+/** cor de cada fatia: ordem fixa, pulando as "outras" (cinza) */
+const sliceColors = (labels: string[]) => {
+  let k = 0;
+  return labels.map((l) => (isOther(l) ? OTHER : SERIES[Math.min(k++, SERIES.length - 1)]));
+};
 
 export const eyebrow = "text-[9.5px] font-bold uppercase tracking-[0.16em] text-black/50";
 
@@ -65,7 +80,7 @@ export function Kpi({ label, value, sub, delta }: { label: string; value: string
       <p className={eyebrow}>{label}</p>
       <p className="mt-1.5 break-words text-[22px] font-extrabold leading-none tracking-[-0.02em] tabular-nums sm:text-[24px]">{value}</p>
       {delta && (
-        <p className="mt-1.5 text-[10.5px] font-semibold tabular-nums" style={{ color: delta.good ? GRAPHITE : RED }}>
+        <p className="mt-1.5 text-[10.5px] font-semibold tabular-nums" style={{ color: delta.good ? GOOD : RED }}>
           {delta.up ? "▲" : "▼"} {delta.text}
         </p>
       )}
@@ -125,10 +140,10 @@ export function MonthBars({ labels, values, marker, fmt, fmtAxis }: {
         const v = values[i] ?? 0;
         return (
           <g key={m}>
-            {v > 0 && <rect x={x} y={y(v)} width={bw} height={Math.max(0.5, y(0) - y(v))} fill={GRAPHITE} />}
+            {v > 0 && <rect x={x} y={y(v)} width={bw} height={Math.max(0.5, y(0) - y(v))} fill={BLUE} rx={1.5} />}
             {v > 0 && <text x={x + bw / 2} y={y(v) - 4} textAnchor="middle" fontSize="8.5" fontWeight="600" fill={INK}>{fmt(v)}</text>}
             {marker && (marker[i] ?? 0) > 0 && (
-              <line x1={x - 3} x2={x + bw + 3} y1={y(marker[i])} y2={y(marker[i])} stroke={SOFT} strokeWidth="1.8" strokeDasharray="3 2" />
+              <line x1={x - 3} x2={x + bw + 3} y1={y(marker[i])} y2={y(marker[i])} stroke={ORANGE} strokeWidth="2" strokeDasharray="3 2" />
             )}
             <text x={x + bw / 2} y={H - 6} textAnchor="middle" fontSize="9.5" fill={LABEL}>{m}</text>
           </g>
@@ -174,11 +189,11 @@ export function Cumulative({ labels, now, prev, fmtAxis, nowLabel, prevLabel, la
           </g>
         ))}
         {labels.map((m, i) => <text key={m} x={x(i)} y={H - 6} textAnchor="middle" fontSize="9.5" fill={LABEL}>{m}</text>)}
-        <path d={path(cPrev, 11)} fill="none" stroke={SOFT} strokeWidth="1.8" strokeDasharray="4 3" />
-        {lastMonth >= 0 && <path d={path(cNow, lastMonth)} fill="none" stroke={INK} strokeWidth="2.6" strokeLinejoin="round" />}
-        {lastMonth >= 0 && <circle cx={x(lastMonth)} cy={y(cNow[lastMonth])} r="3.5" fill={INK} />}
+        <path d={path(cPrev, 11)} fill="none" stroke={ORANGE} strokeWidth="2" strokeDasharray="4 3" />
+        {lastMonth >= 0 && <path d={path(cNow, lastMonth)} fill="none" stroke={BLUE} strokeWidth="2.6" strokeLinejoin="round" />}
+        {lastMonth >= 0 && <circle cx={x(lastMonth)} cy={y(cNow[lastMonth])} r="4" fill={BLUE} stroke="#fff" strokeWidth="2" />}
       </svg>
-      <Legend items={[{ label: nowLabel, color: INK }, { label: prevLabel, color: SOFT, dashed: true }]} />
+      <Legend items={[{ label: nowLabel, color: BLUE }, { label: prevLabel, color: ORANGE, dashed: true }]} />
     </div>
   );
 }
@@ -204,15 +219,16 @@ export function Legend({ items }: { items: { label: string; color: string; dashe
 export function ShareBar({ parts, cols = 2 }: { parts: { label: string; value: number; detail: string }[]; cols?: 1 | 2 }) {
   const total = parts.reduce((s, p) => s + Math.max(0, p.value), 0);
   if (total <= 0) return null;
+  const colors = sliceColors(parts.map((p) => p.label));
   return (
     <div className="break-inside-avoid">
-      <div className="flex h-5 w-full overflow-hidden rounded-sm">
-        {parts.map((p, i) => (p.value > 0 ? <div key={p.label} style={{ width: `${(p.value / total) * 100}%`, background: SERIES[i % SERIES.length] }} /> : null))}
+      <div className="flex h-5 w-full gap-[2px] overflow-hidden">
+        {parts.map((p, i) => (p.value > 0 ? <div key={p.label} className="first:rounded-l-sm last:rounded-r-sm" style={{ width: `${(p.value / total) * 100}%`, background: colors[i] }} /> : null))}
       </div>
       <div className={cn("mt-3 grid gap-x-6 gap-y-2", cols === 2 && "sm:grid-cols-2 print:grid-cols-2")}>
         {parts.map((p, i) => (
           <div key={p.label} className="flex min-w-0 items-baseline gap-2 text-[11.5px]">
-            <span className="inline-block h-2.5 w-2.5 shrink-0 translate-y-[1px] border border-black/10" style={{ background: SERIES[i % SERIES.length] }} />
+            <span className="inline-block h-2.5 w-2.5 shrink-0 translate-y-[1px] border border-black/10" style={{ background: colors[i] }} />
             <span className="truncate font-semibold">{p.label}</span>
             <span className="ml-auto whitespace-nowrap tabular-nums text-black/65">{p.detail}</span>
           </div>
@@ -231,7 +247,7 @@ export function HBars({ rows }: { rows: { label: string; value: number; text: st
         <div key={`${r.label}-${i}`} className="grid break-inside-avoid grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)_auto] items-center gap-3 text-[11.5px] sm:grid-cols-[minmax(0,10.5rem)_minmax(0,1fr)_auto] print:grid-cols-[minmax(0,10.5rem)_minmax(0,1fr)_auto]">
           <span className="truncate" title={r.label}>{r.label}</span>
           <span className="h-3 rounded-sm bg-black/[0.05]">
-            <span className="block h-3 rounded-sm" style={{ width: `${max > 0 ? Math.max(1.5, (r.value / max) * 100) : 0}%`, background: i === 0 ? INK : SOFT }} />
+            <span className="block h-3 rounded-sm" style={{ width: `${max > 0 ? Math.max(1.5, (r.value / max) * 100) : 0}%`, background: isOther(r.label) ? OTHER : BLUE }} />
           </span>
           <span className="whitespace-nowrap text-right tabular-nums">
             <span className="font-semibold">{r.text}</span>
