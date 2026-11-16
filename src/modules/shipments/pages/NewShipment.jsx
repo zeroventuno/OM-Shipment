@@ -211,8 +211,10 @@ export default function NewShipment() {
             .sort((a, b) => open(a.phase === 'Completato') - open(b.phase === 'Completato'))
             .map((tk) => ({
                 id: tk.id,
-                code: tk.protocolNumber || `#${tk.id.slice(0, 8)}`,
-                label: `${tk.protocolNumber ? tk.protocolNumber + ' · ' : ''}${tk.clientName} · ${tk.component}`,
+                // Referência do envio = nosso código interno; o protocolo do fabricante vai como 2ª referência.
+                code: tk.code || `#${tk.id.slice(0, 8)}`,
+                producerProtocol: tk.protocolNumber || null,
+                label: `${tk.code ? tk.code + ' · ' : ''}${tk.clientName} · ${tk.component}${tk.protocolNumber ? ` · ${t('Manufacturer prot.')} ${tk.protocolNumber}` : ''}`,
                 customer: tk.clientName,
             }));
         const warranties = [...processes.warranties]
@@ -224,7 +226,7 @@ export default function NewShipment() {
                 customer: w.customerName,
             }));
         return { ticket: tickets, warranty: warranties };
-    }, [processes]);
+    }, [processes, t]);
 
     const setLinkType = (linkType) => {
         setFormData({ ...formData, linkType, ticketId: null, warrantyId: null });
@@ -481,6 +483,14 @@ export default function NewShipment() {
                                                 <option key={o.id} value={o.id}>{o.label}</option>
                                             ))}
                                         </select>
+                                        {(() => {
+                                            const sel = formData.linkType === 'ticket' && linkOptions.ticket.find((o) => o.id === formData.ticketId);
+                                            return sel?.producerProtocol ? (
+                                                <p className="mt-2 text-sm">
+                                                    {t('Manufacturer protocol')}: <strong>{sel.producerProtocol}</strong> — {t('add it on the portal as the second reference / on the label.')}
+                                                </p>
+                                            ) : null;
+                                        })()}
                                         <p className="mt-2 text-xs text-muted-foreground">
                                             {t('When saved, the date, carrier, tracking and cost are recorded in the linked process.')}
                                         </p>

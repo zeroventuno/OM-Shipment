@@ -107,7 +107,7 @@ export default function TicketDetailPage() {
       <header className="flex flex-wrap items-end justify-between gap-5">
         <div className="flex flex-col gap-1.5 min-w-0">
           <span className="eyebrow">
-            #{ticket.id.slice(0, 8)} · {t("Opened on {{date}}", { date: dateFmt(ticket.createdAt) })}
+            {ticket.code ?? `#${ticket.id.slice(0, 8)}`} · {t("Opened on {{date}}", { date: dateFmt(ticket.createdAt) })}
           </span>
           <h1 className="page-title break-words">{ticket.clientName}</h1>
           <span className="text-[15px] text-foreground/75">
@@ -140,7 +140,7 @@ export default function TicketDetailPage() {
               facts={[
                 { label: t("Customer"), value: ticket.clientName },
                 { label: t("Email"), value: ticket.clientEmail && <a href={`mailto:${ticket.clientEmail}`} className="underline underline-offset-2">{ticket.clientEmail}</a> },
-                { label: t("Protocol no."), value: ticket.protocolNumber },
+                { label: t("Manufacturer protocol"), value: ticket.protocolNumber },
                 { label: t("Approval"), value: ticket.approvalStatus ? t(APPROVAL_LABELS[ticket.approvalStatus] ?? ticket.approvalStatus) : null },
               ]}
             />

@@ -482,6 +482,7 @@ italiano/português, como o sistema grava). Traduza só na tela.
 ```json
 {
   "id": "a1b2c3d4-…",
+  "code": "OMA-26-045",
   "phase": "Spedito",
   "approval_status": null,
   "customer_name": "Rossi Cicli",
@@ -500,6 +501,7 @@ italiano/português, como o sistema grava). Traduza só na tela.
 |---|---|
 | `phase` | `"Ingresso"` (entrada), `"Spedito"` (enviado ao fabricante), `"In lavorazione"`, `"Completato"` |
 | `approval_status` | `"Approvato"`, `"Rifiutato"` ou `null` |
+| `code` | protocolo interno da assistência (`OMA-AA-NNN`), usado como referência nos envios |
 | `producer_protocol` | protocolo informado pelo fabricante |
 
 ### A.4.3 Envio

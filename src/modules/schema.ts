@@ -23,6 +23,8 @@ export const APPROVAL_STATUSES = ["Approvato", "Rifiutato"] as const;
 /** Uma linha da tabela `tickets`, já no formato do app. */
 export interface Ticket {
   id: string;
+  /** Protocolo interno OMA-AA-NNN (gerado pelo banco). protocolNumber é o do fabricante. */
+  code: string | null;
   clientName: string;
   clientEmail: string;
   component: string;

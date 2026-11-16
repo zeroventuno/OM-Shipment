@@ -86,7 +86,7 @@ export default function AssistancePage() {
     .filter((x) => !onlyStale || x.age.stale)
     .filter(({ ticket }) =>
       !term ||
-      [ticket.clientName, ticket.component, ticket.brand, ticket.serialNumber, ticket.protocolNumber, ticket.trackingNumber]
+      [ticket.code, ticket.clientName, ticket.component, ticket.brand, ticket.serialNumber, ticket.protocolNumber, ticket.trackingNumber]
         .some((value) => value?.toLowerCase().includes(term))
     );
 
@@ -101,6 +101,7 @@ export default function AssistancePage() {
       to={`/assistance/${ticket.id}`}
       className="flex flex-col gap-3 p-4 bg-card border border-border rounded-lg hover:border-foreground transition-colors"
     >
+      {ticket.code && <span className="-mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground tabular-nums">{ticket.code}</span>}
       <div className="flex items-start justify-between gap-2">
         <span className="text-[17px] font-semibold tracking-tight leading-snug min-w-0 break-words">{ticket.clientName}</span>
         {ticket.phase === "Completato" ? (
@@ -115,7 +116,7 @@ export default function AssistancePage() {
       {(ticket.protocolNumber || ticket.trackingNumber || ticket.approvalStatus) && (
         <div className="flex flex-wrap gap-1.5 pt-2.5 border-t border-muted">
           {ticket.approvalStatus && <Tag>{t(APPROVAL_LABELS[ticket.approvalStatus] ?? ticket.approvalStatus)}</Tag>}
-          {ticket.protocolNumber && <Tag>{t("Prot.")} {ticket.protocolNumber}</Tag>}
+          {ticket.protocolNumber && <Tag>{t("Manufacturer prot.")} {ticket.protocolNumber}</Tag>}
           {ticket.phase === "Spedito" && ticket.trackingNumber && (
             <Tag>{[ticket.shippingCompany, ticket.trackingNumber].filter(Boolean).join(" ")}</Tag>
           )}

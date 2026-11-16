@@ -220,6 +220,9 @@ export const appResources = {
         "Invoiced": "Faturado",
         "Insured": "Seguro",
         "No insurance": "Sem seguro",
+        "Manufacturer prot.": "Prot. fabricante",
+        "Manufacturer protocol": "Protocolo do fabricante",
+        "add it on the portal as the second reference / on the label.": "coloque no portal como segunda referência / na etiqueta.",
         // Clienti
         "nav.customers": "Clientes",
         "Customer register": "Cadastro de clientes",
@@ -596,6 +599,9 @@ export const appResources = {
         "Invoiced": "Fatturato",
         "Insured": "Assicurato",
         "No insurance": "Senza assicurazione",
+        "Manufacturer prot.": "Prot. produttore",
+        "Manufacturer protocol": "Protocollo del produttore",
+        "add it on the portal as the second reference / on the label.": "inseriscilo sul portale come seconda referenza / sull'etichetta.",
         // Clienti
         "nav.customers": "Clienti",
         "Customer register": "Anagrafica clienti",
