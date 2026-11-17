@@ -3,23 +3,13 @@ import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { itemsTotal, money } from '../../services/importDocs';
 import { itemFromCatalog, matchCatalog } from '../../services/invoiceParser';
+import { emptyItem, cleanItems } from '../../services/docItems';
 
 /**
  * Lista de artigos para documentos de alfândega (proforma IMP e Commercial
  * Invoice): descrição, quantidade, HS, origem e valor unitário, com atalho
  * para puxar descrição e HS do catálogo.
  */
-export const emptyItem = () => ({ qty: '1', description: '', hs_code: '', origin: 'Italy', unit_value: '', code: '', catalog_id: '' });
-
-const num = (v) => Number(String(v ?? '').trim().replace(',', '.'));
-
-/** Artigos preenchidos, com números. */
-export const cleanItems = (items) => items
-    .filter((it) => it.description.trim())
-    .map((it) => ({
-        qty: num(it.qty) || 1, description: it.description.trim(), hs_code: it.hs_code.trim(), origin: it.origin.trim(), unit_value: num(it.unit_value) || 0,
-        ...(it.code?.trim() ? { code: it.code.trim() } : {}), ...(it.catalog_id ? { catalog_id: it.catalog_id } : {}),
-    }));
 
 export function ItemsEditor({ items, setItems, catalog, label, extraTotal = 0, withCode = false }) {
     const { t } = useTranslation();

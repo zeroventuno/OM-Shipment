@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { IMPORT_REASONS, money, parcelsWeight, kg } from '../../services/importDocs';
-import { ItemsEditor, emptyItem, cleanItems as toCleanItems } from './ItemsEditor';
+import { ItemsEditor } from './ItemsEditor';
+import { emptyItem, cleanItems as toCleanItems } from '../../services/docItems';
 import { todayRome } from '../../services/exportDocs';
 import {
     downloadImportDoc, findCustomerByName, issueImportDoc, listImportDocs, loadExportCatalog,
