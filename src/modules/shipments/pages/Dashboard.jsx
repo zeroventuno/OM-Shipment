@@ -249,7 +249,10 @@ export default function Dashboard() {
                                             <td className="px-6 py-4 font-medium text-gray-900">{shipment.orderId}</td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col">
-                                                    <span className="font-medium">{shipment.customerName || '-'}</span>
+                                                    <span className="font-medium">
+                                                        {shipment.isPickup && <span className="mr-1.5 rounded-full border border-foreground px-1.5 py-px text-[10px] font-semibold uppercase tracking-[0.06em]">{t('imp.pickupBadge')}</span>}
+                                                        {shipment.customerName || '-'}
+                                                    </span>
                                                     <span className="text-xs text-gray-500">{countryLabel(shipment.destinationCountry, i18n.language) || '-'}</span>
                                                 </div>
                                             </td>

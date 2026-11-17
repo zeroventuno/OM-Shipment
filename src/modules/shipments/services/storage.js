@@ -33,6 +33,7 @@ const mapToDb = (s) => ({
     savings: s.savings,
     photo_urls: s.photoUrls || [],
     customer_cost_pickup: s.customerCostPickup || false,
+    is_pickup: s.isPickup || false,
     pod_files: s.podFiles || [],
     // Vínculo com assistência/garantia (o banco copia os dados do envio para lá)
     ticket_id: s.ticketId || null,
@@ -62,6 +63,7 @@ const mapFromDb = (s) => ({
     savings: s.savings,
     photoUrls: s.photo_urls || [],
     customerCostPickup: s.customer_cost_pickup || false,
+    isPickup: s.is_pickup || false,
     podFiles: s.pod_files || [],
     ticketId: s.ticket_id || null,
     warrantyId: s.warranty_id || null,

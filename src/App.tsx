@@ -10,6 +10,7 @@ import ResetPassword from '@/pages/ResetPassword'
 const ShipmentsDashboard = lazy(() => import('@/modules/shipments/pages/Dashboard'))
 const NewShipment = lazy(() => import('@/modules/shipments/pages/NewShipment'))
 const Reports = lazy(() => import('@/modules/shipments/pages/Reports'))
+const ImportDocs = lazy(() => import('@/modules/shipments/pages/ImportDocs'))
 const AssistancePage = lazy(() => import('@/modules/assistance/AssistancePage'))
 const WarrantiesPage = lazy(() => import('@/modules/warranties/WarrantiesPage'))
 const TicketDetailPage = lazy(() => import('@/modules/assistance/TicketDetailPage'))
@@ -57,6 +58,7 @@ export default function App() {
                 <Route path="shipments/new" element={page(<NewShipment />)} />
                 <Route path="shipments/reports" element={page(<Reports />)} />
                 <Route path="shipments/requests" element={page(<RequestsPage />)} />
+                <Route path="shipments/import-docs" element={page(<ImportDocs />)} />
                 <Route path="shipments/:id" element={page(<NewShipment />)} />
 
                 <Route path="assistance" element={page(<AssistancePage />)} />

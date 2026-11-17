@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { PhotoUpload } from '../components/shipments/PhotoUpload';
 import { PodUpload } from '../components/shipments/PodUpload';
 import { ExportDocsCard } from '../components/shipments/ExportDocsCard';
+import { ImportDocsCard } from '../components/shipments/ImportDocsCard';
 import { isExtraEu } from '../services/exportDocs';
 import { storageService } from '../services/storage';
 import { useTranslation } from 'react-i18next';
@@ -43,6 +44,8 @@ export default function NewShipment() {
         trackingCode: '',
         photoUrls: [],
         customerCostPickup: false,
+        // Ritiro: a mercadoria vem do cliente para a OM (envio ao contrário)
+        isPickup: false,
         podFiles: [],
         // Carregado junto com o envio: sem isso, salvar uma edição gravaria
         // status undefined, que vira NULL no banco e apagaria um 'Delivered'.
@@ -102,6 +105,7 @@ export default function NewShipment() {
                             trackingCode: shipment.trackingCode || '',
                             photoUrls: shipment.photoUrls || [],
                             customerCostPickup: shipment.customerCostPickup || false,
+                            isPickup: shipment.isPickup || false,
                             podFiles: shipment.podFiles || [],
                             status: shipment.status,
                             linkType: shipment.ticketId ? 'ticket' : shipment.warrantyId ? 'warranty' : 'order',
@@ -469,6 +473,18 @@ export default function NewShipment() {
                                         </button>
                                     ))}
                                 </div>
+                                <label className="flex items-start gap-2.5 text-sm cursor-pointer w-fit">
+                                    <input
+                                        type="checkbox"
+                                        className="mt-0.5 h-4 w-4 accent-primary"
+                                        checked={formData.isPickup}
+                                        onChange={(e) => setFormData({ ...formData, isPickup: e.target.checked })}
+                                    />
+                                    <span>
+                                        <span className="font-semibold">{t('imp.pickup')}</span>
+                                        <span className="block text-muted-foreground">{t('imp.pickupHint')}</span>
+                                    </span>
+                                </label>
                                 {formData.linkType !== 'order' && (
                                     <div>
                                         <label htmlFor="link-process" className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-2">
@@ -543,7 +559,7 @@ export default function NewShipment() {
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('Destination Country')}</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{formData.isPickup ? t('imp.pickupCountry') : t('Destination Country')}</label>
                                     <select
                                         className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                         value={formData.destinationCountry}
@@ -778,7 +794,15 @@ export default function NewShipment() {
                         </CardContent>
                     </Card>
 
-                    {isExtraEu(formData.destinationCountry) && (
+                    {isExtraEu(formData.destinationCountry) && formData.isPickup && (
+                        <ImportDocsCard
+                            shipmentId={id}
+                            customerName={formData.customerName}
+                            country={formData.destinationCountry}
+                            parcels={formData.parcels}
+                        />
+                    )}
+                    {isExtraEu(formData.destinationCountry) && !formData.isPickup && (
                         <ExportDocsCard
                             customerName={formData.customerName}
                             invoiceValue={request?.invoice_value}

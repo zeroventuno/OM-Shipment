@@ -26,6 +26,7 @@ export const AREAS: Area[] = [
             { label: 'New Shipment', to: '/shipments/new' },
             { label: 'Reports', to: '/shipments/reports' },
             { label: 'Shipment requests', to: '/shipments/requests', countKey: 'requests' },
+            { label: 'imp.nav', to: '/shipments/import-docs' },
         ],
     },
     { icon: Wrench, label: 'nav.assistance', to: '/assistance' },

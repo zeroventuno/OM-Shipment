@@ -27,7 +27,7 @@ export function isExtraEu(country) {
     return !!code && !EU_CODES.has(code);
 }
 
-const COMPANY = {
+export const COMPANY = {
     name: 'OFFICINE MATTIO SRL',
     lines: [
         'Via Renzo Gandolfo 6/A',
