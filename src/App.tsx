@@ -17,6 +17,7 @@ const WarrantyDetailPage = lazy(() => import('@/modules/warranties/WarrantyDetai
 const RequestsPage = lazy(() => import('@/modules/requests/RequestsPage'))
 const CustomersPage = lazy(() => import('@/modules/customers/CustomersPage'))
 const CustomerDetailPage = lazy(() => import('@/modules/customers/CustomerDetailPage'))
+const ContactsPage = lazy(() => import('@/modules/contacts/ContactsPage'))
 // Relatório anual: página inteira (sem menu), feita para imprimir/salvar em PDF.
 const ReportPage = lazy(() => import('@/modules/report/ReportPage'))
 // Formulário público de pedido de envio: fora do login (link com token).
@@ -63,6 +64,7 @@ export default function App() {
 
                 <Route path="customers" element={page(<CustomersPage />)} />
                 <Route path="customers/:id" element={page(<CustomerDetailPage />)} />
+                <Route path="contacts" element={page(<ContactsPage />)} />
 
                 {/* Endereços antigos do OM-Shipment, para favoritos continuarem funcionando */}
                 <Route path="dashboard" element={<Navigate to="/shipments" replace />} />

@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { LogOut, X, Truck, Wrench, ShieldCheck, Users, FileBarChart, type LucideIcon } from 'lucide-react';
+import { LogOut, X, Truck, Wrench, ShieldCheck, Users, Contact, FileBarChart, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,6 +31,7 @@ export const AREAS: Area[] = [
     { icon: Wrench, label: 'nav.assistance', to: '/assistance' },
     { icon: ShieldCheck, label: 'nav.warranties', to: '/warranties' },
     { icon: Users, label: 'nav.customers', to: '/customers' },
+    { icon: Contact, label: 'nav.contacts', to: '/contacts' },
 ];
 
 /** Quantos processos estão parados há mais de 30 dias em cada área. */
