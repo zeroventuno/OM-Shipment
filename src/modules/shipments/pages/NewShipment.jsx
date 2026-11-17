@@ -11,6 +11,7 @@ import { ImportDocsCard } from '../components/shipments/ImportDocsCard';
 import { CustomerSearch } from '../components/shipments/CustomerSearch';
 import { isExtraEu } from '../services/exportDocs';
 import { storageService } from '../services/storage';
+import { findCustomerByTokens } from '../services/importDocsApi';
 import { useTranslation } from 'react-i18next';
 import { COUNTRIES, countryLabel } from '../data/countries';
 import { analyzeQuotes, calculateProfit } from '../utils/quotes';
@@ -258,6 +259,26 @@ export default function NewShipment() {
         () => analyzeQuotes(quotes, selectedQuoteId),
         [quotes, selectedQuoteId]
     );
+
+    // Fatura lida no cartão de exportação: completa os campos ainda vazios do
+    // envio (ordem, tipo, cliente, país e frete pago pelo cliente).
+    const fillFromInvoice = async (inv) => {
+        let name = inv.customer || '';
+        if (name) {
+            const c = await findCustomerByTokens(name).catch(() => null);
+            if (c) name = c.name;
+        }
+        const iso = inv.country === 'GB' ? 'UK' : inv.country;
+        const countryValue = iso ? COUNTRIES.find((c) => c.code === iso)?.value || '' : '';
+        setFormData((f) => ({
+            ...f,
+            orderId: f.orderId || inv.orderRef || '',
+            orderType: f.orderType || inv.orderType || '',
+            customerName: f.customerName || name,
+            destinationCountry: f.destinationCountry || countryValue,
+            customerPayment: (f.customerPayment === '' || f.customerPayment == null) && inv.freight ? String(inv.freight) : f.customerPayment,
+        }));
+    };
 
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
@@ -803,6 +824,7 @@ export default function NewShipment() {
                             invoiceValue={request?.invoice_value}
                             country={formData.destinationCountry}
                             parcels={formData.parcels}
+                            onInvoiceRead={fillFromInvoice}
                         />
                     )}
                 </div>

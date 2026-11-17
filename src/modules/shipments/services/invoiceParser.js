@@ -20,11 +20,22 @@ const HS_RE = /\b(?:HTS|HS)\s*(?:CODE)?\s*[:.]?\s*(\d[\d.\s]{4,13}\d)/i;
 const FREIGHT_RE = /SPEDIZ|TRASPORT|SHIPPING|FREIGHT|CARRIAGE/i;
 
 export function parseInvoiceText(lines) {
-    const out = { number: '', date: '', items: [], freight: 0 };
+    const out = { number: '', date: '', items: [], freight: 0, orderRef: '', customer: '', country: '' };
     let last = null;
+    let nextIsCustomer = false;
     for (const raw of lines) {
         const line = String(raw).replace(/\s+/g, ' ').trim();
         if (!line) continue;
+
+        // bloco CUSTOMER: a linha seguinte é o nome do cliente
+        if (/^CUSTOMER$/i.test(line)) { nextIsCustomer = true; continue; }
+        if (nextIsCustomer) { out.customer = line; nextIsCustomer = false; continue; }
+        // "Nazione: GB"
+        const nat = /\bNazione\s*:\s*([A-Z]{2})\b/i.exec(line);
+        if (nat && !out.country) out.country = nat[1].toUpperCase();
+        // número da ordem do e-commerce nas notas: "EC_#60019"
+        const ec = /\b(EC_#?\d{3,})/i.exec(line);
+        if (ec && !out.orderRef) out.orderRef = ec[1].toUpperCase();
 
         // "1/1356 17/11/2026" → nº 1356, data 2026-11-17
         if (!out.number) {
@@ -159,4 +170,20 @@ export function itemFromCatalog(row) {
         hs_code: firstHs(row.hs_code),
         origin: 'Italy',
     };
+}
+
+/**
+ * Tipo de ordem do envio a partir dos HS dos artigos lidos:
+ * vestuário/acessórios (cap. 61, 62, 65, óculos, garrafas), quadro, bicicleta
+ * ou componentes. null quando não há HS ou os artigos são de tipos diferentes.
+ */
+export function orderTypeFromHs(hsCodes) {
+    const kinds = new Set(hsCodes.map((h) => String(h || '').replace(/\D/g, '')).filter(Boolean).map((d) => {
+        if (/^(61|62|65)/.test(d) || d.startsWith('9004') || d.startsWith('3924') || d.startsWith('6406')) return 'Clothing/Accessories';
+        if (d.startsWith('8712')) return 'Bicycle';
+        if (d.startsWith('871491')) return 'Frame Kit';
+        if (d.startsWith('8714')) return 'Components';
+        return 'Other';
+    }));
+    return kinds.size === 1 ? [...kinds][0] : null;
 }

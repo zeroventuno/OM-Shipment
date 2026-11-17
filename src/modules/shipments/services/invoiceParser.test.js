@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { parseInvoiceText, matchCatalog, firstHs } from './invoiceParser';
+import { parseInvoiceText, matchCatalog, firstHs, orderTypeFromHs } from './invoiceParser';
 import { isEuOrigin, originStatementFor, originStatementText } from './commercialInvoice';
 
 // Linhas como saem da fatura FT 1356 (EC_#60019).
 const FT1356 = [
+    'CUSTOMER',
+    'LANGTON HEWER SIMON',
+    '29 CANYNGE SQUARE',
+    'BS83LB BRISTOL',
+    'Nazione: GB',
     'INVOICE sclh@me.com00447930336094',
     '1/1356 17/11/2026',
     'Ordine cliente N. 4370 del 17/11/2026',
@@ -12,6 +17,8 @@ const FT1356 = [
     'HTS CODE 62031200',
     'SPEDIZIONE-EXTRAUE SHIPPING COSTS PZ 1,00 25,99 25,99 N08,1',
     '148,12 0,00 148,12',
+    'NOTES TOTALE DOCUMENTO',
+    'EC_#60019',
 ];
 
 describe('parseInvoiceText', () => {
@@ -20,6 +27,9 @@ describe('parseInvoiceText', () => {
         expect(r.number).toBe('1356');
         expect(r.date).toBe('2026-11-17');
         expect(r.freight).toBeCloseTo(25.99);
+        expect(r.orderRef).toBe('EC_#60019');
+        expect(r.customer).toBe('LANGTON HEWER SIMON');
+        expect(r.country).toBe('GB');
         expect(r.items).toHaveLength(2);
         expect(r.items[0]).toMatchObject({ code: 'C315C1-L', description: 'PARENTINI - OM AUTUMN LS JERSEY TEAM - L', qty: 1, unit_value: 40.98, hs_code: '' });
         expect(r.items[1]).toMatchObject({ code: 'M067AVERDE', qty: 1, unit_value: 81.15, hs_code: '62031200' });
@@ -86,5 +96,15 @@ describe('relação código da fatura ↔ produto da loja', () => {
     it('monta a linha com descrição, nome comercial e HS', async () => {
         const { itemFromCatalog } = await import('./invoiceParser');
         expect(itemFromCatalog(shop[2])).toEqual({ catalog_id: 'ga', description: 'Knitted cycling leg warmers — "OM Gambale"', hs_code: '6117.80', origin: 'Italy' });
+    });
+});
+
+describe('orderTypeFromHs', () => {
+    it('deduz o tipo de ordem', () => {
+        expect(orderTypeFromHs(['6110.30', '6117.80'])).toBe('Clothing/Accessories');
+        expect(orderTypeFromHs(['8714.91'])).toBe('Frame Kit');
+        expect(orderTypeFromHs(['8714.99', '8714.92'])).toBe('Components');
+        expect(orderTypeFromHs(['6110.30', '8714.99'])).toBeNull();
+        expect(orderTypeFromHs(['', ''])).toBeNull();
     });
 });

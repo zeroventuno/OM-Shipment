@@ -12,7 +12,7 @@ import { buildExportPdf, downloadBytes, EUR1_THRESHOLD } from '../../services/ex
 import { itemsTotal, money } from '../../services/importDocs';
 import { originStatementFor, REX_NUMBER, REX_THRESHOLD } from '../../services/commercialInvoice';
 import { findCustomerByName, loadExportCatalog, saveCodeRelations } from '../../services/importDocsApi';
-import { codeBase, itemFromCatalog, matchCatalog, parseInvoiceText } from '../../services/invoiceParser';
+import { codeBase, itemFromCatalog, matchCatalog, orderTypeFromHs, parseInvoiceText } from '../../services/invoiceParser';
 import { pdfLines } from '../../services/pdfText';
 
 const MAX_BYTES = 15 * 1024 * 1024;
@@ -26,7 +26,7 @@ const num = (v) => Number(String(v ?? '').trim().replace(/\./g, '').replace(',',
  *     Unido, a declaração de origem com o número REX;
  *   - a declaração de livre exportação e, se precisar, o mandato EUR.1.
  */
-export function ExportDocsCard({ customerName, invoiceValue, country, parcels }) {
+export function ExportDocsCard({ customerName, invoiceValue, country, parcels, onInvoiceRead }) {
     const { t } = useTranslation();
     const fileRef = useRef(null);
     const statementKind = originStatementFor(country);
@@ -121,7 +121,7 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels })
             if (r.date) setDate(r.date);
             if (!r.items.length) return setReadInfo('fail');
             let matched = 0;
-            setItems(r.items.map((it) => {
+            const rows = r.items.map((it) => {
                 const c = matchCatalog(it.description, catalog, it.code);
                 const base = { ...emptyItem(), code: it.code, qty: String(it.qty).replace('.', ','), unit_value: it.unit_value.toFixed(2).replace('.', ',') };
                 if (!c) return { ...base, description: it.description, hs_code: it.hs_code };
@@ -130,11 +130,20 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels })
                 const note = it.hs_code && it.hs_code.replace(/\D/g, '').slice(0, 6) !== fromCat.hs_code.replace(/\D/g, '').slice(0, 6)
                     ? t('exp.ci.hsInvoice', { hs: it.hs_code }) : '';
                 return { ...base, ...fromCat, note };
-            }));
+            });
+            setItems(rows);
             setFreight(r.freight ? String(r.freight).replace('.', ',') : '');
             const total = r.items.reduce((s, it) => s + it.qty * it.unit_value, 0) + r.freight;
             if (!value) setValue(String(Math.round(total * 100) / 100).replace('.', ','));
             setReadInfo({ items: r.items.length, matched });
+            // dados do envio (ordem, tipo, cliente, país, frete pago) para o formulário principal
+            onInvoiceRead?.({
+                orderRef: r.orderRef,
+                customer: r.customer,
+                country: r.country,
+                freight: r.freight,
+                orderType: orderTypeFromHs(rows.map((x) => x.hs_code)),
+            });
         } catch (err) {
             console.error('Invoice read error:', err);
             setReadInfo('fail');

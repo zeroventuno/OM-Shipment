@@ -38,6 +38,19 @@ export async function findCustomerByName(name) {
     return data?.[0] || null;
 }
 
+/**
+ * Cliente cadastrado com todas as palavras do nome, em qualquer ordem
+ * ("LANGTON HEWER SIMON" → "SIMON LANGTON HEWER"). Só devolve se for um só.
+ */
+export async function findCustomerByTokens(name) {
+    const words = String(name || '').trim().split(/\s+/).filter((w) => w.length > 1).slice(0, 5);
+    if (!words.length) return null;
+    let q = supabase.from('customers').select('id, name, country');
+    for (const w of words) q = q.ilike('name', `%${w.replace(/[\\%_]/g, (c) => `\\${c}`)}%`);
+    const { data } = await q.limit(2);
+    return data?.length === 1 ? data[0] : null;
+}
+
 export async function loadExportCatalog() {
     const { data } = await supabase.from('export_catalog')
         .select('id, section, item, description_en, hs_code, origin, composition, erp_codes').eq('active', true).order('sort_order');
