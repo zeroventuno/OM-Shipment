@@ -161,10 +161,11 @@ const ACCENT = [0.17, 0.33, 0.55];
 
 /**
  * Gera o PDF único. invoiceBytes: o PDF da fatura (ArrayBuffer/Uint8Array).
- * logoBytes: PNG do logo (opcional). Devolve Uint8Array.
+ * logoBytes: PNG do logo (opcional). signatureBytes: PNG da assinatura e
+ * carimbo (opcional; sem ela, o espaço fica para assinar à mão). Devolve Uint8Array.
  */
 export async function buildExportPdf({
-    invoiceBytes, logoBytes, invoiceNumber, invoiceDate, includeEur1,
+    invoiceBytes, logoBytes, signatureBytes, invoiceNumber, invoiceDate, includeEur1,
     origin, producer, today = todayRome(),
 }) {
     const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
@@ -183,9 +184,10 @@ export async function buildExportPdf({
         bold: await doc.embedFont(StandardFonts.HelveticaBold),
     };
     const logo = logoBytes ? await doc.embedPng(logoBytes) : null;
+    const signature = signatureBytes ? await doc.embedPng(signatureBytes) : null;
     const color = (c) => rgb(c[0], c[1], c[2]);
 
-    const ctx = { doc, fonts, logo, color };
+    const ctx = { doc, fonts, logo, signature, color };
     renderDocument(ctx, freeExportBlocks({ invoiceNumber, invoiceDate, today }));
     if (includeEur1) renderDocument(ctx, eur1Blocks({ invoiceNumber, invoiceDate, today, origin, producer }));
 
@@ -212,7 +214,12 @@ export function wrap(text, font, size, width) {
 }
 
 function renderDocument(ctx, blocks) {
-    const { doc, fonts, color } = ctx;
+    const { doc, fonts, color, signature } = ctx;
+    // assinatura e carimbo por cima da linha, a partir de x, com a base em bottom
+    const drawSignature = (x, bottom, w) => {
+        if (!signature) return;
+        page.drawImage(signature, { x, y: bottom, width: w, height: (w * signature.height) / signature.width });
+    };
     const width = A4.width - M.left - M.right;
     let page;
     let y;
@@ -292,17 +299,21 @@ function renderDocument(ctx, blocks) {
                 y -= 18;
                 page.drawText(b.label, { x: M.left, y, size: 9.5, font: fonts.regular, color: color(INK) });
                 page.drawLine({ start: { x: M.left + 52, y: y - 2 }, end: { x: M.left + 230, y: y - 2 }, thickness: 0.6, color: color(INK) });
+                drawSignature(M.left + 90, y - 18, 100);
                 y -= 10;
                 break;
             case 'sign2': {
-                ensure(60);
+                // com a imagem da assinatura, as linhas descem para dar espaço a ela
+                const line = signature ? 70 : 40;
+                ensure(line + 20);
                 const rx = M.left + width / 2 + 20;
                 page.drawText(b.left, { x: M.left + 30, y: y - 10, size: 9.5, font: fonts.regular, color: color(INK) });
                 page.drawText(b.right, { x: rx + 30, y: y - 10, size: 9.5, font: fonts.regular, color: color(INK) });
-                page.drawText(b.leftValue, { x: M.left, y: y - 32, size: 9.5, font: fonts.regular, color: color(INK) });
-                page.drawLine({ start: { x: M.left, y: y - 40 }, end: { x: M.left + 180, y: y - 40 }, thickness: 0.6, color: color(INK) });
-                page.drawLine({ start: { x: rx, y: y - 40 }, end: { x: rx + 180, y: y - 40 }, thickness: 0.6, color: color(INK) });
-                y -= 50;
+                page.drawText(b.leftValue, { x: M.left, y: y - line + 8, size: 9.5, font: fonts.regular, color: color(INK) });
+                page.drawLine({ start: { x: M.left, y: y - line }, end: { x: M.left + 180, y: y - line }, thickness: 0.6, color: color(INK) });
+                page.drawLine({ start: { x: rx, y: y - line }, end: { x: rx + 180, y: y - line }, thickness: 0.6, color: color(INK) });
+                drawSignature(rx + 40, y - line - 14, 100);
+                y -= line + 10;
                 break;
             }
             case 'keep':

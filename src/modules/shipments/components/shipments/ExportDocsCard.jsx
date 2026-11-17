@@ -4,6 +4,7 @@ import { FileText, Download, Upload, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
+import { supabase } from '@/lib/supabase';
 import { buildExportPdf, downloadBytes, EUR1_THRESHOLD } from '../../services/exportDocs';
 
 const MAX_BYTES = 15 * 1024 * 1024;
@@ -24,7 +25,22 @@ export function ExportDocsCard({ customerName, invoiceValue }) {
     const [origin, setOrigin] = useState('wholly');
     const [producer, setProducer] = useState('eu');
     const [busy, setBusy] = useState(false);
+    // assinatura e carimbo: ficam no banco (só equipe logada lê), não na pasta pública
+    const [signature, setSignature] = useState(null); // Uint8Array | null
+    const [signLoaded, setSignLoaded] = useState(false);
+    const [useSign, setUseSign] = useState(true);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        let alive = true;
+        supabase.from('company_assets').select('data_base64').eq('key', 'legal_rep_signature').maybeSingle()
+            .then(({ data }) => {
+                if (!alive) return;
+                if (data?.data_base64) setSignature(Uint8Array.from(atob(data.data_base64), (c) => c.charCodeAt(0)));
+                setSignLoaded(true);
+            });
+        return () => { alive = false; };
+    }, []);
 
     const amount = Number(String(value).replace(/\./g, '').replace(',', '.'));
     useEffect(() => {
@@ -52,7 +68,7 @@ export function ExportDocsCard({ customerName, invoiceValue }) {
         try {
             const logo = await fetch('/logo.png').then((r) => (r.ok ? r.arrayBuffer() : null)).catch(() => null);
             const bytes = await buildExportPdf({
-                invoiceBytes: invoice.bytes, logoBytes: logo, invoiceNumber: number.trim(), invoiceDate: date,
+                invoiceBytes: invoice.bytes, logoBytes: logo, signatureBytes: useSign ? signature : null, invoiceNumber: number.trim(), invoiceDate: date,
                 includeEur1: eur1, origin, producer,
             });
             const who = (customerName || '').replace(/[^\w-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
@@ -111,6 +127,13 @@ export function ExportDocsCard({ customerName, invoiceValue }) {
                     <input type="checkbox" className="mt-1 accent-primary" checked={eur1} onChange={(e) => { setEur1(e.target.checked); setEur1Touched(true); }} />
                     <span>{t('exp.eur1', { limit: EUR1_THRESHOLD.toLocaleString('it-IT') })}</span>
                 </label>
+
+                {signature ? (
+                    <label className="flex items-start gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" className="mt-1 accent-primary" checked={useSign} onChange={(e) => setUseSign(e.target.checked)} />
+                        <span>{t('exp.sign')}</span>
+                    </label>
+                ) : signLoaded && <p className="text-xs text-muted-foreground">{t('exp.sign.none')}</p>}
 
                 {eur1 && (
                     <div className="space-y-3 rounded-md border border-border p-3">

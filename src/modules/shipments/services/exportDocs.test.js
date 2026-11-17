@@ -55,4 +55,11 @@ describe('buildExportPdf', () => {
         expect(without.getPageCount()).toBe(4); // 2 da fatura + 2 da declaração, sem página sobrando
         expect(withEur1.getPageCount()).toBe(without.getPageCount() + 1);
     });
+    it('a assinatura entra sem acrescentar páginas', async () => {
+        // PNG 1x1 transparente
+        const png = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='), (c) => c.charCodeAt(0));
+        const base = { invoiceNumber: '1255', invoiceDate: '2026-10-26', today: '2026-11-16', includeEur1: true };
+        const signed = await PDFDocument.load(await buildExportPdf({ ...base, invoiceBytes: await fakeInvoice(1), signatureBytes: png }));
+        expect(signed.getPageCount()).toBe(1 + 2 + 1);
+    });
 });
