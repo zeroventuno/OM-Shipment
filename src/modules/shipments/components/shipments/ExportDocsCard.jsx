@@ -12,7 +12,8 @@ import { buildExportPdf, downloadBytes, EUR1_THRESHOLD } from '../../services/ex
 import { itemsTotal, money } from '../../services/importDocs';
 import { originStatementFor, REX_NUMBER, REX_THRESHOLD } from '../../services/commercialInvoice';
 import { findCustomerByName, loadExportCatalog, saveCodeRelations } from '../../services/importDocsApi';
-import { codeBase } from '../../services/invoiceParser';
+import { codeBase, itemFromCatalog, matchCatalog, parseInvoiceText } from '../../services/invoiceParser';
+import { pdfLines } from '../../services/pdfText';
 
 const MAX_BYTES = 15 * 1024 * 1024;
 const emptyConsignee = { name: '', address: '', postal_code: '', city: '', country: '', tax_id: '', contact: '', phone: '', email: '' };
@@ -100,10 +101,44 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels })
         setError('');
         if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) return setError(t('exp.err.pdf'));
         if (file.size > MAX_BYTES) return setError(t('exp.err.size'));
-        setInvoice({ name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) });
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        setInvoice({ name: file.name, bytes });
         // "FT 1255 - cliente.pdf" / "FTI_1356_EC_#60019.pdf" → 1255 / 1356
         const m = /(?:FTI?|fatt(?:ura)?|invoice)[\s_.-]*(\d{1,6})/i.exec(file.name);
         if (m && !number) setNumber(m[1]);
+        readInvoice(bytes);
+    };
+
+    // Lê a fatura do gestionale: número, data, artigos (com o produto da loja
+    // quando o código já está relacionado) e frete. O que não der para ler
+    // continua sendo preenchido à mão.
+    const [readInfo, setReadInfo] = useState(null); // { items, matched } | 'fail'
+    const readInvoice = async (bytes) => {
+        setReadInfo(null);
+        try {
+            const r = parseInvoiceText(await pdfLines(bytes));
+            if (r.number) setNumber(r.number);
+            if (r.date) setDate(r.date);
+            if (!r.items.length) return setReadInfo('fail');
+            let matched = 0;
+            setItems(r.items.map((it) => {
+                const c = matchCatalog(it.description, catalog, it.code);
+                const base = { ...emptyItem(), code: it.code, qty: String(it.qty).replace('.', ','), unit_value: it.unit_value.toFixed(2).replace('.', ',') };
+                if (!c) return { ...base, description: it.description, hs_code: it.hs_code };
+                matched += 1;
+                const fromCat = itemFromCatalog(c);
+                const note = it.hs_code && it.hs_code.replace(/\D/g, '').slice(0, 6) !== fromCat.hs_code.replace(/\D/g, '').slice(0, 6)
+                    ? t('exp.ci.hsInvoice', { hs: it.hs_code }) : '';
+                return { ...base, ...fromCat, note };
+            }));
+            setFreight(r.freight ? String(r.freight).replace('.', ',') : '');
+            const total = r.items.reduce((s, it) => s + it.qty * it.unit_value, 0) + r.freight;
+            if (!value) setValue(String(Math.round(total * 100) / 100).replace('.', ','));
+            setReadInfo({ items: r.items.length, matched });
+        } catch (err) {
+            console.error('Invoice read error:', err);
+            setReadInfo('fail');
+        }
     };
 
     const goods = cleanItems(items);
@@ -183,6 +218,11 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels })
                         </Button>
                     )}
                     <input ref={fileRef} type="file" accept="application/pdf,.pdf" className="hidden" onChange={onFile} />
+                    {readInfo && (
+                        <p role="status" className={`mt-2 text-xs ${readInfo === 'fail' ? 'text-error' : 'text-muted-foreground'}`}>
+                            {readInfo === 'fail' ? t('exp.ci.readFail') : t('exp.ci.read', { n: readInfo.items, m: readInfo.matched })}
+                        </p>
+                    )}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                     <Input label={t('exp.number')} value={number} onChange={(e) => setNumber(e.target.value)} placeholder="1255" />

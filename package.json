@@ -37,6 +37,7 @@
     "i18next": "^25.6.3",
     "lucide-react": "^0.453.0",
     "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.10.38",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.55.0",
