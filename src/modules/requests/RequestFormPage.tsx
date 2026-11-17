@@ -53,6 +53,8 @@ export default function RequestFormPage() {
   const [newAddress, setNewAddress] = useState<AddressInput>(emptyAddress);
   const [newCustomer, setNewCustomer] = useState<CustomerInput | null>(null);
   const [boxes, setBoxes] = useState<BoxDraft[]>([emptyBox()]);
+  // Ainda não embalado: o pedido vai sem caixas e a equipe completa depois.
+  const [packLater, setPackLater] = useState(false);
   const [service, setService] = useState<"standard" | "express">("standard");
   const [orderRef, setOrderRef] = useState("");
   const [notes, setNotes] = useState("");
@@ -113,7 +115,7 @@ export default function RequestFormPage() {
       return formSubmit(token, {
         customer_id: customerId,
         address_id: addressId,
-        boxes: boxes.map((b) => ({
+        boxes: packLater ? [] : boxes.map((b) => ({
           width: Number(b.width), height: Number(b.height), depth: Number(b.depth), weight: Number(String(b.weight).replace(",", ".")),
         })),
         service_level: service,
@@ -166,7 +168,7 @@ export default function RequestFormPage() {
       return setError(t("Fill in the new customer's name, address, city and country"));
     }
     const invalid = boxes.some((b) => [b.width, b.height, b.depth, b.weight].some((v) => !(Number(String(v).replace(",", ".")) > 0)));
-    if (invalid) return setError(t("Fill in the size and weight of every box"));
+    if (invalid && !packLater) return setError(t("Fill in the size and weight of every box"));
     if (parseMoney(invoiceValue) === null) return setError(t("Fill in the invoiced value"));
     if (insuredValue.trim() && parseMoney(insuredValue) === null) return setError(t("Invalid value for insurance"));
     submit.mutate();
@@ -377,9 +379,16 @@ export default function RequestFormPage() {
             <section className="bg-card border border-border rounded-lg p-5 md:p-6 flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-bold uppercase tracking-[0.12em]">{t("Boxes")}</h2>
-                <span className="text-sm text-muted-foreground">{t("Size in cm, weight in kg")}</span>
+                {!packLater && <span className="text-sm text-muted-foreground">{t("Size in cm, weight in kg")}</span>}
               </div>
-              {boxes.map((b, i) => (
+              <label className="inline-flex items-start gap-2.5 cursor-pointer text-sm">
+                <input type="checkbox" className="accent-primary mt-0.5 h-4 w-4" checked={packLater} onChange={(e) => setPackLater(e.target.checked)} />
+                <span>
+                  <span className="font-semibold">{t("Not packed yet")}</span>
+                  <span className="block text-muted-foreground">{t("The team will fill in boxes and weight when the goods are packed.")}</span>
+                </span>
+              </label>
+              {!packLater && boxes.map((b, i) => (
                 <div key={i} className="flex flex-col gap-3 pb-4 border-b border-muted last:border-0 last:pb-0">
                 {(presets.data?.length ?? 0) > 0 && (
                   <div className="flex flex-col gap-2">
@@ -441,9 +450,11 @@ export default function RequestFormPage() {
                 </div>
                 </div>
               ))}
-              <Button type="button" variant="outline" size="sm" className="self-start" onClick={() => setBoxes((l) => [...l, emptyBox()])} disabled={boxes.length >= 20}>
-                <Plus /> {t("Add box")}
-              </Button>
+              {!packLater && (
+                <Button type="button" variant="outline" size="sm" className="self-start" onClick={() => setBoxes((l) => [...l, emptyBox()])} disabled={boxes.length >= 20}>
+                  <Plus /> {t("Add box")}
+                </Button>
+              )}
             </section>
 
             <section className="bg-card border border-border rounded-lg p-5 md:p-6 flex flex-col gap-4">
@@ -555,7 +566,7 @@ export default function RequestFormPage() {
                     {statusLabel[r.status]}
                   </span>
                 </div>
-                <p className="text-sm">{r.boxes.map(boxSummary).join(" · ")} — {t("total")} {totalWeight(r.boxes)} kg</p>
+                <p className="text-sm">{r.boxes.length ? `${r.boxes.map(boxSummary).join(" · ")} — ${t("total")} ${totalWeight(r.boxes)} kg` : t("Packaging to be defined")}</p>
                 {r.invoice_value != null && (
                   <p className="text-sm text-muted-foreground">
                     {t("Invoiced")} {formatMoney(r.invoice_value, i18n.language)} ·{" "}

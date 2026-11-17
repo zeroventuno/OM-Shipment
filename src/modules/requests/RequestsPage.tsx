@@ -122,10 +122,16 @@ export default function RequestsPage() {
                 </div>
 
                 <div className="flex flex-col gap-1 pt-3 border-t border-muted text-sm">
-                  {r.boxes.map((b, i) => (
-                    <p key={i}><span className="text-muted-foreground">{t("Box")} {i + 1}:</span> {boxSummary(b)}</p>
-                  ))}
-                  <p className="font-semibold">{t("Total")}: {r.boxes.length} × · {totalWeight(r.boxes)} kg</p>
+                  {r.boxes.length === 0 ? (
+                    <p className="font-semibold">{t("Packaging to be defined")}</p>
+                  ) : (
+                    <>
+                      {r.boxes.map((b, i) => (
+                        <p key={i}><span className="text-muted-foreground">{t("Box")} {i + 1}:</span> {boxSummary(b)}</p>
+                      ))}
+                      <p className="font-semibold">{t("Total")}: {r.boxes.length} × · {totalWeight(r.boxes)} kg</p>
+                    </>
+                  )}
                   {r.invoice_value != null && (
                     <p>
                       <span className="text-muted-foreground">{t("Invoiced")}:</span> {formatMoney(r.invoice_value, i18n.language)}

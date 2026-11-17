@@ -126,7 +126,7 @@ export default function NewShipment() {
                     setFormData((f) => ({
                         ...f,
                         requestId: req.id,
-                        parcels: req.boxes,
+                        parcels: req.boxes?.length ? req.boxes : f.parcels,
                         customerName: req.customer?.name || f.customerName,
                         destinationCountry: req.address?.country || req.customer?.country || f.destinationCountry,
                         serviceLevel: req.service_level,
@@ -415,7 +415,7 @@ export default function NewShipment() {
                     {request.address && [request.address.contact_name, request.address.phone].some(Boolean) && (
                         <p className="text-muted-foreground">{[request.address.contact_name, request.address.phone].filter(Boolean).join(' · ')}</p>
                     )}
-                    <p>{request.boxes.map(boxSummary).join(' · ')} — {t('Total')} {totalWeight(request.boxes)} kg</p>
+                    <p>{request.boxes.length ? `${request.boxes.map(boxSummary).join(' · ')} — ${t('Total')} ${totalWeight(request.boxes)} kg` : t('Packaging to be defined')}</p>
                     {request.invoice_value != null && (
                         <p>
                             {t('Invoiced')}: {formatMoney(request.invoice_value, i18n.language)} ·{' '}
