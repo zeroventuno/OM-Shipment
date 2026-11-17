@@ -202,6 +202,8 @@ export const shipmentResources = {
 
             // Retirada e proforma de importação (IMP)
             "imp.nav": "Proforma import (IMP)",
+            "customerSearch.placeholder": "Buscar cliente…",
+            "customerSearch.none": "Nenhum cliente cadastrado com esse nome",
             "imp.pickup": "Retirada (presa)",
             "imp.pickupHint": "A mercadoria vem do cliente para a Officine Mattio. O país é o da retirada.",
             "imp.pickupCountry": "País da retirada",
@@ -521,6 +523,8 @@ export const shipmentResources = {
 
             // Ritiro e proforma import (IMP)
             "imp.nav": "Proforma import (IMP)",
+            "customerSearch.placeholder": "Cerca cliente…",
+            "customerSearch.none": "Nessun cliente registrato con questo nome",
             "imp.pickup": "Ritiro (presa)",
             "imp.pickupHint": "La merce arriva dal cliente alla Officine Mattio. Il paese è quello del ritiro.",
             "imp.pickupCountry": "Paese del ritiro",

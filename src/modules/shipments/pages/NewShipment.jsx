@@ -8,6 +8,7 @@ import { PhotoUpload } from '../components/shipments/PhotoUpload';
 import { PodUpload } from '../components/shipments/PodUpload';
 import { ExportDocsCard } from '../components/shipments/ExportDocsCard';
 import { ImportDocsCard } from '../components/shipments/ImportDocsCard';
+import { CustomerSearch } from '../components/shipments/CustomerSearch';
 import { isExtraEu } from '../services/exportDocs';
 import { storageService } from '../services/storage';
 import { useTranslation } from 'react-i18next';
@@ -63,7 +64,6 @@ export default function NewShipment() {
     const [processes, setProcesses] = useState({ tickets: [], warranties: [] });
     const [agents, setAgents] = useState([]);
 
-    const [uniqueCustomers, setUniqueCustomers] = useState([]);
 
     const [quotes, setQuotes] = useState([
         { id: 1, portal: PORTALS[0], carrier: ALL_CARRIERS[0], price: '' }, // MBE - TNT
@@ -140,9 +140,6 @@ export default function NewShipment() {
                         agent: f.agent || req.requested_by || ''
                     }));
                 }
-
-                // Load unique customers for autocomplete
-                setUniqueCustomers(await storageService.getCustomerNames());
 
                 // Assistências, garantias e agentes para o vínculo. Opcional: se
                 // falhar, o formulário continua funcionando como antes.
@@ -537,16 +534,12 @@ export default function NewShipment() {
                                         ))}
                                     </select>
                                 </div>
-                                <Input
-                                    label={t('Customer')}
-                                    placeholder={t('Customer')}
+                                <CustomerSearch
                                     value={formData.customerName}
-                                    onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                                    list="customers"
+                                    onChange={(name) => setFormData((f) => ({ ...f, customerName: name }))}
+                                    // país do cadastro, se ainda não foi escolhido
+                                    onSelect={(c) => setFormData((f) => ({ ...f, destinationCountry: f.destinationCountry || c.country || '' }))}
                                 />
-                                <datalist id="customers">
-                                    {uniqueCustomers.map(c => <option key={c} value={c} />)}
-                                </datalist>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('Quantity (Bicycles/Frames)')}</label>
                                     <input

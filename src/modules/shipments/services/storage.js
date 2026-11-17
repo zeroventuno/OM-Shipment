@@ -4,20 +4,6 @@ import { resolveStatus } from '../utils/shipmentStatus';
 
 const STORAGE_KEY = 'bikeship_data_v1';
 
-// O Supabase devolve no máximo 1000 linhas por consulta: busca em páginas.
-async function fetchAllRows(table, columns, filter = (q) => q) {
-    const PAGE = 1000;
-    const rows = [];
-    for (let from = 0; ; from += PAGE) {
-        const { data, error } = await filter(supabase.from(table).select(columns)).order('id').range(from, from + PAGE - 1);
-        if (error) {
-            console.error(`Supabase ${table} error:`, error);
-            throw error;
-        }
-        rows.push(...data);
-        if (data.length < PAGE) return rows;
-    }
-}
 
 // Comprovantes de entrega ficam num bucket privado, separado do de fotos, que
 // tem leitura pública. Um POD traz assinatura, nome e endereço do cliente.
@@ -281,26 +267,6 @@ export const storageService = {
         }, {});
 
         return Object.entries(portalCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
-    },
-
-    // Nomes para o autocomplete do formulário: o cadastro de clientes (inclui
-    // quem acabou de ser cadastrado) mais os nomes usados em envios antigos.
-    getCustomerNames: async () => {
-        if (!supabase) {
-            return [...new Set(localRead().map(s => s.customerName).filter(Boolean))].sort();
-        }
-
-        const [customers, shipments] = await Promise.all([
-            fetchAllRows('customers', 'name'),
-            fetchAllRows('shipments', 'customer_name', (q) => q.not('customer_name', 'is', null)),
-        ]);
-        const names = new Map();
-        for (const raw of [...customers.map(r => r.name), ...shipments.map(r => r.customer_name)]) {
-            const name = (raw || '').trim();
-            const key = name.toLowerCase();
-            if (name && !names.has(key)) names.set(key, name);
-        }
-        return [...names.values()].sort((x, y) => x.localeCompare(y, 'it', { sensitivity: 'base' }));
     },
 
     getStats: async () => {
