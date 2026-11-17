@@ -2,31 +2,48 @@ import { useTranslation } from 'react-i18next';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { itemsTotal, money } from '../../services/importDocs';
+import { itemFromCatalog, matchCatalog } from '../../services/invoiceParser';
 
 /**
  * Lista de artigos para documentos de alfândega (proforma IMP e Commercial
  * Invoice): descrição, quantidade, HS, origem e valor unitário, com atalho
  * para puxar descrição e HS do catálogo.
  */
-export const emptyItem = () => ({ qty: '1', description: '', hs_code: '', origin: 'Italy', unit_value: '' });
+export const emptyItem = () => ({ qty: '1', description: '', hs_code: '', origin: 'Italy', unit_value: '', code: '', catalog_id: '' });
 
 const num = (v) => Number(String(v ?? '').trim().replace(',', '.'));
 
 /** Artigos preenchidos, com números. */
 export const cleanItems = (items) => items
     .filter((it) => it.description.trim())
-    .map((it) => ({ qty: num(it.qty) || 1, description: it.description.trim(), hs_code: it.hs_code.trim(), origin: it.origin.trim(), unit_value: num(it.unit_value) || 0 }));
+    .map((it) => ({
+        qty: num(it.qty) || 1, description: it.description.trim(), hs_code: it.hs_code.trim(), origin: it.origin.trim(), unit_value: num(it.unit_value) || 0,
+        ...(it.code?.trim() ? { code: it.code.trim() } : {}), ...(it.catalog_id ? { catalog_id: it.catalog_id } : {}),
+    }));
 
-export function ItemsEditor({ items, setItems, catalog, label, extraTotal = 0 }) {
+export function ItemsEditor({ items, setItems, catalog, label, extraTotal = 0, withCode = false }) {
     const { t } = useTranslation();
     const small = 'h-9 w-full rounded-md border border-input bg-card px-2 text-sm';
     const setItem = (i, field, value) => setItems((l) => l.map((x, j) => (j === i ? { ...x, [field]: value } : x)));
     const addFromCatalog = (id) => {
         const c = catalog.find((x) => x.id === id);
         if (!c) return;
-        const row = { ...emptyItem(), description: c.description_en || c.item, hs_code: (c.hs_code || '').split('/')[0].trim() };
+        const row = { ...emptyItem(), ...itemFromCatalog(c) };
         setItems((l) => (l.length === 1 && !l[0].description ? [row] : [...l, row]));
     };
+    // escolher o produto da linha (e assim relacionar o código da fatura)
+    const pickProduct = (i, id) => {
+        const c = catalog.find((x) => x.id === id);
+        setItems((l) => l.map((x, j) => (j === i ? (c ? { ...x, ...itemFromCatalog(c) } : { ...x, catalog_id: '' }) : x)));
+    };
+    // código digitado: se já estiver relacionado, preenche sozinho
+    const lookupCode = (i) => {
+        const it = items[i];
+        if (!it?.code?.trim() || it.catalog_id) return;
+        const c = matchCatalog(it.description, catalog, it.code);
+        if (c) pickProduct(i, c.id);
+    };
+    const products = catalog.filter((c) => c.section === 'shop');
     const total = itemsTotal(cleanItems(items)) + extraTotal;
 
     return (
@@ -40,6 +57,15 @@ export function ItemsEditor({ items, setItems, catalog, label, extraTotal = 0 })
             )}
             {items.map((it, i) => (
                 <div key={i} className="rounded-md border border-border p-2.5 space-y-2">
+                    {withCode && (
+                        <div className="grid grid-cols-[7rem_1fr] gap-2">
+                            <input className={small} aria-label={t('exp.ci.code')} placeholder={t('exp.ci.code')} value={it.code || ''} onChange={(e) => setItem(i, 'code', e.target.value)} onBlur={() => lookupCode(i)} />
+                            <select className={small} aria-label={t('exp.ci.product')} value={it.catalog_id || ''} onChange={(e) => pickProduct(i, e.target.value)}>
+                                <option value="">{t('exp.ci.product')}…</option>
+                                {(products.length ? products : catalog).map((c) => <option key={c.id} value={c.id}>{c.item}</option>)}
+                            </select>
+                        </div>
+                    )}
                     <textarea rows={2} className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm" placeholder={t('imp.description')} value={it.description} onChange={(e) => setItem(i, 'description', e.target.value)} />
                     {it.note && <p className="text-xs text-muted-foreground">{it.note}</p>}
                     <div className="grid grid-cols-[3.5rem_1fr_1fr] gap-2">

@@ -59,3 +59,32 @@ describe('origem', () => {
         expect(originStatementText('')).not.toContain('Reference');
     });
 });
+
+describe('relação código da fatura ↔ produto da loja', () => {
+    const shop = [
+        { id: 'jl', section: 'shop', item: 'Jersey manica lunga Team OM.CC (maglia manica lunga)', description_en: 'Knitted long-sleeve cycling jersey', hs_code: '6110.30', erp_codes: ['C315C1'] },
+        { id: 'jc', section: 'shop', item: 'Jersey Team OM.CC (maglia manica corta)', description_en: 'Knitted short-sleeve cycling jersey', hs_code: '6110.30', erp_codes: [] },
+        { id: 'ga', section: 'shop', item: 'OM Gambale (scaldagambe)', description_en: 'Knitted cycling leg warmers', hs_code: '6117.80', erp_codes: ['M067A'] },
+        { id: 'bt', section: 'shop', item: 'Bib Team OM.CC (salopette)', description_en: 'Knitted cycling bib shorts', hs_code: '6104.63', erp_codes: [] },
+    ];
+    it('tira o tamanho do código', async () => {
+        const { codeBase } = await import('./invoiceParser');
+        expect(codeBase('C315C1-L')).toBe('C315C1');
+        expect(codeBase('C315C1-XXL')).toBe('C315C1');
+        expect(codeBase('C315C1-3XS')).toBe('C315C1');
+        expect(codeBase('M067AVERDE')).toBe('M067AVERDE');
+    });
+    it('acha pelo código já relacionado, inclusive com cor/tamanho', () => {
+        expect(matchCatalog('qualquer coisa', shop, 'C315C1-L')?.id).toBe('jl');
+        expect(matchCatalog('OM - GAMBALE TERMICO VERDE', shop, 'M067AVERDE')?.id).toBe('ga');
+    });
+    it('sem código relacionado, acha pelo nome da loja', () => {
+        expect(matchCatalog('PARENTINI - OM AUTUMN LS JERSEY TEAM - L', shop, 'X999')?.id).toBe('jl');
+        expect(matchCatalog('JERSEY TEAM OM.CC ACQUA', shop, 'X998')?.id).toBe('jc');
+        expect(matchCatalog('BIB TEAM OMCC NERO', shop, '')?.id).toBe('bt');
+    });
+    it('monta a linha com descrição, nome comercial e HS', async () => {
+        const { itemFromCatalog } = await import('./invoiceParser');
+        expect(itemFromCatalog(shop[2])).toEqual({ catalog_id: 'ga', description: 'Knitted cycling leg warmers — "OM Gambale"', hs_code: '6117.80', origin: 'Italy' });
+    });
+});

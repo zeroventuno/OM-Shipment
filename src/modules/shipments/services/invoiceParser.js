@@ -90,9 +90,54 @@ const KEYWORDS = [
     [/\b(TAPE|NASTRO)\b/i, /nastro/i],
 ];
 
-export function matchCatalog(description, catalog) {
-    for (const [inv, cat] of KEYWORDS) {
-        if (!inv.test(description)) continue;
+// Tamanhos no fim do código do artigo: "C315C1-L" → "C315C1".
+const SIZE_SUFFIX = /-(?:\d?X{0,3}[SML]|X{1,3}L|\d{1,2}|TU|UNI)$/i;
+
+/** Código da fatura sem o tamanho, para gravar a relação com o produto. */
+export const codeBase = (code) => String(code || '').trim().toUpperCase().replace(SIZE_SUFFIX, '');
+
+/** Produto do catálogo ligado a este código da fatura (o mais específico). */
+export function matchByCode(code, catalog) {
+    const c = codeBase(code);
+    if (!c) return null;
+    let best = null;
+    for (const row of catalog) {
+        for (const e of row.erp_codes || []) {
+            const k = String(e).toUpperCase();
+            if (k && c.startsWith(k) && (!best || k.length > best.len)) best = { row, len: k.length };
+        }
+    }
+    return best?.row || null;
+}
+
+// Palavras que identificam o produto ("LS" na fatura = "manica lunga" na loja).
+const STOP = new Set(['OM', 'OMCC', 'CC', 'TEAM', 'THE', 'CON', 'PER', 'DA', 'DI']);
+const words = (s) => String(s || '').toUpperCase()
+    .replace(/\bLS\b/g, 'MANICA LUNGA').replace(/\bSS\b/g, 'MANICA CORTA')
+    .replace(/\bMANICHE\b/g, 'MANICA').replace(/[^A-Z0-9 ]+/g, ' ')
+    .split(/\s+/).filter((w) => w.length >= 3 && !STOP.has(w));
+
+/**
+ * Artigo da fatura → produto do catálogo: 1º pelo código da fatura já
+ * relacionado; 2º pelos nomes dos produtos da loja; 3º por palavras-chave.
+ */
+export function matchCatalog(description, catalog, code) {
+    const byCode = matchByCode(code, catalog);
+    if (byCode) return byCode;
+
+    const inv = new Set(words(description));
+    let best = null;
+    for (const row of catalog.filter((r) => r.section === 'shop')) {
+        const w = words(row.item);
+        const hits = w.filter((x) => inv.has(x)).length;
+        // empate: o que tem menos palavras sobrando é o mais exato
+        const score = hits * 10 - (w.length - hits);
+        if (hits > 0 && (!best || score > best.score)) best = { row, score };
+    }
+    if (best) return best.row;
+
+    for (const [inv2, cat] of KEYWORDS) {
+        if (!inv2.test(description)) continue;
         const hit = catalog.find((c) => cat.test(c.item));
         if (hit) return hit;
     }
@@ -101,3 +146,17 @@ export function matchCatalog(description, catalog) {
 
 /** Primeiro código de um campo como "6110.30 / 6114.30" → "6110.30" */
 export const firstHs = (hs) => String(hs || '').split('/')[0].trim();
+
+/** Nome comercial do produto: "Jersey Team OM.CC (maglia manica corta)" → "Jersey Team OM.CC" */
+export const commercialName = (item) => String(item || '').replace(/\s*\(.*\)\s*$/, '').trim();
+
+/** Campos da linha da Commercial Invoice a partir do produto do catálogo. */
+export function itemFromCatalog(row) {
+    const name = row.section === 'shop' ? commercialName(row.item) : '';
+    return {
+        catalog_id: row.id,
+        description: [row.description_en || row.item, name && `"${name}"`].filter(Boolean).join(' — '),
+        hs_code: firstHs(row.hs_code),
+        origin: 'Italy',
+    };
+}

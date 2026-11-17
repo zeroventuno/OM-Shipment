@@ -6,7 +6,7 @@ import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { filterCatalog } from '../../services/exportCatalog';
 
-const EMPTY = { section: 'other', item: '', description_en: '', hs_code: '', hs_note: '', verified: false, origin: '' };
+const EMPTY = { section: 'other', item: '', description_en: '', hs_code: '', hs_note: '', verified: false, origin: '', composition: '', erp_codes: [] };
 
 /**
  * Catálogo de artigos para exportação: descrição em inglês, HS de referência e
@@ -53,6 +53,9 @@ export function ExportCatalog() {
             hs_code: fields.hs_code?.trim() || null,
             hs_note: fields.hs_note?.trim() || null,
             origin: fields.origin?.trim() || null,
+            composition: fields.composition?.trim() || null,
+            erp_codes: (Array.isArray(fields.erp_codes) ? fields.erp_codes : String(fields.erp_codes || '').split(','))
+                .map((c) => String(c).trim().toUpperCase()).filter(Boolean),
             updated_at: new Date().toISOString(),
         };
         if (!payload.item || !payload.description_en) return setError(t('cat.err.required'));
@@ -94,6 +97,8 @@ export function ExportCatalog() {
                 <Input label={t('cat.hsNote')} value={editing.hs_note || ''} onChange={(e) => setEditing({ ...editing, hs_note: e.target.value })} />
             </div>
             <Input label={t('cat.origin')} value={editing.origin || ''} onChange={(e) => setEditing({ ...editing, origin: e.target.value })} />
+            <Input label={t('cat.composition')} value={editing.composition || ''} onChange={(e) => setEditing({ ...editing, composition: e.target.value })} />
+            <Input label={t('cat.codes')} placeholder="C315C1, M067A" value={Array.isArray(editing.erp_codes) ? editing.erp_codes.join(', ') : editing.erp_codes || ''} onChange={(e) => setEditing({ ...editing, erp_codes: e.target.value })} />
             <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input type="checkbox" className="accent-primary" checked={editing.verified} onChange={(e) => setEditing({ ...editing, verified: e.target.checked })} />
                 {t('cat.verified')}
@@ -163,6 +168,8 @@ export function ExportCatalog() {
                                     {r.hs_note && <span className="text-xs text-muted-foreground">{r.hs_note}</span>}
                                 </div>
                                 {r.origin && <p className="mt-1 text-xs"><span className="text-muted-foreground">{t('cat.origin')}:</span> {r.origin}</p>}
+                                {r.composition && <p className="mt-1 text-xs"><span className="text-muted-foreground">{t('cat.composition')}:</span> {r.composition}</p>}
+                                {r.erp_codes?.length > 0 && <p className="mt-1 text-xs font-mono"><span className="font-sans text-muted-foreground">{t('cat.codes')}:</span> {r.erp_codes.join(', ')}</p>}
                             </li>
                         )))}
                     </ul>

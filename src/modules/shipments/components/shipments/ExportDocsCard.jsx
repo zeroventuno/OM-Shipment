@@ -10,7 +10,8 @@ import { ItemsEditor, emptyItem, cleanItems } from './ItemsEditor';
 import { buildExportPdf, downloadBytes, EUR1_THRESHOLD } from '../../services/exportDocs';
 import { itemsTotal, money } from '../../services/importDocs';
 import { originStatementFor, REX_NUMBER, REX_THRESHOLD } from '../../services/commercialInvoice';
-import { findCustomerByName, loadExportCatalog } from '../../services/importDocsApi';
+import { findCustomerByName, loadExportCatalog, saveCodeRelations } from '../../services/importDocsApi';
+import { codeBase } from '../../services/invoiceParser';
 
 const MAX_BYTES = 15 * 1024 * 1024;
 const emptyConsignee = { name: '', address: '', postal_code: '', city: '', country: '', tax_id: '', contact: '', phone: '', email: '' };
@@ -129,6 +130,10 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels })
                     statement: statement ? statementKind || 'uk' : null,
                 } : null,
             });
+            if (commercial) {
+                // relação código da fatura → produto, para as próximas faturas
+                saveCodeRelations(goods.filter((g) => g.code && g.catalog_id).map((g) => ({ code: codeBase(g.code), catalogId: g.catalog_id })), catalog).catch(() => {});
+            }
             const who = (customerName || '').replace(/[^\w-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
             downloadBytes(bytes, `Export_FT${number.trim()}${who ? `_${who}` : ''}.pdf`);
         } catch (err) {
@@ -211,7 +216,7 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels })
                             </div>
                         </div>
 
-                        <ItemsEditor items={items} setItems={setItems} catalog={catalog} extraTotal={freightValue} />
+                        <ItemsEditor items={items} setItems={setItems} catalog={catalog} extraTotal={freightValue} withCode />
 
                         <div className="grid grid-cols-2 gap-3">
                             <Input label={t('exp.ci.freight')} inputMode="decimal" value={freight} onChange={(e) => setFreight(e.target.value)} placeholder="0,00" />

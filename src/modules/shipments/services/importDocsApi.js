@@ -40,8 +40,22 @@ export async function findCustomerByName(name) {
 
 export async function loadExportCatalog() {
     const { data } = await supabase.from('export_catalog')
-        .select('id, item, description_en, hs_code, origin').eq('active', true).order('sort_order');
+        .select('id, section, item, description_en, hs_code, origin, composition, erp_codes').eq('active', true).order('sort_order');
     return data || [];
+}
+
+/**
+ * Grava a relação "código da fatura → produto": nas próximas faturas o mesmo
+ * código já vem com descrição, HS e origem. Ignora o que já está relacionado.
+ */
+export async function saveCodeRelations(pairs, catalog) {
+    for (const { code, catalogId } of pairs) {
+        const row = catalog.find((c) => c.id === catalogId);
+        if (!row || !code || (row.erp_codes || []).includes(code)) continue;
+        const erp_codes = [...(row.erp_codes || []), code];
+        const { error } = await supabase.from('export_catalog').update({ erp_codes, updated_at: new Date().toISOString() }).eq('id', catalogId);
+        if (!error) row.erp_codes = erp_codes;
+    }
 }
 
 let signatureCache;
