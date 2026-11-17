@@ -53,6 +53,24 @@ export interface PublicRequest {
   status: "pending" | "shipped" | "cancelled";
   carrier: string | null;
   tracking_code: string | null;
+  /** "request" = feito pelo formulário; "manual" = envio cadastrado na tela interna com agente. */
+  source?: "request" | "manual";
+  is_pickup?: boolean;
+}
+
+const normName = (s: string | null | undefined) =>
+  (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+
+/**
+ * Mesmo agente? "Érica" = "Erica Pedratscher" = "erica": compara sem acento e
+ * maiúsculas; se um dos dois é só o primeiro nome, basta o primeiro nome bater.
+ */
+export function sameAgent(a: string | null | undefined, b: string | null | undefined): boolean {
+  const x = normName(a), y = normName(b);
+  if (!x || !y) return false;
+  if (x === y) return true;
+  const [fx, fy] = [x.split(" "), y.split(" ")];
+  return (fx.length === 1 || fy.length === 1) && fx[0] === fy[0];
 }
 
 async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
@@ -165,14 +183,19 @@ export interface ShipmentRequest {
   status: "pending" | "shipped" | "cancelled";
   shipment_id: string | null;
   customer: Customer;
+  shipment: { tracking_code: string | null; selected_quote: { portal?: string; carrier?: string } | null } | null;
 }
+
+/** "My Parcel / TNT" a partir da cotação escolhida no envio. */
+export const quoteCarrier = (q: { portal?: string; carrier?: string } | null | undefined) =>
+  [q?.portal, q?.carrier].map((p) => (p || "").trim()).filter(Boolean).join(" / ") || null;
 
 export const REQUESTS_QUERY_KEY = ["shipment_requests"];
 
 export async function listRequests(): Promise<ShipmentRequest[]> {
   const { data, error } = await requireSupabase()
     .from("shipment_requests")
-    .select("id, created_at, boxes, service_level, order_ref, notes, invoice_value, insured_value, requested_by, status, shipment_id, customer:customers(*), address:customer_addresses(*)")
+    .select("id, created_at, boxes, service_level, order_ref, notes, invoice_value, insured_value, requested_by, status, shipment_id, customer:customers(*), address:customer_addresses(*), shipment:shipments!shipment_id(tracking_code, selected_quote)")
     .order("created_at", { ascending: false })
     .limit(300);
   if (error) throw error;
@@ -182,7 +205,7 @@ export async function listRequests(): Promise<ShipmentRequest[]> {
 export async function getRequest(id: string): Promise<ShipmentRequest> {
   const { data, error } = await requireSupabase()
     .from("shipment_requests")
-    .select("id, created_at, boxes, service_level, order_ref, notes, invoice_value, insured_value, requested_by, status, shipment_id, customer:customers(*), address:customer_addresses(*)")
+    .select("id, created_at, boxes, service_level, order_ref, notes, invoice_value, insured_value, requested_by, status, shipment_id, customer:customers(*), address:customer_addresses(*), shipment:shipments!shipment_id(tracking_code, selected_quote)")
     .eq("id", id)
     .single();
   if (error) throw error;

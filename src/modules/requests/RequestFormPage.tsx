@@ -3,7 +3,8 @@ import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { CheckCircle2, ExternalLink, Loader2, Plus, Search, Trash2, Truck, X } from "lucide-react";
+import { CheckCircle2, Loader2, Plus, Search, Trash2, X } from "lucide-react";
+import { TrackingInfo } from "./TrackingInfo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +14,7 @@ import { Field, CustomerFields, AddressFields, useCountries } from "@/modules/cu
 import {
   parseMoney, formatMoney,
   formInfo, formCustomers, formCreateCustomer, formSubmit, formList, formBoxPresets, formCustomerAddresses, formAddAddress,
-  boxSummary, totalWeight, formatAddress, splitCarrier, trackingUrl,
+  boxSummary, totalWeight, formatAddress, sameAgent,
   type Box, type CustomerInput, type CustomerOption, type AddressInput,
 } from "./api";
 
@@ -58,6 +59,11 @@ export default function RequestFormPage() {
   const [boxes, setBoxes] = useState<BoxDraft[]>([emptyBox()]);
   // Ainda não embalado: o pedido vai sem caixas e a equipe completa depois.
   const [packLater, setPackLater] = useState(false);
+  // Aba "Elenco": só os meus (pelo nome de quem usa o link) ou todos.
+  const [listScope, setListScope] = useState<"mine" | "all">(() => (requestedBy.trim() ? "mine" : "all"));
+  const visibleRequests = listScope === "mine" && requestedBy.trim()
+    ? requests.data?.filter((r) => sameAgent(r.requested_by, requestedBy))
+    : requests.data;
   const [service, setService] = useState<"standard" | "express">("standard");
   const [orderRef, setOrderRef] = useState("");
   const [notes, setNotes] = useState("");
@@ -231,7 +237,7 @@ export default function RequestFormPage() {
           {([
             ["new", t("New request"), t("tab.request")],
             ["customer", t("Register customer"), t("tab.customer")],
-            ["list", `${t("Requests")} · ${requests.data?.length ?? 0}`, `${t("tab.list")} · ${requests.data?.length ?? 0}`],
+            ["list", `${t("Requests")} · ${visibleRequests?.length ?? 0}`, `${t("tab.list")} · ${visibleRequests?.length ?? 0}`],
           ] as const).map(([value, label, short]) => (
             <button
               key={value}
@@ -553,12 +559,25 @@ export default function RequestFormPage() {
         {tab === "list" && (
           <section className="flex flex-col gap-3">
             {requests.isLoading && <p className="text-muted-foreground">…</p>}
-            {requests.data?.length === 0 && <p className="text-muted-foreground">{t("No requests in the last 60 days.")}</p>}
-            {requests.data?.map((r) => (
+            {requestedBy.trim() && (
+              <div role="group" className="flex gap-1 self-start rounded-full border border-border p-1">
+                {(["mine", "all"] as const).map((s) => (
+                  <button key={s} type="button" aria-pressed={listScope === s} onClick={() => setListScope(s)}
+                    className={cn("px-3.5 py-1.5 rounded-full text-sm font-semibold", listScope === s ? "bg-primary text-primary-foreground" : "text-muted-foreground")}>
+                    {s === "mine" ? t("Mine ({{name}})", { name: requestedBy.trim() }) : t("All")}
+                  </button>
+                ))}
+              </div>
+            )}
+            {visibleRequests?.length === 0 && <p className="text-muted-foreground">{t("No requests in the last 60 days.")}</p>}
+            {visibleRequests?.map((r) => (
               <article key={r.id} className="bg-card border border-border rounded-lg p-4 flex flex-col gap-2">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-semibold text-[17px] tracking-tight truncate">{r.customer}</p>
+                    <p className="font-semibold text-[17px] tracking-tight truncate">
+                      {r.is_pickup && <span className="mr-1.5 align-middle rounded-full border border-foreground px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em]">{t("Pickup")}</span>}
+                      {r.customer}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {format(new Date(r.created_at), "dd/MM/yyyy HH:mm", { locale })} · {r.requested_by}
                       {r.service_level === "express" && ` · ${t("Express")}`}
@@ -569,47 +588,21 @@ export default function RequestFormPage() {
                     {statusLabel[r.status]}
                   </span>
                 </div>
-                <p className="text-sm">{r.boxes.length ? `${r.boxes.map(boxSummary).join(" · ")} — ${t("total")} ${totalWeight(r.boxes)} kg` : t("Packaging to be defined")}</p>
+                {(r.boxes.length > 0 || r.source !== "manual") && (
+                  <p className="text-sm">{r.boxes.length ? `${r.boxes.map(boxSummary).join(" · ")} — ${t("total")} ${totalWeight(r.boxes)} kg` : t("Packaging to be defined")}</p>
+                )}
                 {r.invoice_value != null && (
                   <p className="text-sm text-muted-foreground">
                     {t("Invoiced")} {formatMoney(r.invoice_value, i18n.language)} ·{" "}
                     {r.insured_value ? `${t("Insured")} ${formatMoney(r.insured_value, i18n.language)}` : t("No insurance")}
                   </p>
                 )}
-                {r.status === "shipped" && (r.carrier || r.tracking_code) && <TrackingInfo carrier={r.carrier} code={r.tracking_code} />}
+                {r.status === "shipped" && <TrackingInfo carrier={r.carrier} code={r.tracking_code} />}
               </article>
             ))}
           </section>
         )}
       </main>
-    </div>
-  );
-}
-
-/** Transportadora, número de rastreio e link para acompanhar (lista "Richieste"). */
-function TrackingInfo({ carrier, code }: { carrier: string | null; code: string | null }) {
-  const { t } = useTranslation();
-  const { portal, courier } = splitCarrier(carrier);
-  const url = trackingUrl(courier, code);
-  return (
-    <div className="mt-1 rounded-md border border-border bg-secondary/50 px-3 py-2.5 text-sm flex flex-col gap-1">
-      <p className="flex items-center gap-2 font-semibold">
-        <Truck className="h-4 w-4 shrink-0" />
-        {courier ? t("Shipped with {{courier}}", { courier }) : t("Shipped")}
-        {portal && <span className="font-normal text-muted-foreground">· {t("via {{portal}}", { portal })}</span>}
-      </p>
-      {code ? (
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span>{courier ? `${t("Tracking")} ${courier}` : t("Tracking")}: <span className="font-mono font-semibold select-all">{code}</span></span>
-          {url && (
-            <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold underline underline-offset-2">
-              {t("Track shipment")} <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          )}
-        </p>
-      ) : (
-        <p className="text-muted-foreground">{t("Tracking not available yet")}</p>
-      )}
     </div>
   );
 }

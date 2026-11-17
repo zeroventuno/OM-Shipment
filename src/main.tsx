@@ -8,6 +8,13 @@ import './i18n'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { Toaster } from '@/components/ui/toaster'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { AppErrorBoundary, reloadForNewVersion } from '@/components/AppErrorBoundary'
+
+// Depois de uma publicação os arquivos da versão anterior somem: quem estava
+// com a página aberta recarrega e pega a versão nova, em vez de tela branca.
+window.addEventListener('vite:preloadError', (event) => {
+    if (reloadForNewVersion()) event.preventDefault()
+})
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -22,7 +29,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <QueryClientProvider client={queryClient}>
                 <AuthProvider>
                     <TooltipProvider>
-                        <App />
+                        <AppErrorBoundary>
+                            <App />
+                        </AppErrorBoundary>
                         <Toaster />
                     </TooltipProvider>
                 </AuthProvider>

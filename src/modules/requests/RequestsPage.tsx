@@ -9,7 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useDateLocale } from "@/i18n/dateLocale";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "../common/PageHeader";
-import { listRequests, setRequestStatus, formatAddress, formatMoney, boxSummary, totalWeight, REQUESTS_QUERY_KEY, type ShipmentRequest, type Customer } from "./api";
+import { listRequests, setRequestStatus, formatAddress, formatMoney, boxSummary, totalWeight, quoteCarrier, REQUESTS_QUERY_KEY, type ShipmentRequest, type Customer } from "./api";
+import { TrackingInfo } from "./TrackingInfo";
 import CustomerDialog from "./CustomerDialog";
 
 type Filter = "pending" | "shipped" | "cancelled";
@@ -144,6 +145,10 @@ export default function RequestsPage() {
                   {r.order_ref && <p><span className="text-muted-foreground">{t("Order Number")}:</span> {r.order_ref}</p>}
                   {r.notes && <p className="whitespace-pre-line text-foreground/80">{r.notes}</p>}
                 </div>
+
+                {r.status === "shipped" && (
+                  <TrackingInfo carrier={quoteCarrier(r.shipment?.selected_quote)} code={r.shipment?.tracking_code || null} />
+                )}
 
                 <div className="flex flex-wrap gap-2 pt-1">
                   {r.status === "pending" && (
