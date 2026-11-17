@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { supabase } from '@/lib/supabase';
+import { ExportCatalog } from './ExportCatalog';
 import { buildExportPdf, downloadBytes, EUR1_THRESHOLD } from '../../services/exportDocs';
 
 const MAX_BYTES = 15 * 1024 * 1024;
@@ -99,6 +100,7 @@ export function ExportDocsCard({ customerName, invoiceValue }) {
                 <p className="text-sm text-muted-foreground">{t('exp.intro')}</p>
             </CardHeader>
             <CardContent className="space-y-4">
+                <ExportCatalog />
                 <div>
                     <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t('exp.invoice')}</span>
                     {invoice ? (
