@@ -207,3 +207,31 @@ export function downloadText(filename: string, text: string, type = "text/csv;ch
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+// ---------------------------------------------------------------------------
+// Duplicados
+// ---------------------------------------------------------------------------
+
+export const DISMISSALS_KEY = ["customer_duplicate_dismissals"];
+
+/** Pares marcados como "não são duplicados". */
+export async function listDismissals(): Promise<[string, string][]> {
+  const rows = await fetchAll<{ customer_a: string; customer_b: string }>((from, to) =>
+    requireSupabase().from("customer_duplicate_dismissals").select("customer_a, customer_b").range(from, to));
+  return rows.map((r) => [r.customer_a, r.customer_b]);
+}
+
+export async function dismissPairs(pairs: [string, string][]) {
+  const rows = pairs.map(([a, b]) => (a < b ? { customer_a: a, customer_b: b } : { customer_a: b, customer_b: a }));
+  const { error } = await requireSupabase().from("customer_duplicate_dismissals").upsert(rows, { ignoreDuplicates: true });
+  if (error) throw new Error(error.message);
+}
+
+export interface MergeResult { merged: number; addresses_moved: number; addresses_duplicate: number; requests: number }
+
+/** Une os cadastros no principal (função merge_customers, numa transação). */
+export async function mergeCustomers(mainId: string, otherIds: string[]): Promise<MergeResult> {
+  const { data, error } = await requireSupabase().rpc("merge_customers", { main_id: mainId, other_ids: otherIds });
+  if (error) throw new Error(error.message);
+  return data as MergeResult;
+}

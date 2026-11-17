@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { Download, Loader2, Plus, Upload } from "lucide-react";
+import { Copy, Download, Loader2, Plus, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useDateLocale } from "@/i18n/dateLocale";
@@ -11,7 +11,8 @@ import { cn } from "@/lib/utils";
 import { countryLabel, canonicalCountry } from "@/modules/shipments/data/countries";
 import { formatMoney } from "@/modules/requests/api";
 import { PageHeader, SearchBox } from "../common/PageHeader";
-import { listCustomers, listAllAddresses, buildCustomersCsv, downloadText, CUSTOMERS_KEY, type CustomerRow } from "./api";
+import { listCustomers, listAllAddresses, listDismissals, buildCustomersCsv, downloadText, CUSTOMERS_KEY, DISMISSALS_KEY, type CustomerRow } from "./api";
+import { findDuplicateGroups } from "./duplicates.js";
 import { key as nameKey } from "./importer.js";
 import ImportDialog from "./ImportDialog";
 
@@ -49,6 +50,8 @@ export default function CustomersPage() {
   };
 
   const { data: customers = [], isLoading, error } = useQuery({ queryKey: CUSTOMERS_KEY, queryFn: listCustomers });
+  const { data: dismissed } = useQuery({ queryKey: DISMISSALS_KEY, queryFn: listDismissals });
+  const duplicateGroups = useMemo(() => (dismissed && customers.length ? findDuplicateGroups(customers, dismissed).length : 0), [customers, dismissed]);
   const lang = i18n.language || "it";
   const countryName = (stored: string | null) => (stored ? countryLabel(stored, lang) : "");
 
@@ -130,6 +133,11 @@ export default function CustomersPage() {
         title={t("Customer register")}
         actions={
           <>
+            {duplicateGroups > 0 && (
+              <Button variant="outline" asChild>
+                <Link to="/customers/duplicates"><Copy /> {t("dup.button")} <span className="tabular-nums">({duplicateGroups})</span></Link>
+              </Button>
+            )}
             <Button variant="outline" onClick={exportCsv} disabled={exporting || filtered.length === 0}>
               {exporting ? <Loader2 className="animate-spin" /> : <Download />} {t("Export")}
             </Button>

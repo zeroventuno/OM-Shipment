@@ -18,6 +18,7 @@ const RequestsPage = lazy(() => import('@/modules/requests/RequestsPage'))
 const CustomersPage = lazy(() => import('@/modules/customers/CustomersPage'))
 const CustomerDetailPage = lazy(() => import('@/modules/customers/CustomerDetailPage'))
 const ContactsPage = lazy(() => import('@/modules/contacts/ContactsPage'))
+const DuplicatesPage = lazy(() => import('@/modules/customers/DuplicatesPage'))
 // Relatório anual: página inteira (sem menu), feita para imprimir/salvar em PDF.
 const ReportPage = lazy(() => import('@/modules/report/ReportPage'))
 // Formulário público de pedido de envio: fora do login (link com token).
@@ -63,6 +64,7 @@ export default function App() {
                 <Route path="warranties/:id" element={page(<WarrantyDetailPage />)} />
 
                 <Route path="customers" element={page(<CustomersPage />)} />
+                <Route path="customers/duplicates" element={page(<DuplicatesPage />)} />
                 <Route path="customers/:id" element={page(<CustomerDetailPage />)} />
                 <Route path="contacts" element={page(<ContactsPage />)} />
 
