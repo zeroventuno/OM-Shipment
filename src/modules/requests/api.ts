@@ -233,7 +233,7 @@ export function trackingUrl(courier: string | null | undefined, code: string | n
   if (!c) return null;
   const n = encodeURIComponent(c);
   switch ((courier || "").trim().toLowerCase()) {
-    case "tnt": return `https://www.tnt.com/express/it_it/site/shipping-tools/tracking.html?searchType=con&cons=${n}`;
+    case "tnt": return `https://www.tnt.it/tracking/getTrack.html?wt=1&consigNos=${n}`;
     case "dhl": return `https://www.dhl.com/it-it/home/tracking/tracking-express.html?submit=1&tracking-id=${n}`;
     case "ups": return `https://www.ups.com/track?loc=it_IT&tracknum=${n}`;
     case "fedex": return `https://www.fedex.com/fedextrack/?trknbr=${n}`;
