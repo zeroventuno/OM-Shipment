@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PDFDocument } from 'pdf-lib';
+import { PDFArray, PDFDocument, PDFName } from 'pdf-lib';
 import { buildExportPdf, eur1Blocks, enDate, freeExportBlocks, isExtraEu, itDate } from './exportDocs';
 
 async function fakeInvoice(pages = 1) {
@@ -61,5 +61,20 @@ describe('buildExportPdf', () => {
         const base = { invoiceNumber: '1255', invoiceDate: '2026-10-26', today: '2026-11-16', includeEur1: true };
         const signed = await PDFDocument.load(await buildExportPdf({ ...base, invoiceBytes: await fakeInvoice(1), signatureBytes: png }));
         expect(signed.getPageCount()).toBe(1 + 2 + 1);
+    });
+    it('troca a assinatura colada à mão na fatura pela do sistema', async () => {
+        const png = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='), (c) => c.charCodeAt(0));
+        const inv = await PDFDocument.create();
+        const page = inv.addPage([595, 842]);
+        const stamp = inv.context.obj({ Type: 'Annot', Subtype: 'Stamp', Rect: [173, 300, 244, 380] });
+        const link = inv.context.obj({ Type: 'Annot', Subtype: 'Link', Rect: [0, 0, 10, 10] });
+        page.node.set(PDFName.of('Annots'), inv.context.obj([inv.context.register(stamp), inv.context.register(link)]));
+        const out = await PDFDocument.load(await buildExportPdf({
+            invoiceNumber: '1', invoiceDate: '2026-10-26', today: '2026-11-16', includeEur1: false,
+            invoiceBytes: await inv.save(), signatureBytes: png,
+        }));
+        const annots = out.getPage(0).node.lookup(PDFName.of('Annots'), PDFArray);
+        const types = annots.asArray().map((r) => out.context.lookup(r).get(PDFName.of('Subtype')).toString());
+        expect(types).toEqual(['/Link']);
     });
 });

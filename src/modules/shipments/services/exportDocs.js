@@ -168,15 +168,22 @@ export async function buildExportPdf({
     invoiceBytes, logoBytes, signatureBytes, invoiceNumber, invoiceDate, includeEur1,
     origin, producer, today = todayRome(),
 }) {
-    const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
+    const { PDFDocument, StandardFonts, rgb, PDFName, PDFArray } = await import('pdf-lib');
     const doc = await PDFDocument.create();
     doc.setTitle(`Export documents - invoice ${invoiceNumber}`);
     doc.setAuthor(COMPANY.name);
+
+    const signature = signatureBytes ? await doc.embedPng(signatureBytes) : null;
 
     if (invoiceBytes) {
         const src = await PDFDocument.load(invoiceBytes, { ignoreEncryption: true });
         const pages = await doc.copyPages(src, src.getPageIndices());
         pages.forEach((p) => doc.addPage(p));
+        if (signature && pages.length) {
+            // assinatura colada à mão (anotação "Stamp", ex.: Pré-visualização do Mac) sai, para não ficar duplicada
+            pages.forEach((p) => removeStampAnnotations(p, PDFName, PDFArray));
+            signInvoice(pages[pages.length - 1], signature);
+        }
     }
 
     const fonts = {
@@ -184,7 +191,6 @@ export async function buildExportPdf({
         bold: await doc.embedFont(StandardFonts.HelveticaBold),
     };
     const logo = logoBytes ? await doc.embedPng(logoBytes) : null;
-    const signature = signatureBytes ? await doc.embedPng(signatureBytes) : null;
     const color = (c) => rgb(c[0], c[1], c[2]);
 
     const ctx = { doc, fonts, logo, signature, color };
@@ -192,6 +198,29 @@ export async function buildExportPdf({
     if (includeEur1) renderDocument(ctx, eur1Blocks({ invoiceNumber, invoiceDate, today, origin, producer }));
 
     return doc.save();
+}
+
+/**
+ * Assina a última página da fatura do gestionale: no modelo da Officine Mattio,
+ * o espaço livre fica abaixo das linhas de artigos, à esquerda (onde a
+ * assinatura era colada à mão). Posição relativa ao tamanho da página.
+ */
+export const INVOICE_SIGNATURE_SPOT = { x: 0.28, top: 0.555, width: 0.19 };
+function removeStampAnnotations(page, PDFName, PDFArray) {
+    const annots = page.node.lookupMaybe(PDFName.of('Annots'), PDFArray);
+    if (!annots) return;
+    const stamp = PDFName.of('Stamp');
+    for (let i = annots.size() - 1; i >= 0; i--) {
+        const a = annots.lookup(i);
+        if (a?.get?.(PDFName.of('Subtype')) === stamp) annots.remove(i);
+    }
+}
+
+function signInvoice(page, signature) {
+    const { width: pw, height: ph } = page.getSize();
+    const w = pw * INVOICE_SIGNATURE_SPOT.width;
+    const h = (w * signature.height) / signature.width;
+    page.drawImage(signature, { x: pw * INVOICE_SIGNATURE_SPOT.x, y: ph * (1 - INVOICE_SIGNATURE_SPOT.top) - h, width: w, height: h });
 }
 
 /** Quebra o texto em linhas que cabem na largura. */
