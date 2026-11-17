@@ -13,7 +13,7 @@ import {
  */
 
 /** Número REX da Officine Mattio (Registered Exporter). Vazio = ainda não informado. */
-export const REX_NUMBER = '';
+export const REX_NUMBER = 'TREXITIT03860450042';
 
 /** Acima deste valor por remessa a declaração de origem precisa do número REX. */
 export const REX_THRESHOLD = 6000;
