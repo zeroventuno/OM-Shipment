@@ -25,6 +25,8 @@ import {
  */
 
 const NAME_KEY = "om-request-name";
+// Aceita vírgula ou ponto como decimal (50,5 = 50.5).
+const toNumber = (v: string) => Number(String(v).trim().replace(",", "."));
 const emptyBox = (): BoxDraft => ({ width: "", height: "", depth: "", weight: "" });
 type BoxDraft = Record<keyof Box, string> & { presetId?: string };
 const emptyCustomer: CustomerInput = { name: "", address_line1: "", city: "", country: "" };
@@ -117,7 +119,7 @@ export default function RequestFormPage() {
         customer_id: customerId,
         address_id: addressId,
         boxes: packLater ? [] : boxes.map((b) => ({
-          width: Number(b.width), height: Number(b.height), depth: Number(b.depth), weight: Number(String(b.weight).replace(",", ".")),
+          width: toNumber(b.width), height: toNumber(b.height), depth: toNumber(b.depth), weight: toNumber(b.weight),
         })),
         service_level: service,
         order_ref: orderRef || undefined,
@@ -168,7 +170,7 @@ export default function RequestFormPage() {
     if (newCustomer && (!newCustomer.name.trim() || !newCustomer.address_line1.trim() || !newCustomer.city.trim() || !newCustomer.country)) {
       return setError(t("Fill in the new customer's name, address, city and country"));
     }
-    const invalid = boxes.some((b) => [b.width, b.height, b.depth, b.weight].some((v) => !(Number(String(v).replace(",", ".")) > 0)));
+    const invalid = boxes.some((b) => [b.width, b.height, b.depth, b.weight].some((v) => !(toNumber(v) > 0)));
     if (invalid && !packLater) return setError(t("Fill in the size and weight of every box"));
     if (parseMoney(invoiceValue) === null) return setError(t("Fill in the invoiced value"));
     if (insuredValue.trim() && parseMoney(insuredValue) === null) return setError(t("Invalid value for insurance"));
