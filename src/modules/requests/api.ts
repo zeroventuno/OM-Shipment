@@ -216,3 +216,28 @@ export function formatAddress(c: Partial<Customer> | Partial<AddressInput>): str
 
 export const boxSummary = (b: Box) => `${b.width}×${b.height}×${b.depth} cm · ${b.weight} kg`;
 export const totalWeight = (boxes: Box[]) => boxes.reduce((sum, b) => sum + Number(b.weight || 0), 0);
+
+/** "My Parcel / TNT" → { portal: "My Parcel", courier: "TNT" } */
+export function splitCarrier(carrier: string | null | undefined) {
+  const parts = (carrier || "").split("/").map((p) => p.trim()).filter(Boolean);
+  if (parts.length < 2) return { portal: null as string | null, courier: parts[0] || null };
+  return { portal: parts.slice(0, -1).join(" / "), courier: parts[parts.length - 1] };
+}
+
+/**
+ * Página de rastreio da transportadora; para as que não têm link direto
+ * confiável (BRT, SDA, outras), o 17TRACK, que reconhece o código sozinho.
+ */
+export function trackingUrl(courier: string | null | undefined, code: string | null | undefined): string | null {
+  const c = (code || "").replace(/\s+/g, "");
+  if (!c) return null;
+  const n = encodeURIComponent(c);
+  switch ((courier || "").trim().toLowerCase()) {
+    case "tnt": return `https://www.tnt.com/express/it_it/site/shipping-tools/tracking.html?searchType=con&cons=${n}`;
+    case "dhl": return `https://www.dhl.com/it-it/home/tracking/tracking-express.html?submit=1&tracking-id=${n}`;
+    case "ups": return `https://www.ups.com/track?loc=it_IT&tracknum=${n}`;
+    case "fedex": return `https://www.fedex.com/fedextrack/?trknbr=${n}`;
+    case "brt": return `https://vas.brt.it/vas/sped_det_show.hsm?referer=sped_numspe_par.htm&Nspediz=${n}`;
+    default: return `https://t.17track.net/it#nums=${n}`;
+  }
+}

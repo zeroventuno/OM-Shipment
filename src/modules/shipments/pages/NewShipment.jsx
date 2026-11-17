@@ -135,7 +135,9 @@ export default function NewShipment() {
                         destinationCountry: req.address?.country || req.customer?.country || f.destinationCountry,
                         serviceLevel: req.service_level,
                         orderId: req.order_ref || f.orderId,
-                        quantity: req.boxes?.length || f.quantity
+                        quantity: req.boxes?.length || f.quantity,
+                        // agente = quem fez o pedido no formulário
+                        agent: f.agent || req.requested_by || ''
                     }));
                 }
 
