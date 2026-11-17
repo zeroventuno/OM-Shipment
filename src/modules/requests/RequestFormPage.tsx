@@ -18,7 +18,8 @@ import {
 } from "./api";
 
 /*
- * Formulário público de pedido de envio, aberto pelo link /pedido/<token>.
+ * Formulário público de pedido de envio, aberto pelo link /spedizione/<token>
+ * (os links antigos /pedido/<token> continuam valendo).
  * Não exige login: quem tem o link vê só isto (novo pedido + pedidos feitos
  * com o mesmo link). O resto do sistema continua exigindo login.
  */

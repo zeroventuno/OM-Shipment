@@ -40,6 +40,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pedido/:token" element={page(<RequestFormPage />)} />
+            <Route path="/spedizione/:token" element={page(<RequestFormPage />)} />
             <Route path="/report" element={<ProtectedRoute>{page(<ReportPage />)}</ProtectedRoute>} />
 
             <Route

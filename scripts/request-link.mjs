@@ -14,7 +14,11 @@
  * base; o padrão é https://om-shipment.vercel.app.
  */
 import postgres from 'postgres';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
+
+// 12 caracteres sem os que se confundem (0/O, 1/l/I): ~70 bits, impossível de adivinhar.
+const ALPHABET = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const newToken = () => Array.from({ length: 12 }, () => ALPHABET[randomInt(ALPHABET.length)]).join('');
 
 const [command, ...args] = process.argv.slice(2);
 const url = process.env.TARGET_DATABASE_URL?.trim();
@@ -29,13 +33,13 @@ try {
     if (command === 'create') {
         const [name] = args;
         if (!name) throw new Error('Uso: create "<nome do link, ex.: Oficina Cuneo>"');
-        const token = randomBytes(24).toString('base64url');
+        const token = newToken();
         const [row] = await sql`
             INSERT INTO public.request_links (name, token_hash)
             VALUES (${name}, ${createHash('sha256').update(token).digest('hex')})
             RETURNING id`;
         console.log(`Link criado: "${name}" (id ${row.id})\n`);
-        console.log(`  ${appUrl}/pedido/${token}\n`);
+        console.log(`  ${appUrl}/spedizione/${token}\n`);
         console.log('Guarde agora — ele não aparece de novo.');
     } else if (command === 'list') {
         const rows = await sql`
