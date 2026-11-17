@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { FileText, Download, Plus, Trash2, Pencil } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
-import { IMPORT_REASONS, itemsTotal, money, parcelsWeight, kg } from '../../services/importDocs';
+import { IMPORT_REASONS, money, parcelsWeight, kg } from '../../services/importDocs';
+import { ItemsEditor, emptyItem, cleanItems as toCleanItems } from './ItemsEditor';
 import { todayRome } from '../../services/exportDocs';
 import {
     downloadImportDoc, findCustomerByName, issueImportDoc, listImportDocs, loadExportCatalog,
@@ -17,7 +18,6 @@ import {
  * Cada documento recebe o próximo número IMP-NNN ao ser emitido.
  */
 
-const emptyItem = () => ({ qty: '1', description: '', hs_code: '', origin: 'Italy', unit_value: '' });
 const emptyShipper = { name: '', address: '', postal_code: '', city: '', country: '', tax_id: '', contact: '', phone: '', email: '' };
 const toStr = (v) => (v === null || v === undefined ? '' : String(v));
 const num = (v) => Number(String(v ?? '').trim().replace(',', '.'));
@@ -92,22 +92,12 @@ export function ImportDocsCard({ shipmentId, customerName, country, parcels }) {
         setDate(todayRome());
     };
 
-    const setItem = (i, field, value) => setItems((l) => l.map((x, j) => (j === i ? { ...x, [field]: value } : x)));
     const setBox = (i, field, value) => setBoxes((l) => l.map((x, j) => (j === i ? { ...x, [field]: value } : x)));
-    const addFromCatalog = (id) => {
-        const c = catalog.find((x) => x.id === id);
-        if (!c) return;
-        const row = { ...emptyItem(), description: c.description_en || c.item, hs_code: c.hs_code || '', origin: c.origin || 'Italy' };
-        setItems((l) => (l.length === 1 && !l[0].description ? [row] : [...l, row]));
-    };
 
-    const cleanItems = items
-        .filter((it) => it.description.trim())
-        .map((it) => ({ qty: num(it.qty) || 1, description: it.description.trim(), hs_code: it.hs_code.trim(), origin: it.origin.trim(), unit_value: num(it.unit_value) || 0 }));
+    const cleanItems = toCleanItems(items);
     const cleanBoxes = boxes
         .filter((b) => [b.width, b.height, b.depth, b.weight].every((v) => num(v) > 0))
         .map((b) => ({ width: num(b.width), height: num(b.height), depth: num(b.depth), weight: num(b.weight), ...(b.name ? { name: b.name } : {}) }));
-    const total = useMemo(() => itemsTotal(cleanItems), [items]); // eslint-disable-line react-hooks/exhaustive-deps
     const reasonValue = reason === 'other' ? reasonText.trim() : IMPORT_REASONS[reason];
     const ready = shipper.name.trim() && shipper.country && cleanItems.length > 0 && reasonValue && date;
     const nextLabel = editing ? docs.find((d) => d.id === editing)?.code : null;
@@ -212,35 +202,7 @@ export function ImportDocsCard({ shipmentId, customerName, country, parcels }) {
                             </label>
                         </div>
 
-                        <div className="space-y-2">
-                            <span className={eyebrow}>{t('imp.items')}</span>
-                            {catalog.length > 0 && (
-                                <select className={small} value="" onChange={(e) => addFromCatalog(e.target.value)}>
-                                    <option value="">{t('imp.fromCatalog')}</option>
-                                    {catalog.map((c) => <option key={c.id} value={c.id}>{c.item}{c.hs_code ? ` · ${c.hs_code}` : ''}</option>)}
-                                </select>
-                            )}
-                            {items.map((it, i) => (
-                                <div key={i} className="rounded-md border border-border p-2.5 space-y-2">
-                                    <textarea rows={2} className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm" placeholder={t('imp.description')} value={it.description} onChange={(e) => setItem(i, 'description', e.target.value)} />
-                                    <div className="grid grid-cols-[3.5rem_1fr_1fr] gap-2">
-                                        <input className={small} inputMode="decimal" aria-label={t('imp.qty')} placeholder={t('imp.qty')} value={it.qty} onChange={(e) => setItem(i, 'qty', e.target.value)} />
-                                        <input className={small} aria-label="HS code" placeholder="HS code" value={it.hs_code} onChange={(e) => setItem(i, 'hs_code', e.target.value)} />
-                                        <input className={small} aria-label={t('imp.origin')} placeholder={t('imp.origin')} value={it.origin} onChange={(e) => setItem(i, 'origin', e.target.value)} />
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <input className={small} inputMode="decimal" aria-label={t('imp.unitValue')} placeholder={`${t('imp.unitValue')} (€)`} value={it.unit_value} onChange={(e) => setItem(i, 'unit_value', e.target.value)} />
-                                        {items.length > 1 && (
-                                            <button type="button" aria-label={t('imp.remove')} className="p-2 text-muted-foreground hover:text-error" onClick={() => setItems((l) => l.filter((_, j) => j !== i))}><Trash2 className="h-4 w-4" /></button>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                            <div className="flex items-center justify-between">
-                                <Button type="button" variant="outlined" size="sm" onClick={() => setItems((l) => [...l, emptyItem()])}><Plus className="mr-1 h-4 w-4" />{t('imp.addItem')}</Button>
-                                <span className="text-sm font-semibold tabular-nums">{t('Total')}: € {money(total)}</span>
-                            </div>
-                        </div>
+                        <ItemsEditor items={items} setItems={setItems} catalog={catalog} />
 
                         <div className="space-y-2">
                             <span className={eyebrow}>{t('imp.packing')}</span>

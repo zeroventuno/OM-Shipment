@@ -1,9 +1,12 @@
 import { countryCode } from '../data/countries';
+import { renderCommercialInvoice } from './commercialInvoice';
 
 /**
  * Documentos de alfândega para envios fora da UE, num PDF único:
  *   1. a fatura emitida no gestionale (o PDF enviado pela equipe, sem mudanças);
  *   2. a declaração de livre exportação + procuração (inglês, modelo da OM);
+ *   2b. a Commercial Invoice em inglês (artigos com HS e origem e, para o
+ *       Reino Unido, a declaração de origem), quando preenchida;
  *   3. o mandato para o EUR.1 (italiano), quando o valor passa de €6.000.
  *
  * Os textos reproduzem os modelos que a OM já usa (fatura FT 1255). Só mudam
@@ -166,7 +169,7 @@ const ACCENT = [0.17, 0.33, 0.55];
  */
 export async function buildExportPdf({
     invoiceBytes, logoBytes, signatureBytes, invoiceNumber, invoiceDate, includeEur1,
-    origin, producer, today = todayRome(),
+    origin, producer, commercial = null, today = todayRome(),
 }) {
     const { PDFDocument, StandardFonts, rgb, PDFName, PDFArray } = await import('pdf-lib');
     const doc = await PDFDocument.create();
@@ -194,6 +197,7 @@ export async function buildExportPdf({
     const color = (c) => rgb(c[0], c[1], c[2]);
 
     const ctx = { doc, fonts, logo, signature, color };
+    if (commercial) renderCommercialInvoice({ pdf: doc, fonts, logo, signature, color }, { invoiceNumber, invoiceDate, ...commercial });
     renderDocument(ctx, freeExportBlocks({ invoiceNumber, invoiceDate, today }));
     if (includeEur1) renderDocument(ctx, eur1Blocks({ invoiceNumber, invoiceDate, today, origin, producer }));
 

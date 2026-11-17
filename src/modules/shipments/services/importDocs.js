@@ -68,13 +68,13 @@ export function shipperLines(s, lang = 'en') {
     ].filter((x) => x && String(x).trim());
 }
 
-const A4 = { width: 595.28, height: 841.89 };
-const M = { left: 40, right: 40, top: 36, bottom: 40 };
-const W = A4.width - M.left - M.right;
-const INK = [0.1, 0.1, 0.12];
-const MUTED = [0.42, 0.42, 0.47];
+export const A4 = { width: 595.28, height: 841.89 };
+export const M = { left: 40, right: 40, top: 36, bottom: 40 };
+export const W = A4.width - M.left - M.right;
+export const INK = [0.1, 0.1, 0.12];
+export const MUTED = [0.42, 0.42, 0.47];
 const LINE = [0.78, 0.78, 0.82];
-const FILL = [0.95, 0.95, 0.96];
+export const FILL = [0.95, 0.95, 0.96];
 
 /**
  * doc: { number, issued_on, shipper, items, parcels, reason, notes, returned }
@@ -96,7 +96,7 @@ export async function buildImportPdf({ doc: d, logoBytes, signatureBytes }) {
     // --------------------------------------------------------------- pág. 1
     let page = pdf.addPage([A4.width, A4.height]);
     let y = header(ctx, page, 'PROFORMA INVOICE', code, d.issued_on);
-    y = parties(ctx, page, y, d.shipper);
+    y = importParties(ctx, page, y, d.shipper);
 
     // faixa de informações
     const items = d.items || [];
@@ -156,7 +156,7 @@ export async function buildImportPdf({ doc: d, logoBytes, signatureBytes }) {
     // --------------------------------------------------------------- pág. 2
     page = pdf.addPage([A4.width, A4.height]);
     y = header(ctx, page, 'PACKING LIST', code, d.issued_on);
-    y = parties(ctx, page, y, d.shipper);
+    y = importParties(ctx, page, y, d.shipper);
     const parcels = d.parcels || [];
     const pcols = [
         { key: 'n', label: 'PACKAGE', w: 0.14 },
@@ -197,11 +197,14 @@ export async function buildImportPdf({ doc: d, logoBytes, signatureBytes }) {
 // Peças do layout
 // ---------------------------------------------------------------------------
 
-function text({ fonts, color }, page, s, x, y, { font = fonts.regular, size = 9, ink = INK } = {}) {
+export function text({ fonts, color }, page, s, x, y, { font = fonts.regular, size = 9, ink = INK } = {}) {
     page.drawText(pdfSafe(s), { x, y, size, font, color: color(ink) });
 }
 
-function header(ctx, page, title, code, date) {
+export function header(ctx, page, title, code, date, {
+    numberLine = `No. ${code}   ·   Date ${itDate(date)}`,
+    sub = 'Import into the EU · Shipper: customer · Consignee: Officine Mattio',
+} = {}) {
     const { fonts, logo, color } = ctx;
     const top = A4.height - M.top;
     if (logo) {
@@ -211,21 +214,28 @@ function header(ctx, page, title, code, date) {
     }
     const tw = fonts.bold.widthOfTextAtSize(title, 20);
     text(ctx, page, title, M.left + W - tw, top - 18, { font: fonts.bold, size: 20 });
-    const line = `No. ${code}   ·   Date ${itDate(date)}`;
+    const line = numberLine;
     text(ctx, page, line, M.left + W - fonts.bold.widthOfTextAtSize(line, 10), top - 36, { font: fonts.bold, size: 10 });
-    const sub = 'Import into the EU · Shipper: customer · Consignee: Officine Mattio';
     text(ctx, page, sub, M.left + W - fonts.regular.widthOfTextAtSize(sub, 7.5), top - 49, { size: 7.5, ink: MUTED });
     const y = top - 62;
     page.drawLine({ start: { x: M.left, y }, end: { x: M.left + W, y }, thickness: 1.2, color: color(INK) });
     return y - 12;
 }
 
-function parties(ctx, page, y, shipper) {
+/** Remetente = cliente, destinatário = Officine Mattio (proforma IMP). */
+function importParties(ctx, page, y, shipper) {
+    return parties(ctx, page, y,
+        { label: 'SHIPPER / EXPORTER', lines: [shipper.name, ...shipperLines(shipper)] },
+        { label: 'CONSIGNEE / IMPORTER', lines: [COMPANY.name, ...COMPANY.lines, 'VAT IT03860450042'] });
+}
+
+/** Duas caixas lado a lado; a 1ª linha de cada uma sai em negrito. */
+export function parties(ctx, page, y, leftBox, rightBox) {
     const { fonts, color } = ctx;
     const gap = 14;
     const bw = (W - gap) / 2;
-    const left = [shipper.name, ...shipperLines(shipper)];
-    const right = [COMPANY.name, ...COMPANY.lines, 'VAT IT03860450042'];
+    const left = leftBox.lines;
+    const right = rightBox.lines;
     const inner = bw - 20;
     const linesOf = (arr) => arr.flatMap((s, i) => wrap(pdfSafe(s), i === 0 ? fonts.bold : fonts.regular, i === 0 ? 10 : 8.5, inner).map((l) => [l, i === 0]));
     const L = linesOf(left);
@@ -241,12 +251,12 @@ function parties(ctx, page, y, shipper) {
             ly -= 11;
         }
     };
-    box(M.left, 'SHIPPER / EXPORTER', L);
-    box(M.left + bw + gap, 'CONSIGNEE / IMPORTER', R);
+    box(M.left, leftBox.label, L);
+    box(M.left + bw + gap, rightBox.label, R);
     return y - h - 12;
 }
 
-function infoStrip(ctx, page, y, cells, widths) {
+export function infoStrip(ctx, page, y, cells, widths) {
     const { fonts, color } = ctx;
     const h = 34;
     let x = M.left;
@@ -261,7 +271,7 @@ function infoStrip(ctx, page, y, cells, widths) {
     return y - h - 12;
 }
 
-function table(ctx, page, y, cols, rows, { minRows = 0 } = {}) {
+export function table(ctx, page, y, cols, rows, { minRows = 0 } = {}) {
     const { fonts, color } = ctx;
     const headH = 18;
     page.drawRectangle({ x: M.left, y: y - headH, width: W, height: headH, color: color(FILL), borderColor: color(INK), borderWidth: 0.8 });
@@ -301,7 +311,7 @@ function table(ctx, page, y, cols, rows, { minRows = 0 } = {}) {
     return ry - 10;
 }
 
-function signatureBlock(ctx, page, y, date) {
+export function signatureBlock(ctx, page, y, date) {
     const { fonts, color, signature } = ctx;
     const rx = M.left + W * 0.55;
     const lineY = y - 70;
@@ -315,7 +325,7 @@ function signatureBlock(ctx, page, y, date) {
     }
 }
 
-function footer(ctx, page, code, n, total) {
+export function footer(ctx, page, code, n, total) {
     const s = `${COMPANY.name} · Via Renzo Gandolfo 6/A · 12100 Cuneo (CN) · Italy · VAT/EORI IT03860450042`;
     text(ctx, page, s, M.left, M.bottom - 18, { size: 7, ink: MUTED });
     const p = `${code} · ${n}/${total}`;

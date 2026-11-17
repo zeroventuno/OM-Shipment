@@ -801,6 +801,8 @@ export default function NewShipment() {
                         <ExportDocsCard
                             customerName={formData.customerName}
                             invoiceValue={request?.invoice_value}
+                            country={formData.destinationCountry}
+                            parcels={formData.parcels}
                         />
                     )}
                 </div>
