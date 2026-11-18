@@ -12,6 +12,11 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      // assistenza.html: a mesma aplicação, com a prévia de link do formulário público.
+      input: {
+        main: path.resolve(import.meta.dirname, 'index.html'),
+        assistenza: path.resolve(import.meta.dirname, 'assistenza.html'),
+      },
       output: {
         // Separa as bibliotecas pesadas do código da aplicação: elas mudam
         // pouco e ficam em cache do navegador entre deploys.

@@ -1,6 +1,10 @@
 {
     "rewrites": [
         {
+            "source": "/assistenza/:token",
+            "destination": "/assistenza.html"
+        },
+        {
             "source": "/((?!assets/|og-|favicon|logo|apple-touch-icon).*)",
             "destination": "/"
         }
