@@ -12,12 +12,15 @@ import {
 
 import { useTranslation } from 'react-i18next';
 import { countryLabel } from '../data/countries';
+import { useIsMobile } from '@/hooks/use-is-mobile';
+import CarrierUsageList from '../components/CarrierUsageList';
 
 // Tons de preto a cinza-claro, do mais usado ao menos usado (identidade da marca).
 const COLORS = ['#0A0A0A', '#3D4144', '#5C6063', '#7D8184', '#9EA1A3', '#BDBFC0', '#D6D7D7', '#292D30'];
 
 export default function Dashboard() {
     const { t, i18n } = useTranslation();
+    const isMobile = useIsMobile();
     const [stats, setStats] = useState({
         totalSavings: 0,
         totalShipments: 0,
@@ -71,7 +74,7 @@ export default function Dashboard() {
     }, []);
 
     return (
-        <div className="space-y-8 pb-8">
+        <div className="space-y-5 md:space-y-8 pb-8">
             <div className="flex flex-wrap gap-3 justify-between items-center">
                 <div>
                     <h1 className="page-title">{t('Dashboard')}</h1>
@@ -91,34 +94,34 @@ export default function Dashboard() {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Total Savings')}</CardTitle>
-                        <DollarSign className="h-6 w-6 text-muted-foreground" />
+                        <DollarSign className="hidden md:block h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-4xl font-bold tracking-tight text-foreground">€ {stats.totalSavings.toFixed(2)}</div>
+                        <div className="text-xl md:text-4xl font-bold tracking-tight text-foreground break-words">€ {stats.totalSavings.toFixed(2)}</div>
                         <p className="text-xs text-muted-foreground mt-1 font-medium">{t('Efficient shipping')}</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Shipments')}</CardTitle>
-                        <Package className="h-6 w-6 text-primary" />
+                        <Package className="hidden md:block h-6 w-6 text-primary" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-4xl font-bold tracking-tight text-foreground">{stats.totalShipments}</div>
+                        <div className="text-xl md:text-4xl font-bold tracking-tight text-foreground break-words">{stats.totalShipments}</div>
                         <p className="text-xs text-gray-500 mt-1">{stats.pendingShipments} {t('Pending')}</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Total Bikes')}</CardTitle>
-                        <Bike className="h-6 w-6 text-muted-foreground" />
+                        <Bike className="hidden md:block h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent className="flex flex-col">
-                        <div className="text-4xl font-bold tracking-tight text-foreground">{stats.totalBikes || 0}</div>
+                        <div className="text-xl md:text-4xl font-bold tracking-tight text-foreground break-words">{stats.totalBikes || 0}</div>
                         <div className="flex items-center text-xs text-gray-500 mt-1">
                             <span className="font-medium mr-1">{stats.avgBikesPerMonth?.toFixed(1) || 0}</span> {t('Bikes / month average')}
                         </div>
@@ -127,24 +130,24 @@ export default function Dashboard() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Best Option')}</CardTitle>
-                        <Truck className="h-6 w-6 text-muted-foreground" />
+                        <Truck className="hidden md:block h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-4xl font-bold tracking-tight text-foreground">{stats.favoriteCarrier}</div>
+                        <div className="text-xl md:text-4xl font-bold tracking-tight text-foreground break-words">{stats.favoriteCarrier}</div>
                         <p className="text-xs text-gray-500 mt-1">{stats.favoriteCarrierPercentage}% {t('usage')}</p>
                     </CardContent>
                 </Card>
             </div>
 
             {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="min-h-[400px]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6">
+                <Card className="md:min-h-[400px]">
                     <CardHeader>
                         <CardTitle>{t('Portal / Carrier Usage')}</CardTitle>
                     </CardHeader>
-                    <CardContent className="h-[300px]">
+                    <CardContent className="md:h-[300px]">
                         {stats.combinationData && stats.combinationData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
+                            isMobile ? <CarrierUsageList data={stats.combinationData} /> : <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
                                         data={stats.combinationData}
@@ -175,29 +178,31 @@ export default function Dashboard() {
                                 </PieChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="flex items-center justify-center h-full text-gray-500">
+                            <div className="flex items-center justify-center h-32 md:h-full text-gray-500">
                                 {t('No data available')}
                             </div>
                         )}
                     </CardContent>
                 </Card>
 
-                <Card className="min-h-[400px]">
+                <Card className="md:min-h-[400px]">
                     <CardHeader>
                         <CardTitle>{t('Bikes Shipped by Month')}</CardTitle>
                     </CardHeader>
-                    <CardContent className="h-[300px]">
+                    <CardContent className="h-[220px] md:h-[300px]">
                         {stats.monthlyData && stats.monthlyData.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={stats.monthlyData}>
+                                <BarChart data={stats.monthlyData} margin={isMobile ? { top: 4, right: 0, left: -8, bottom: 0 } : undefined}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                                     <XAxis
                                         dataKey="month"
+                                        minTickGap={8}
                                         axisLine={false}
                                         tickLine={false}
                                         tick={{ fontSize: 12 }}
                                     />
                                     <YAxis
+                                        width={isMobile ? 36 : 60}
                                         axisLine={false}
                                         tickLine={false}
                                         tick={{ fontSize: 12 }}
@@ -210,7 +215,7 @@ export default function Dashboard() {
                                         dataKey="count"
                                         fill="#0A0A0A"
                                         radius={[4, 4, 0, 0]}
-                                        barSize={40}
+                                        maxBarSize={40}
                                     />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -229,7 +234,27 @@ export default function Dashboard() {
                     <CardTitle>{t('Recent Shipments')}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="overflow-x-auto">
+                    <div className="md:hidden flex flex-col divide-y divide-muted">
+                        {stats.recentShipments.length === 0 && <p className="py-6 text-center text-gray-500">{t('No shipments')}</p>}
+                        {stats.recentShipments.map((shipment) => (
+                            <Link key={shipment.id} to={`/shipments/${shipment.id}`} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                                <span className="min-w-0">
+                                    <span className="block text-xs font-semibold tabular-nums text-muted-foreground">{shipment.orderId}</span>
+                                    <span className="block break-words font-semibold leading-snug">
+                                        {shipment.isPickup && <span className="mr-1.5 rounded-full border border-foreground px-1.5 py-px text-[10px] font-semibold uppercase tracking-[0.06em]">{t('imp.pickupBadge')}</span>}
+                                        {shipment.customerName || '-'}
+                                    </span>
+                                    <span className="block text-sm text-muted-foreground">
+                                        {[countryLabel(shipment.destinationCountry, i18n.language), shipment.selectedQuote?.carrier].filter(Boolean).join(' · ') || '-'}
+                                    </span>
+                                </span>
+                                <span className={`shrink-0 px-2 py-1 rounded-full text-xs font-medium ${trackingUpdates[shipment.id]?.status === 'Delivered' ? 'bg-primary text-primary-foreground' : 'border border-foreground text-foreground'}`}>
+                                    {trackingUpdates[shipment.id]?.status || shipment.status}
+                                </span>
+                            </Link>
+                        ))}
+                    </div>
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                                 <tr>

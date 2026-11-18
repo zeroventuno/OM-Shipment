@@ -264,8 +264,30 @@ export function Table({ head, rows, foot }: { head: string[]; rows: (string | nu
   const cell = (v: string | number, j: number, strong = false) => (
     <td key={j} className={cn("py-1.5", j === 0 ? "pr-3 text-left" : "whitespace-nowrap pl-3 text-right tabular-nums", strong && "font-bold")}>{v}</td>
   );
+  // no celular, tabela larga vira uma lista: nome em cima, valores com rótulo embaixo
+  const stacked = head.length > 3;
+  const stackedRow = (r: (string | number)[], key: number | string, strong = false) => (
+    <div key={key} className={cn("break-inside-avoid py-2.5", strong ? "border-t-2 border-black/60" : "border-b border-black/[0.07]")}>
+      <p className="text-[12.5px] font-bold">{r[0]}</p>
+      <dl className="mt-1.5 grid grid-cols-3 gap-x-3 gap-y-1.5">
+        {r.slice(1).map((v, j) => (
+          <div key={j} className="min-w-0">
+            <dt className="text-[9px] font-bold uppercase tracking-[0.06em] text-black/50">{head[j + 1]}</dt>
+            <dd className={cn("text-[12px] tabular-nums", strong && "font-bold")}>{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
   return (
-    <div className="overflow-x-auto">
+    <>
+    {stacked && (
+      <div className="sm:hidden print:hidden">
+        {rows.map((r, i) => stackedRow(r, i))}
+        {foot && stackedRow(foot, "foot", true)}
+      </div>
+    )}
+    <div className={cn("overflow-x-auto", stacked && "hidden sm:block print:block")}>
       <table className="w-full border-collapse text-[11px]">
         <thead>
           <tr className="border-b border-black/25">
@@ -286,6 +308,7 @@ export function Table({ head, rows, foot }: { head: string[]; rows: (string | nu
         )}
       </table>
     </div>
+    </>
   );
 }
 

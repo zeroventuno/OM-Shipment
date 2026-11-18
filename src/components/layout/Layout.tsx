@@ -37,7 +37,7 @@ function BottomNav() {
                         key={area.to}
                         to={area.to}
                         className={cn(
-                            'relative flex flex-col items-center gap-1 py-2.5 text-[10px] uppercase tracking-[0.06em]',
+                            'relative min-w-0 flex flex-col items-center gap-1 py-2.5 text-[clamp(8.5px,2.6vw,10px)] uppercase tracking-normal',
                             active ? 'text-foreground font-bold' : 'text-muted-foreground font-semibold'
                         )}
                     >

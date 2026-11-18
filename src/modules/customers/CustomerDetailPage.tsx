@@ -224,7 +224,7 @@ export default function CustomerDetailPage() {
       {/* histórico */}
       {!isNew && (
         <section className="flex flex-col gap-4">
-          <div className="flex gap-1 p-1 rounded-full bg-secondary overflow-x-auto" role="tablist">
+          <div className="no-scrollbar flex gap-1 p-1 rounded-full bg-secondary overflow-x-auto" role="tablist">
             {([
               ["shipments", t("Shipments"), act?.shipments.length],
               ["tickets", t("Assistance"), act?.tickets.length],

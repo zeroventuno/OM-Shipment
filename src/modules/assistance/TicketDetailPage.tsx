@@ -156,7 +156,7 @@ export default function TicketDetailPage() {
               ]}
             />
             {ticket.shipmentId && (
-              <Link to={`/shipments/${ticket.shipmentId}`} className="self-start text-[11px] font-semibold uppercase tracking-[0.12em] underline-offset-4 hover:underline">
+              <Link to={`/shipments/${ticket.shipmentId}`} className="tap-target self-start text-[11px] font-semibold uppercase tracking-[0.12em] underline-offset-4 hover:underline">
                 {t("Open shipment")}
               </Link>
             )}
@@ -164,7 +164,7 @@ export default function TicketDetailPage() {
           <button
             type="button"
             onClick={() => window.confirm(t("Delete this ticket?")) && deleteMutation.mutate()}
-            className="self-start inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-destructive hover:underline underline-offset-4"
+            className="tap-target self-start inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-destructive hover:underline underline-offset-4"
           >
             <Trash2 className="h-3.5 w-3.5" /> {t("Delete ticket")}
           </button>

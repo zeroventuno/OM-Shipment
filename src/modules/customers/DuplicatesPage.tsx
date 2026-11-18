@@ -43,7 +43,7 @@ export default function DuplicatesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Link to="/customers" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground w-fit">
+      <Link to="/customers" className="tap-target inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground w-fit">
         <ArrowLeft className="h-4 w-4" /> {t("dup.back")}
       </Link>
       <PageHeader eyebrow={t("nav.customers")} title={t("dup.title")} />
@@ -164,7 +164,7 @@ function GroupCard({ group }: { group: Group }) {
               <div className="flex items-start justify-between gap-2">
                 <p className="font-semibold text-[16px] break-words">{m.name}</p>
                 <Link to={`/customers/${m.id}`} target="_blank" title={t("dup.open")} aria-label={t("dup.open")}
-                  className="shrink-0 text-muted-foreground hover:text-foreground mt-0.5">
+                  className="tap-target shrink-0 text-muted-foreground hover:text-foreground mt-0.5">
                   <ExternalLink className="h-4 w-4" />
                 </Link>
               </div>

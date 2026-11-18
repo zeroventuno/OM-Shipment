@@ -135,7 +135,7 @@ export function StageBoard<T>({ columns, renderCard, getKey, collapse = {}, onMo
     <>
       {/* Celular: abas por etapa */}
       <div className="md:hidden flex flex-col gap-4">
-        <div role="tablist" className="flex gap-1.5 overflow-x-auto -mx-4 px-4 pb-1">
+        <div role="tablist" className="no-scrollbar flex gap-1.5 overflow-x-auto -mx-4 px-4 pb-1">
           {columns.map((col) => (
             <button
               key={col.key}

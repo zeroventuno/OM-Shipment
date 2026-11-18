@@ -1,13 +1,16 @@
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, Cell, CartesianGrid } from 'recharts';
 import { useTranslation } from 'react-i18next';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 
 export default function MonthlyChart({ data }) {
     const { t } = useTranslation();
+    const isMobile = useIsMobile();
+    const barSize = isMobile ? 12 : 40;
 
     return (
-        <div className="h-80 w-full bg-white p-6 rounded-lg border border-border animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="h-72 md:h-80 w-full bg-white p-3 md:p-6 rounded-lg border border-border animate-in fade-in slide-in-from-bottom-4 duration-700">
             <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                <BarChart data={data} margin={isMobile ? { top: 8, right: 4, left: 0, bottom: 0 } : { top: 20, right: 30, left: 0, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                     <XAxis
                         dataKey="name"
@@ -20,7 +23,8 @@ export default function MonthlyChart({ data }) {
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: '#6B7280', fontSize: 12 }}
-                        tickFormatter={(value) => `€${value}`}
+                        width={isMobile ? 40 : 60}
+                        tickFormatter={(value) => (isMobile && Math.abs(value) >= 1000 ? `€${value / 1000}k` : `€${value}`)}
                     />
                     <Tooltip
                         cursor={{ fill: '#F3F4F6' }}
@@ -73,7 +77,7 @@ export default function MonthlyChart({ data }) {
                         name={t("Savings")}
                         fill="#C9C9C4"
                         radius={[2, 2, 0, 0]}
-                        barSize={40}
+                        barSize={barSize}
                     />
 
                     {/* Foreground Bar: Profit - Dark Blue (or Red for loss) */}
@@ -81,8 +85,8 @@ export default function MonthlyChart({ data }) {
                         dataKey="profit"
                         name={t("Profit")}
                         radius={[2, 2, 0, 0]}
-                        barSize={40}
-                        barGap={-40} // Completely overlap
+                        barSize={barSize}
+                        barGap={-barSize} // Completely overlap
                     >
                         {data.map((entry, index) => (
                             <Cell

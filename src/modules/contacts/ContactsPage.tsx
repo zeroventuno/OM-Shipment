@@ -113,9 +113,9 @@ export default function ContactsPage() {
                     <div className="min-w-0 flex-1 flex flex-col gap-1">
                       <p className="font-medium break-words">{c.name}{c.role && <span className="text-muted-foreground font-normal"> · {c.role}</span>}</p>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                        {c.phone && <a href={`tel:${c.phone.replace(/[^\d+]/g, "")}`} className="inline-flex items-center gap-1.5 hover:underline underline-offset-4"><Phone className="h-3.5 w-3.5 text-muted-foreground" />{c.phone}</a>}
-                        {c.mobile && <a href={`tel:${c.mobile.replace(/[^\d+]/g, "")}`} className="inline-flex items-center gap-1.5 hover:underline underline-offset-4"><Smartphone className="h-3.5 w-3.5 text-muted-foreground" />{c.mobile}</a>}
-                        {c.email && <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1.5 hover:underline underline-offset-4 break-all"><Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />{c.email}</a>}
+                        {c.phone && <a href={`tel:${c.phone.replace(/[^\d+]/g, "")}`} className="max-md:min-h-11 inline-flex items-center gap-1.5 hover:underline underline-offset-4"><Phone className="h-3.5 w-3.5 text-muted-foreground" />{c.phone}</a>}
+                        {c.mobile && <a href={`tel:${c.mobile.replace(/[^\d+]/g, "")}`} className="max-md:min-h-11 inline-flex items-center gap-1.5 hover:underline underline-offset-4"><Smartphone className="h-3.5 w-3.5 text-muted-foreground" />{c.mobile}</a>}
+                        {c.email && <a href={`mailto:${c.email}`} className="max-md:min-h-11 inline-flex items-center gap-1.5 hover:underline underline-offset-4 break-all"><Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />{c.email}</a>}
                       </div>
                       {c.notes && <p className="text-sm text-muted-foreground whitespace-pre-line">{c.notes}</p>}
                     </div>

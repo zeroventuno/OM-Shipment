@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import { supabase } from '@/lib/supabase';
 import { countrySpellings } from '../data/countries';
 import { resolveStatus } from '../utils/shipmentStatus';
@@ -333,7 +334,8 @@ export const storageService = {
         const monthlyDataMap = bikeShipments.reduce((acc, curr) => {
             if (curr.createdAt) {
                 const date = new Date(curr.createdAt);
-                const monthYear = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+                // chave ano-mês: ordena certo em qualquer idioma
+                const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                 const quantity = curr.quantity || 1;
                 acc[monthYear] = (acc[monthYear] || 0) + quantity;
             }
@@ -342,8 +344,11 @@ export const storageService = {
 
         // Sort monthly data chronologically
         const monthlyData = Object.entries(monthlyDataMap)
-            .map(([month, count]) => ({ month, count }))
-            .sort((a, b) => new Date(a.month) - new Date(b.month));
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([key, count]) => ({
+                month: new Date(`${key}-15T12:00:00`).toLocaleString(i18n.language || 'it', { month: 'short', year: '2-digit' }),
+                count,
+            }));
 
         const totalBikes = bikeShipments.reduce((acc, curr) => acc + (curr.quantity || 1), 0);
         const monthsCount = Object.keys(monthlyDataMap).length || 1;

@@ -5,6 +5,8 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Pencil, Trash2, Search, DollarSign, TrendingUp, TrendingDown, User, FileDown, Printer, Camera, X, Truck, Wrench, Menu, AlertCircle, FileCheck, FileStack, Loader2 } from 'lucide-react';
 import MonthlyChart from '../components/MonthlyChart';
+import ReportShipmentList from '../components/ReportShipmentList';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { storageService } from '../services/storage';
 import { useTranslation } from 'react-i18next';
 import { countryLabel } from '../data/countries';
@@ -13,6 +15,7 @@ import * as XLSX from 'xlsx';
 
 export default function Reports() {
     const { t, i18n } = useTranslation();
+    const isMobile = useIsMobile();
     const [shipments, setShipments] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [customerFilter, setCustomerFilter] = useState('all');
@@ -417,7 +420,7 @@ export default function Reports() {
                             {t('Filter Type')}
                         </label>
                         <select
-                            className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 text-sm focus:ring-2 focus:ring-primary"
+                            className="w-full h-11 md:h-9 rounded-md border border-gray-300 bg-white px-2.5 text-sm focus:ring-2 focus:ring-primary"
                             value={customerFilter}
                             onChange={(e) => {
                                 setCustomerFilter(e.target.value);
@@ -437,7 +440,7 @@ export default function Reports() {
                                 {t('Select Customer')}
                             </label>
                             <select
-                                className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 text-sm focus:ring-2 focus:ring-primary"
+                                className="w-full h-11 md:h-9 rounded-md border border-gray-300 bg-white px-2.5 text-sm focus:ring-2 focus:ring-primary"
                                 value={selectedCustomer}
                                 onChange={(e) => setSelectedCustomer(e.target.value)}
                             >
@@ -452,64 +455,64 @@ export default function Reports() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Total Savings')}</CardTitle>
-                        <DollarSign className="h-6 w-6 text-muted-foreground" />
+                        <DollarSign className="hidden md:block h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">€ {stats.totalSavings.toFixed(2)}</div>
+                        <div className="text-xl md:text-2xl font-bold">€ {stats.totalSavings.toFixed(2)}</div>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Total Profit')}</CardTitle>
-                        <TrendingUp className="h-6 w-6 text-muted-foreground" />
+                        <TrendingUp className="hidden md:block h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className={`text-2xl font-bold ${stats.totalProfit >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                        <div className={`text-xl md:text-2xl font-bold ${stats.totalProfit >= 0 ? 'text-foreground' : 'text-destructive'}`}>
                             € {stats.totalProfit.toFixed(2)}
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="bg-card">
+                <Card className="bg-card max-md:col-span-2 max-md:order-1">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-700">{t('Best Customer (Profit)')}</CardTitle>
-                        <User className="h-6 w-6 text-muted-foreground" />
+                        <User className="hidden md:block h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-lg font-bold truncate text-foreground" title={stats.bestCustomer}>{stats.bestCustomer}</div>
+                        <div className="text-lg font-bold md:truncate break-words text-foreground" title={stats.bestCustomer}>{stats.bestCustomer}</div>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Current Month Savings')}</CardTitle>
-                        <DollarSign className="h-6 w-6 text-muted-foreground" />
+                        <DollarSign className="hidden md:block h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">€ {stats.monthSavings.toFixed(2)}</div>
+                        <div className="text-xl md:text-2xl font-bold">€ {stats.monthSavings.toFixed(2)}</div>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">{t('Current Month Profit')}</CardTitle>
-                        <TrendingUp className="h-6 w-6 text-muted-foreground" />
+                        <TrendingUp className="hidden md:block h-6 w-6 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className={`text-2xl font-bold ${stats.monthProfit >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                        <div className={`text-xl md:text-2xl font-bold ${stats.monthProfit >= 0 ? 'text-foreground' : 'text-destructive'}`}>
                             € {stats.monthProfit.toFixed(2)}
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="bg-card">
+                <Card className="bg-card max-md:col-span-2 max-md:order-2">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-700">{t('Worst Customer (Loss)')}</CardTitle>
-                        <TrendingDown className="h-6 w-6 text-destructive" />
+                        <TrendingDown className="hidden md:block h-6 w-6 text-destructive" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-lg font-bold truncate text-foreground" title={stats.worstCustomer}>{stats.worstCustomer}</div>
+                        <div className="text-lg font-bold md:truncate break-words text-foreground" title={stats.worstCustomer}>{stats.worstCustomer}</div>
                     </CardContent>
                 </Card>
             </div>
@@ -518,7 +521,7 @@ export default function Reports() {
                 <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <CardTitle>{t('All Shipments')} ({filteredShipments.length})</CardTitle>
                     <div className="flex flex-wrap gap-2">
-                        <div className="relative flex-1 min-w-[12rem]">
+                        <div className="relative w-full md:w-auto md:flex-1 md:min-w-[12rem]">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <Input
                                 placeholder={t('Search...')}
@@ -529,6 +532,7 @@ export default function Reports() {
                         </div>
                         <Button
                             variant="outlined"
+                            className="flex-1 md:flex-none px-3 md:px-5 whitespace-nowrap"
                             onClick={exportToExcel}
                             disabled={filteredShipments.length === 0}
                         >
@@ -537,6 +541,7 @@ export default function Reports() {
                         </Button>
                         <Button
                             variant="outlined"
+                            className="flex-1 md:flex-none px-3 md:px-5 whitespace-nowrap"
                             onClick={handleExportPods}
                             disabled={filteredShipments.length === 0 || exportingPod}
                             title={t('Export proofs (PDF)')}
@@ -548,6 +553,7 @@ export default function Reports() {
                         </Button>
                         <Button
                             variant="outlined"
+                            className="flex-1 md:flex-none px-3 md:px-5 whitespace-nowrap"
                             onClick={handlePrint}
                             disabled={filteredShipments.length === 0}
                         >
@@ -557,6 +563,18 @@ export default function Reports() {
                     </div>
                 </CardHeader>
                 <CardContent>
+                    {isMobile ? (
+                        <ReportShipmentList
+                            key={`${searchTerm}|${customerFilter}|${selectedCustomer}`}
+                            shipments={filteredShipments}
+                            selectedItems={selectedItems}
+                            onSelectAll={handleSelectAll}
+                            onSelectItem={handleSelectItem}
+                            onDelete={handleDelete}
+                            onPhotos={(photos) => { setCurrentPhotos(photos); setIsPhotoModalOpen(true); }}
+                            onPod={openPod}
+                        />
+                    ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-center">
                             <thead className="text-xs text-gray-700 uppercase bg-gray-50">
@@ -698,6 +716,7 @@ export default function Reports() {
                             </div>
                         )}
                     </div>
+                    )}
                 </CardContent>
             </Card>
 
