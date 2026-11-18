@@ -7,6 +7,18 @@
 export const PUBLIC_LANGUAGES = ["it", "fr", "en", "es", "pt"] as const;
 export type PublicLanguage = (typeof PUBLIC_LANGUAGES)[number];
 
+/**
+ * Idioma inicial: o ?lang= do link, se houver; senão o primeiro idioma do
+ * navegador que o formulário tem; senão inglês, o mais entendido fora da lista.
+ */
+export function detectLanguage(requested: string | null, browser: readonly string[]): PublicLanguage {
+  for (const value of [requested ?? "", ...browser]) {
+    const code = value.slice(0, 2).toLowerCase();
+    if ((PUBLIC_LANGUAGES as readonly string[]).includes(code)) return code as PublicLanguage;
+  }
+  return "en";
+}
+
 /** Cada idioma com o próprio nome, para quem procura o seu na lista. */
 export const LANGUAGE_NAMES: Record<PublicLanguage, string> = {
   it: "Italiano", fr: "Français", en: "English", es: "Español", pt: "Português",

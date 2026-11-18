@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Field } from "@/modules/customers/fields";
 import { checkServiceLink, submitServiceRequest, type IntakeFile } from "./api";
-import { LANGUAGE_NAMES, PUBLIC_LANGUAGES, publicText, type PublicLanguage } from "./i18n";
+import { LANGUAGE_NAMES, PUBLIC_LANGUAGES, detectLanguage, publicText, type PublicLanguage } from "./i18n";
 import {
   MAX_FILE_BYTES, MAX_PHOTOS, MAX_RECEIPTS, emptyDraft, fileMime, validateDraft,
   type ServiceDraft, type ServiceKind,
@@ -19,11 +19,10 @@ import {
  * Serve a clientes finais: só envia. Não mostra clientes nem outros pedidos.
  */
 
-function initialLanguage(): PublicLanguage {
-  const requested = new URLSearchParams(window.location.search).get("lang") || navigator.language || "";
-  const code = requested.slice(0, 2).toLowerCase();
-  return (PUBLIC_LANGUAGES as readonly string[]).includes(code) ? (code as PublicLanguage) : "it";
-}
+const initialLanguage = () => detectLanguage(
+  new URLSearchParams(window.location.search).get("lang"),
+  navigator.languages?.length ? navigator.languages : [navigator.language],
+);
 
 const Section = ({ title, children }: { title: string; children: ReactNode }) => (
   <section className="bg-card border border-border rounded-lg p-5 md:p-6 flex flex-col gap-4">

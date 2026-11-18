@@ -1,6 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { PUBLIC_LANGUAGES, publicText } from "./i18n";
+import { PUBLIC_LANGUAGES, detectLanguage, publicText } from "./i18n";
 import { emptyDraft, fileMime, requestNotes, ticketPrefill, validateDraft, warrantyPrefill, type ServiceDraft } from "./intake";
+
+describe("idioma inicial do formulário público", () => {
+  it("segue o navegador, inclusive variantes regionais", () => {
+    expect(detectLanguage(null, ["fr-CH", "en"])).toBe("fr");
+    expect(detectLanguage(null, ["pt-BR"])).toBe("pt");
+  });
+  it("procura na lista até achar um idioma disponível", () => {
+    expect(detectLanguage(null, ["de-DE", "fr-FR", "en"])).toBe("fr");
+  });
+  it("o link pode forçar o idioma; valor inválido é ignorado", () => {
+    expect(detectLanguage("es", ["fr"])).toBe("es");
+    expect(detectLanguage("xx", ["fr"])).toBe("fr");
+  });
+  it("sem idioma disponível, abre em inglês", () => expect(detectLanguage(null, ["de-DE", "ja"])).toBe("en"));
+});
 
 describe("textos do formulário público", () => {
   it("todos os idiomas têm as mesmas chaves", () => {
