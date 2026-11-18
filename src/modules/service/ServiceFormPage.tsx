@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Loader2, Paperclip, X } from "lucide-react";
+import { CheckCircle2, ChevronDown, Loader2, Paperclip, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Field } from "@/modules/customers/fields";
 import { checkServiceLink, submitServiceRequest, type IntakeFile } from "./api";
-import { PUBLIC_LANGUAGES, publicText, type PublicLanguage } from "./i18n";
+import { LANGUAGE_NAMES, PUBLIC_LANGUAGES, publicText, type PublicLanguage } from "./i18n";
 import {
   MAX_FILE_BYTES, MAX_PHOTOS, MAX_RECEIPTS, emptyDraft, fileMime, validateDraft,
   type ServiceDraft, type ServiceKind,
@@ -126,19 +126,19 @@ export default function ServiceFormPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-primary text-primary-foreground">
-        <div className="max-w-3xl mx-auto px-4 md:px-8 py-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="max-w-3xl mx-auto px-4 md:px-8 py-5 flex items-center justify-between gap-4">
           <div className="flex flex-col gap-2 shrink-0">
             <img src="/logo.png" alt="Officine Mattio" className="h-6 w-auto invert self-start" />
             <span className="tricolor h-0.5 w-12" aria-hidden="true" />
           </div>
-          <div className="flex gap-1" role="group" aria-label={tx("language")}>
-            {PUBLIC_LANGUAGES.map((l) => (
-              <button key={l} type="button" onClick={() => { setLang(l); setError(""); }} aria-pressed={lang === l}
-                className={cn("h-9 w-10 rounded-full border text-[11px] font-semibold uppercase tracking-[0.08em]",
-                  lang === l ? "bg-white text-primary border-white" : "border-white/30 text-white/70")}>
-                {l}
-              </button>
-            ))}
+          <div className="relative shrink-0">
+            {/* Lista nativa: no celular abre o seletor do próprio aparelho. Com 16px o iPhone não dá zoom. */}
+            <select value={lang} aria-label={tx("language")}
+              onChange={(e) => { setLang(e.target.value as PublicLanguage); setError(""); }}
+              className="h-11 appearance-none rounded-full border border-white/30 bg-transparent pl-4 pr-9 text-base font-medium text-white">
+              {PUBLIC_LANGUAGES.map((l) => <option key={l} value={l} className="text-black">{LANGUAGE_NAMES[l]}</option>)}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" aria-hidden="true" />
           </div>
         </div>
       </header>

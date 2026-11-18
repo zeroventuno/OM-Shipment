@@ -7,6 +7,11 @@
 export const PUBLIC_LANGUAGES = ["it", "fr", "en", "es", "pt"] as const;
 export type PublicLanguage = (typeof PUBLIC_LANGUAGES)[number];
 
+/** Cada idioma com o próprio nome, para quem procura o seu na lista. */
+export const LANGUAGE_NAMES: Record<PublicLanguage, string> = {
+  it: "Italiano", fr: "Français", en: "English", es: "Español", pt: "Português",
+};
+
 export const publicText: Record<PublicLanguage, Record<string, string>> = {
   it: {
     title: "Richiesta di garanzia o assistenza",
