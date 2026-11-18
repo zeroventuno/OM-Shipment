@@ -9,8 +9,13 @@ import { IMPORT_REASONS, money, parcelsWeight, kg } from '../../services/importD
 import { ItemsEditor } from './ItemsEditor';
 import { emptyItem, cleanItems as toCleanItems } from '../../services/docItems';
 import { todayRome } from '../../services/exportDocs';
+import { CustomerSearch } from './CustomerSearch';
 import {
-    downloadImportDoc, findCustomerByName, issueImportDoc, listImportDocs, loadExportCatalog,
+    NEW_ADDRESS, addressToSave, initialAddressChoice, shipperAddressFields, shipperFromCustomer,
+} from '../../services/customerShipper';
+import {
+    addCustomerAddress, downloadImportDoc, findCustomerForShipment, issueImportDoc, listImportDocs,
+    loadAddressOptions, loadCustomer, loadExportCatalog,
 } from '../../services/importDocsApi';
 
 /**
@@ -30,6 +35,13 @@ export function ImportDocsCard({ shipmentId, customerName, country, parcels }) {
     const [editing, setEditing] = useState(null); // id do documento em edição, ou null = novo
     const [shipper, setShipper] = useState(emptyShipper);
     const [customerId, setCustomerId] = useState(null);
+    const [customer, setCustomer] = useState(null);
+    const [picked, setPicked] = useState(null); // cliente escolhido à mão para este nome
+    const [lookupDone, setLookupDone] = useState(false);
+    const [changingCustomer, setChangingCustomer] = useState(false);
+    const [customerSearch, setCustomerSearch] = useState('');
+    const [addresses, setAddresses] = useState([]);
+    const [addressChoice, setAddressChoice] = useState('');
     const [date, setDate] = useState(todayRome());
     const [reason, setReason] = useState('warranty');
     const [reasonText, setReasonText] = useState('');
@@ -44,27 +56,39 @@ export function ImportDocsCard({ shipmentId, customerName, country, parcels }) {
     useEffect(() => { reload(); }, [shipmentId]); // eslint-disable-line react-hooks/exhaustive-deps
     useEffect(() => { loadExportCatalog().then(setCatalog).catch(() => {}); }, []);
 
-    // Remetente = ficha do cliente (quando existe); o país do ritiro vale se a ficha não tiver.
+    // Remetente = ficha do cliente. Um endereço só já entra preenchido; com
+    // vários, o usuário escolhe; sem ficha, valem o nome e o país da retirada.
     useEffect(() => {
         if (editing) return;
         let alive = true;
-        findCustomerByName(customerName).then((c) => {
+        setLookupDone(false);
+        const pickedId = picked?.forName === customerName ? picked.id : null;
+        (async () => {
+            const c = await (pickedId ? loadCustomer(pickedId) : findCustomerForShipment(customerName));
+            return [c, c ? await loadAddressOptions(c) : []];
+        })().catch(() => [null, []]).then(([c, options]) => {
             if (!alive) return;
+            const choice = initialAddressChoice(options);
+            setCustomer(c);
             setCustomerId(c?.id || null);
-            setShipper({
-                name: c?.name || customerName || '',
-                address: [c?.address_line1, c?.address_line2].filter(Boolean).join(', '),
-                postal_code: c?.postal_code || '',
-                city: c?.city || '',
-                country: c?.country || country || '',
-                tax_id: c?.tax_id || '',
-                contact: c?.contact_name || '',
-                phone: c?.phone || '',
-                email: c?.email || '',
-            });
+            setAddresses(options);
+            setAddressChoice(choice);
+            setShipper({ ...emptyShipper, ...shipperFromCustomer(c, options.find((o) => o.key === choice), { name: customerName, country }) });
+            setChangingCustomer(false);
+            setLookupDone(true);
         });
         return () => { alive = false; };
-    }, [customerName, country, editing]);
+    }, [customerName, country, editing, picked]);
+
+    const chooseAddress = (value) => {
+        setAddressChoice(value);
+        const option = addresses.find((o) => o.key === value);
+        setShipper((s) => ({ ...s, ...shipperAddressFields(customer, option, country) }));
+    };
+    const pickCustomer = (c) => {
+        setCustomerSearch('');
+        setPicked({ id: c.id, forName: customerName });
+    };
 
     useEffect(() => {
         if (!editing) setBoxes((parcels || []).map((p) => ({ width: toStr(p.width), height: toStr(p.height), depth: toStr(p.depth), weight: toStr(p.weight) })));
@@ -100,12 +124,14 @@ export function ImportDocsCard({ shipmentId, customerName, country, parcels }) {
         .filter((b) => [b.width, b.height, b.depth, b.weight].every((v) => num(v) > 0))
         .map((b) => ({ width: num(b.width), height: num(b.height), depth: num(b.depth), weight: num(b.weight), ...(b.name ? { name: b.name } : {}) }));
     const reasonValue = reason === 'other' ? reasonText.trim() : IMPORT_REASONS[reason];
-    const ready = shipper.name.trim() && shipper.country && cleanItems.length > 0 && reasonValue && date;
+    const addressMissing = !editing && customer && !addressChoice;
+    const ready = shipper.name.trim() && shipper.country && cleanItems.length > 0 && reasonValue && date && !addressMissing;
     const nextLabel = editing ? docs.find((d) => d.id === editing)?.code : null;
 
     const issue = async () => {
         setError('');
         setBusy(true);
+        const newAddress = !editing && customerId && addressChoice === NEW_ADDRESS ? addressToSave(shipper, addresses) : null;
         try {
             const row = await issueImportDoc({
                 id: editing || undefined,
@@ -119,6 +145,12 @@ export function ImportDocsCard({ shipmentId, customerName, country, parcels }) {
                 notes: notes.trim(),
                 returned,
             });
+            if (newAddress) {
+                await addCustomerAddress(customerId, newAddress).catch((err) => {
+                    console.error('Customer address error:', err);
+                    setError(t('imp.addressNotSaved'));
+                });
+            }
             await downloadImportDoc(row);
             setEditing(row.id);
             reload();
@@ -168,6 +200,34 @@ export function ImportDocsCard({ shipmentId, customerName, country, parcels }) {
 
                         <div className="space-y-3">
                             <span className={eyebrow}>{t('imp.shipper')}</span>
+                            {!editing && lookupDone && customer && !changingCustomer && (
+                                <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm">
+                                    <span className="min-w-0 break-words">{t('imp.fromCustomer')} <strong className="font-semibold">{customer.name}</strong></span>
+                                    <button type="button" className="tap-target shrink-0 underline" onClick={() => setChangingCustomer(true)}>{t('imp.changeCustomer')}</button>
+                                </div>
+                            )}
+                            {!editing && lookupDone && customer && customerName?.trim() && customerName.trim().toLowerCase() !== customer.name.trim().toLowerCase() && (
+                                <p className="text-xs text-error">{t('imp.nameDiffers', { name: customerName.trim() })}</p>
+                            )}
+                            {!editing && lookupDone && (!customer || changingCustomer) && (
+                                <div className="space-y-1">
+                                    <CustomerSearch value={customerSearch} onChange={setCustomerSearch} onSelect={pickCustomer} />
+                                    {!customer && <p className="text-xs text-muted-foreground">{t('imp.noCustomer')}</p>}
+                                </div>
+                            )}
+                            {!editing && customer && addresses.length > 0 && (
+                                <div>
+                                    <label htmlFor="imp-address" className={eyebrow}>{t('imp.pickupAddress')}</label>
+                                    <select id="imp-address" className="flex h-10 w-full rounded-md border border-input bg-card px-3 text-sm" value={addressChoice} onChange={(e) => chooseAddress(e.target.value)}>
+                                        {!addressChoice && <option value="">{t('imp.chooseAddress')}</option>}
+                                        {addresses.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+                                        <option value={NEW_ADDRESS}>{t('imp.newAddress')}</option>
+                                    </select>
+                                </div>
+                            )}
+                            {!editing && customer && addressChoice === NEW_ADDRESS && (
+                                <p className="text-xs text-muted-foreground">{t('imp.newAddressHint')}</p>
+                            )}
                             {field(t('imp.name'), 'name')}
                             {field(t('imp.address'), 'address')}
                             <div className="grid grid-cols-2 gap-3">
@@ -229,7 +289,7 @@ export function ImportDocsCard({ shipmentId, customerName, country, parcels }) {
                             <Download className="mr-2 h-4 w-4" />
                             {busy ? t('Generating...') : editing ? t('imp.saveDownload', { code: nextLabel }) : t('imp.issue')}
                         </Button>
-                        {!ready && <p className="text-xs text-muted-foreground">{t('imp.missing')}</p>}
+                        {!ready && <p className="text-xs text-muted-foreground">{t(addressMissing ? 'imp.addressMissing' : 'imp.missing')}</p>}
                         <Link to="/shipments/import-docs" className="block text-center text-xs text-muted-foreground underline">{t('imp.register')}</Link>
                     </>
                 )}

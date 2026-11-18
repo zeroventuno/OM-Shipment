@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase';
 import { buildImportPdf, importCode } from './importDocs';
 import { downloadBytes } from './exportDocs';
+import { addressOptions, namesMatch } from './customerShipper';
+import { listAddresses, saveAddress } from '@/modules/customers/api';
 
 /** Proforma de importação: leitura, emissão (número dado pelo banco) e PDF. */
 
@@ -27,15 +29,47 @@ export async function setImportDocCancelled(id, cancelled) {
     if (error) throw error;
 }
 
+const CUSTOMER_COLS = 'id, name, address_line1, address_line2, address_line3, postal_code, city, region, country, tax_id, phone, email, contact_name';
+
 /** Ficha do cliente pelo nome do envio, para preencher o remetente. */
 export async function findCustomerByName(name) {
     const clean = (name || '').trim();
     if (!clean) return null;
     const { data } = await supabase.from('customers')
-        .select('id, name, address_line1, address_line2, postal_code, city, region, country, tax_id, phone, email, contact_name')
+        .select(CUSTOMER_COLS)
         .ilike('name', clean.replace(/[\\%_]/g, (c) => `\\${c}`))
         .limit(1);
     return data?.[0] || null;
+}
+
+export async function loadCustomer(id) {
+    const { data, error } = await supabase.from('customers').select(CUSTOMER_COLS).eq('id', id).single();
+    if (error) throw error;
+    return data;
+}
+
+/**
+ * Ficha do cliente da retirada: nome igual ou, se não houver, o único cadastro
+ * com o nome mais curto/longo ("ALONZO AGUIRRE ROCHA" → "Alonzo Aguirre").
+ */
+export async function findCustomerForShipment(name) {
+    const exact = await findCustomerByName(name);
+    if (exact) return exact;
+    const words = String(name || '').match(/[\p{L}\p{N}]{2,}/gu)?.slice(0, 6) || [];
+    if (words.length === 0) return null;
+    const { data, error } = await supabase.from('customers').select('id, name')
+        .or(words.map((w) => `name.ilike."*${w}*"`).join(',')).limit(1000);
+    if (error) throw error;
+    const found = (data || []).filter((c) => namesMatch(c.name, name));
+    return found.length === 1 ? loadCustomer(found[0].id) : null;
+}
+
+export const loadAddressOptions = async (customer) => addressOptions(customer, await listAddresses(customer.id));
+
+/** Endereço novo na ficha; vira o padrão se o cliente ainda não tiver nenhum. */
+export async function addCustomerAddress(customerId, address) {
+    const rows = await listAddresses(customerId);
+    await saveAddress(customerId, address, rows.length === 0);
 }
 
 /**

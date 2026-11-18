@@ -271,6 +271,16 @@ export const shipmentResources = {
             "imp.confirmCancel": "Anular {{code}}? O número continua usado.",
             "imp.openPickup": "Abrir a retirada",
             "imp.loading": "Carregando…",
+            "imp.fromCustomer": "Dados da ficha de",
+            "imp.nameDiffers": "Na retirada o nome está como «{{name}}». Confira qual é o nome correto para o documento.",
+            "imp.changeCustomer": "Trocar",
+            "imp.noCustomer": "Cliente da retirada não encontrado no cadastro. Procure aqui para puxar os dados.",
+            "imp.pickupAddress": "Endereço da retirada",
+            "imp.chooseAddress": "Escolha o endereço…",
+            "imp.newAddress": "+ Novo endereço",
+            "imp.newAddressHint": "Ao emitir, este endereço fica salvo na ficha do cliente (precisa de endereço, cidade e país).",
+            "imp.addressMissing": "Escolha o endereço da retirada.",
+            "imp.addressNotSaved": "O documento foi emitido, mas o endereço não foi salvo na ficha do cliente.",
 
             // Documentos de exportação (fora da UE)
             "exp.title": "Documentos de exportação",
@@ -615,6 +625,16 @@ export const shipmentResources = {
             "imp.confirmCancel": "Annullare {{code}}? Il numero resta usato.",
             "imp.openPickup": "Apri il ritiro",
             "imp.loading": "Caricamento…",
+            "imp.fromCustomer": "Dati dalla scheda di",
+            "imp.nameDiffers": "Nel ritiro il nome è «{{name}}». Controlla qual è il nome corretto per il documento.",
+            "imp.changeCustomer": "Cambia",
+            "imp.noCustomer": "Cliente del ritiro non trovato in anagrafica. Cercalo qui per riprendere i dati.",
+            "imp.pickupAddress": "Indirizzo del ritiro",
+            "imp.chooseAddress": "Scegli l'indirizzo…",
+            "imp.newAddress": "+ Nuovo indirizzo",
+            "imp.newAddressHint": "All'emissione, questo indirizzo viene salvato nella scheda del cliente (servono indirizzo, città e paese).",
+            "imp.addressMissing": "Scegli l'indirizzo del ritiro.",
+            "imp.addressNotSaved": "Il documento è stato emesso, ma l'indirizzo non è stato salvato nella scheda del cliente.",
 
             // Documenti export (extra UE)
             "exp.title": "Documenti export",
