@@ -1,7 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { importCode, itemsTotal, kg, money, parcelsVolume, parcelsWeight, pdfSafe, shipperLines } from './importDocs';
+import { importCode, importItemColumns, productIdCell, itemsTotal, kg, money, parcelsVolume, parcelsWeight, pdfSafe, shipperLines } from './importDocs';
 
 describe('importDocs', () => {
+    it('quebra código longo sem mexer nos curtos', () => {
+        expect(productIdCell(' L8FRAME ')).toBe('L8FRAME');
+        expect(productIdCell('L8COMPONENTS')).toBe('L8COMPONEN TS');
+    });
+    it('mostra Product ID só quando há código, com colunas somando 100%', () => {
+        const keys = (items) => importItemColumns(items).map((c) => c.key);
+        const width = (items) => importItemColumns(items).reduce((s, c) => s + c.w, 0);
+        expect(keys([{ code: ' ' }])).not.toContain('code');
+        expect(keys([{}, { code: 'L8FRAME' }])).toContain('code');
+        expect(width([{}])).toBeCloseTo(1);
+        expect(width([{ code: 'L8FRAME' }])).toBeCloseTo(1);
+    });
     it('numera IMP com 3 dígitos', () => {
         expect(importCode(3)).toBe('IMP-003');
         expect(importCode(1234)).toBe('IMP-1234');

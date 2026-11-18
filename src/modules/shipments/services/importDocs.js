@@ -76,6 +76,23 @@ export const MUTED = [0.42, 0.42, 0.47];
 const LINE = [0.78, 0.78, 0.82];
 export const FILL = [0.95, 0.95, 0.96];
 
+/** Código livre: quebra os muito longos para não invadir a coluna ao lado. */
+export const productIdCell = (code) => String(code || '').trim().replace(/(\S{10})(?=\S)/g, '$1 ');
+
+/** Colunas dos artigos; "Product ID" só aparece se algum artigo tiver código. */
+export function importItemColumns(items) {
+    const withId = items.some((it) => String(it.code || '').trim());
+    return [
+        { key: 'qty', label: 'QTY', w: withId ? 0.06 : 0.07, align: 'right' },
+        ...(withId ? [{ key: 'code', label: 'PRODUCT ID', w: 0.15 }] : []),
+        { key: 'description', label: 'DESCRIPTION OF GOODS', w: withId ? 0.31 : 0.40 },
+        { key: 'hs_code', label: 'HS CODE', w: withId ? 0.12 : 0.16 },
+        { key: 'origin', label: 'ORIGIN', w: withId ? 0.10 : 0.11 },
+        { key: 'unit_value', label: 'UNIT VALUE', w: 0.12, align: 'right' },
+        { key: 'total', label: 'TOTAL EUR', w: 0.14, align: 'right' },
+    ];
+}
+
 /**
  * doc: { number, issued_on, shipper, items, parcels, reason, notes, returned }
  * Devolve Uint8Array.
@@ -110,16 +127,10 @@ export async function buildImportPdf({ doc: d, logoBytes, signatureBytes }) {
     y = infoStrip(ctx, page, y, info, [0.4, 0.24, 0.12, 0.24]);
 
     // tabela de artigos
-    const cols = [
-        { key: 'qty', label: 'QTY', w: 0.07, align: 'right' },
-        { key: 'description', label: 'DESCRIPTION OF GOODS', w: 0.40 },
-        { key: 'hs_code', label: 'HS CODE', w: 0.16 },
-        { key: 'origin', label: 'ORIGIN', w: 0.11 },
-        { key: 'unit_value', label: 'UNIT VALUE', w: 0.12, align: 'right' },
-        { key: 'total', label: 'TOTAL EUR', w: 0.14, align: 'right' },
-    ];
+    const cols = importItemColumns(items);
     const rows = items.map((it) => ({
         qty: kg(it.qty),
+        code: productIdCell(it.code),
         description: it.description || '',
         hs_code: it.hs_code || '',
         origin: it.origin || '',

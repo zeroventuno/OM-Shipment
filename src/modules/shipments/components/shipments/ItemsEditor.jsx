@@ -1,9 +1,10 @@
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { itemsTotal, money } from '../../services/importDocs';
 import { itemFromCatalog, matchCatalog } from '../../services/invoiceParser';
-import { emptyItem, cleanItems } from '../../services/docItems';
+import { emptyItem, cleanItems, productIdSuggestions } from '../../services/docItems';
 
 /**
  * Lista de artigos para documentos de alfândega (proforma IMP e Commercial
@@ -11,8 +12,9 @@ import { emptyItem, cleanItems } from '../../services/docItems';
  * para puxar descrição e HS do catálogo.
  */
 
-export function ItemsEditor({ items, setItems, catalog, label, extraTotal = 0, withCode = false }) {
+export function ItemsEditor({ items, setItems, catalog, label, extraTotal = 0, withCode = false, withProductId = false }) {
     const { t } = useTranslation();
+    const productIdsList = useId();
     const small = 'h-9 w-full rounded-md border border-input bg-card px-2 text-sm';
     const setItem = (i, field, value) => setItems((l) => l.map((x, j) => (j === i ? { ...x, [field]: value } : x)));
     const addFromCatalog = (id) => {
@@ -56,6 +58,9 @@ export function ItemsEditor({ items, setItems, catalog, label, extraTotal = 0, w
                             </select>
                         </div>
                     )}
+                    {withProductId && (
+                        <input className={small} list={productIdsList} autoComplete="off" aria-label={t('imp.productId')} placeholder={`${t('imp.productId')} (L8FRAME)`} value={it.code || ''} onChange={(e) => setItem(i, 'code', e.target.value)} />
+                    )}
                     <textarea rows={2} className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm" placeholder={t('imp.description')} value={it.description} onChange={(e) => setItem(i, 'description', e.target.value)} />
                     {it.note && <p className="text-xs text-muted-foreground">{it.note}</p>}
                     <div className="grid grid-cols-[3.5rem_1fr_1fr] gap-2">
@@ -71,6 +76,11 @@ export function ItemsEditor({ items, setItems, catalog, label, extraTotal = 0, w
                     </div>
                 </div>
             ))}
+            {withProductId && (
+                <datalist id={productIdsList}>
+                    {productIdSuggestions(catalog).map((code) => <option key={code} value={code} />)}
+                </datalist>
+            )}
             <div className="flex items-center justify-between">
                 <Button type="button" variant="outlined" size="sm" onClick={() => setItems((l) => [...l, emptyItem()])}><Plus className="mr-1 h-4 w-4" />{t('imp.addItem')}</Button>
                 <span className="text-sm font-semibold tabular-nums">{t('Total')}: € {money(total)}</span>

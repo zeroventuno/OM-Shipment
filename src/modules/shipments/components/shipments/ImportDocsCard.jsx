@@ -263,7 +263,7 @@ export function ImportDocsCard({ shipmentId, customerName, country, parcels }) {
                             </label>
                         </div>
 
-                        <ItemsEditor items={items} setItems={setItems} catalog={catalog} />
+                        <ItemsEditor items={items} setItems={setItems} catalog={catalog} withProductId />
 
                         <div className="space-y-2">
                             <span className={eyebrow}>{t('imp.packing')}</span>

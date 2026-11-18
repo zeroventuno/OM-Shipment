@@ -2,6 +2,14 @@
 
 export const emptyItem = () => ({ qty: '1', description: '', hs_code: '', origin: 'Italy', unit_value: '', code: '', catalog_id: '' });
 
+/** Códigos genéricos do Mexal para artigos fora da UE. */
+export const GENERIC_PRODUCT_IDS = ['L8BIKE', 'L8FRAME', 'L8WHEEL', 'L8GROUP', 'L8PARTS'];
+
+/** Sugestões do campo ID do produto: genéricos e códigos ligados ao catálogo. */
+export const productIdSuggestions = (catalog = []) => [
+    ...new Set([...GENERIC_PRODUCT_IDS, ...catalog.flatMap((c) => c.erp_codes || [])]),
+];
+
 const num = (v) => Number(String(v ?? '').trim().replace(',', '.'));
 
 /** Artigos preenchidos, com números. */
