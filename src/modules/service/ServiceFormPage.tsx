@@ -126,8 +126,8 @@ export default function ServiceFormPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-primary text-primary-foreground">
-        <div className="max-w-3xl mx-auto px-4 md:px-8 py-5 flex items-center justify-between gap-4">
-          <div className="flex flex-col gap-2">
+        <div className="max-w-3xl mx-auto px-4 md:px-8 py-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+          <div className="flex flex-col gap-2 shrink-0">
             <img src="/logo.png" alt="Officine Mattio" className="h-6 w-auto invert self-start" />
             <span className="tricolor h-0.5 w-12" aria-hidden="true" />
           </div>

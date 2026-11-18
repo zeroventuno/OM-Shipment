@@ -1,10 +1,10 @@
 /*
  * Textos do pedido de garantia/assistência.
- * publicText: formulário dos clientes finais, em quatro idiomas e independente
+ * publicText: formulário dos clientes finais, em cinco idiomas e independente
  * do idioma do sistema. serviceResources: fila interna (italiano e português).
  */
 
-export const PUBLIC_LANGUAGES = ["it", "en", "es", "pt"] as const;
+export const PUBLIC_LANGUAGES = ["it", "fr", "en", "es", "pt"] as const;
 export type PublicLanguage = (typeof PUBLIC_LANGUAGES)[number];
 
 export const publicText: Record<PublicLanguage, Record<string, string>> = {
@@ -33,6 +33,32 @@ export const publicText: Record<PublicLanguage, Record<string, string>> = {
     "err.email": "Indica un'e-mail valida.", "err.privacy": "Conferma l'informativa per continuare.",
     "err.fileType": "Formato non accettato: {{name}}", "err.fileSize": "File oltre 10 MB: {{name}}", "err.fileCount": "Hai raggiunto il numero massimo di file.",
     "err.busy": "Troppe richieste in questo momento. Riprova più tardi.", "err.send": "Invio non riuscito. Controlla la connessione e riprova.",
+  },
+  fr: {
+    title: "Demande de garantie ou d'assistance",
+    intro: "Expliquez-nous ce qui s'est passé. Nous examinerons votre demande et vous répondrons par e-mail.",
+    kindLabel: "De quel produit s'agit-il ?",
+    warrantyTitle: "Produit Officine Mattio",
+    warrantyHint: "Garantie d'un vélo ou d'un cadre Officine Mattio",
+    assistanceTitle: "Autre marque",
+    assistanceHint: "Assistance pour groupes, roues et composants (Shimano, SRAM…)",
+    product: "Produit", bikeModel: "Modèle du vélo ou du cadre", component: "Composant",
+    componentPh: "Ex. : groupe, dérailleur, roue", brand: "Marque", size: "Taille", serial: "Numéro de série",
+    serialHint: "Sur le cadre ou le composant. Si vous ne le trouvez pas, joignez une photo.", shop: "Acheté chez",
+    purchaseDate: "Date d'achat", problem: "Description du problème", problemPh: "Ce qui se passe, depuis quand et dans quelles conditions",
+    files: "Photos et documents", photos: "Photos du problème", receipt: "Preuve d'achat", addFiles: "Ajouter des fichiers",
+    photosHint: "Jusqu'à 8 images, 10 Mo maximum chacune.", receiptHint: "Jusqu'à 2 fichiers, image ou PDF, 10 Mo maximum chacun.",
+    removeFile: "Retirer", contact: "Vos coordonnées", name: "Nom et prénom", email: "E-mail", phone: "Téléphone", country: "Pays",
+    privacy: "J'ai bien noté qu'Officine Mattio utilisera ces données et ces fichiers pour traiter ma demande.", send: "Envoyer la demande",
+    sending: "Envoi en cours…", doneTitle: "Demande reçue. Merci !", doneCode: "Votre référence est {{code}}.",
+    doneText: "Conservez-la : nous vous contacterons par e-mail après avoir examiné votre demande.", another: "Envoyer une autre demande",
+    invalidLink: "Ce lien n'est pas valide ou a été désactivé.", invalidHint: "Demandez un nouveau lien à Officine Mattio.",
+    optional: "facultatif", language: "Langue",
+    "err.kind": "Choisissez le type de produit.", "err.brand": "Indiquez la marque.", "err.product": "Indiquez le produit.",
+    "err.serial": "Indiquez le numéro de série.", "err.problem": "Décrivez le problème.", "err.name": "Indiquez votre nom.",
+    "err.email": "Indiquez un e-mail valide.", "err.privacy": "Confirmez la mention pour continuer.",
+    "err.fileType": "Format non accepté : {{name}}", "err.fileSize": "Fichier de plus de 10 Mo : {{name}}", "err.fileCount": "Vous avez atteint le nombre maximum de fichiers.",
+    "err.busy": "Trop de demandes en ce moment. Réessayez plus tard.", "err.send": "Échec de l'envoi. Vérifiez votre connexion et réessayez.",
   },
   en: {
     title: "Warranty or service request",

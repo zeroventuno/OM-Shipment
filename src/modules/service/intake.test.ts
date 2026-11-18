@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { PUBLIC_LANGUAGES, publicText } from "./i18n";
 import { emptyDraft, fileMime, requestNotes, ticketPrefill, validateDraft, warrantyPrefill, type ServiceDraft } from "./intake";
+
+describe("textos do formulário público", () => {
+  it("todos os idiomas têm as mesmas chaves", () => {
+    const keys = Object.keys(publicText.it).sort();
+    for (const lang of PUBLIC_LANGUAGES) expect(Object.keys(publicText[lang]).sort()).toEqual(keys);
+  });
+});
 
 const warranty: ServiceDraft = {
   ...emptyDraft, kind: "warranty", product: "L8", serial_number: "S1", problem: "Crepa",
