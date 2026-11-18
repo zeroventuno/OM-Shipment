@@ -29,6 +29,14 @@ const it = {
   "dup.back": "Torna ai clienti",
   "dup.contact": "Contatto",
   "dup.address": "Indirizzo",
+  "dup.select": "Seleziona {{name}}",
+  "dup.selected_one": "{{count}} selezionato",
+  "dup.selected_other": "{{count}} selezionati",
+  "dup.clear": "Deseleziona tutti",
+  "dup.remove": "Togli {{name}}",
+  "dup.pickTwo": "Seleziona almeno due clienti",
+  "dup.mergeTitle": "Unisci clienti",
+  "dup.mergeIntro": "Scegli quale scheda resta. Riceve i campi vuoti e gli indirizzi delle altre; i loro nomi restano come alias e lo storico continua a comparire. Le altre schede vengono rimosse e l'operazione non si può annullare.",
 };
 
 const pt: typeof it = {
@@ -60,6 +68,14 @@ const pt: typeof it = {
   "dup.back": "Voltar aos clientes",
   "dup.contact": "Contato",
   "dup.address": "Endereço",
+  "dup.select": "Selecionar {{name}}",
+  "dup.selected_one": "{{count}} selecionado",
+  "dup.selected_other": "{{count}} selecionados",
+  "dup.clear": "Limpar seleção",
+  "dup.remove": "Tirar {{name}}",
+  "dup.pickTwo": "Selecione pelo menos dois clientes",
+  "dup.mergeTitle": "Unir clientes",
+  "dup.mergeIntro": "Escolha qual cadastro fica. Ele recebe os campos vazios e os endereços dos outros; os nomes deles ficam como apelidos e o histórico continua aparecendo. Os outros cadastros são removidos e isso não pode ser desfeito.",
 };
 
 export const duplicatesResources = { it, pt };

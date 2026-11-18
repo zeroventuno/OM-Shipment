@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { Copy, Download, Loader2, Plus, Upload } from "lucide-react";
+import { Copy, Download, GitMerge, Loader2, Plus, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useDateLocale } from "@/i18n/dateLocale";
@@ -15,6 +15,7 @@ import { listCustomers, listAllAddresses, listDismissals, buildCustomersCsv, dow
 import { findDuplicateGroups } from "./duplicates.js";
 import { key as nameKey } from "./importer.js";
 import ImportDialog from "./ImportDialog";
+import MergeDialog from "./MergeDialog";
 
 type Activity = "all" | "shipments" | "service" | "none" | "noAddress";
 type Sort = "name" | "last" | "count" | "cost";
@@ -35,6 +36,14 @@ export default function CustomersPage() {
   const [shown, setShown] = useState(PAGE);
   const [importOpen, setImportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  // a seleção sobrevive à busca: dá para achar um cliente, marcar e buscar o outro
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const toggleSelected = (id: string) => setSelectedIds((cur) => {
+    const next = new Set(cur);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
 
   const q = params.get("q") ?? "";
   const country = params.get("country") ?? "";
@@ -52,6 +61,7 @@ export default function CustomersPage() {
   const { data: customers = [], isLoading, error } = useQuery({ queryKey: CUSTOMERS_KEY, queryFn: listCustomers });
   const { data: dismissed } = useQuery({ queryKey: DISMISSALS_KEY, queryFn: listDismissals });
   const duplicateGroups = useMemo(() => (dismissed && customers.length ? findDuplicateGroups(customers, dismissed).length : 0), [customers, dismissed]);
+  const selected = useMemo(() => customers.filter((c) => selectedIds.has(c.id)), [customers, selectedIds]);
   const lang = i18n.language || "it";
   const countryName = (stored: string | null) => (stored ? countryLabel(stored, lang) : "");
 
@@ -205,6 +215,7 @@ export default function CustomersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
+                  <th className="w-11 pl-2"><span className="sr-only">{t("dup.mergeTitle")}</span></th>
                   {[t("Customer"), t("Contacts"), t("Shipments"), t("Latest shipment"), t("Assistance / warranties"), t("Addresses")].map((h, i) => (
                     <th key={h} className={cn("px-4 py-3 eyebrow font-semibold", i >= 2 && "text-right")}>{h}</th>
                   ))}
@@ -212,7 +223,10 @@ export default function CustomersPage() {
               </thead>
               <tbody>
                 {filtered.slice(0, shown).map((c) => (
-                  <tr key={c.id} onClick={() => navigate(`/customers/${c.id}`)} className="border-b border-muted last:border-0 hover:bg-secondary/60 cursor-pointer">
+                  <tr key={c.id} onClick={() => navigate(`/customers/${c.id}`)} className={cn("border-b border-muted last:border-0 hover:bg-secondary/60 cursor-pointer", selectedIds.has(c.id) && "bg-secondary/60")}>
+                    <td className="w-11 pl-2" onClick={(e) => e.stopPropagation()}>
+                      <SelectBox checked={selectedIds.has(c.id)} label={t("dup.select", { name: c.name })} onChange={() => toggleSelected(c.id)} />
+                    </td>
                     <td className="px-4 py-3 max-w-[22rem]">
                       <Link to={`/customers/${c.id}`} onClick={(e) => e.stopPropagation()} className="font-semibold hover:underline underline-offset-4 break-words">{c.name}</Link>
                       <p className="text-muted-foreground truncate">{[c.city, countryName(c.country)].filter(Boolean).join(" · ") || "—"}</p>
@@ -239,7 +253,8 @@ export default function CustomersPage() {
           {/* celular: cartões */}
           <div className="md:hidden flex flex-col gap-3">
             {filtered.slice(0, shown).map((c) => (
-              <Link key={c.id} to={`/customers/${c.id}`} className="bg-card border border-border rounded-lg p-4 flex flex-col gap-1.5 active:bg-secondary">
+              <div key={c.id} className="relative">
+              <Link to={`/customers/${c.id}`} className={cn("bg-card border rounded-lg p-4 pr-14 flex flex-col gap-1.5 active:bg-secondary", selectedIds.has(c.id) ? "border-foreground" : "border-border")}>
                 <p className="font-semibold text-[17px] tracking-tight break-words">{c.name}</p>
                 <p className="text-sm text-muted-foreground">{[c.city, countryName(c.country)].filter(Boolean).join(" · ") || "—"}</p>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground tabular-nums">
@@ -248,6 +263,10 @@ export default function CustomersPage() {
                   <span>{t("Addresses")}: <strong className={c.addresses ? "text-foreground" : "text-destructive"}>{c.addresses}</strong></span>
                 </div>
               </Link>
+              <div className="absolute right-1 top-1">
+                <SelectBox checked={selectedIds.has(c.id)} label={t("dup.select", { name: c.name })} onChange={() => toggleSelected(c.id)} />
+              </div>
+              </div>
             ))}
           </div>
 
@@ -259,7 +278,45 @@ export default function CustomersPage() {
         </>
       )}
 
+      {selected.length > 0 && (
+        <div className="sticky bottom-20 md:bottom-4 z-20 bg-card border border-foreground rounded-lg shadow-lg p-3 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
+            <span className="text-sm font-semibold tabular-nums">{t("dup.selected", { count: selected.length })}</span>
+            {selected.map((c) => (
+              <span key={c.id} className="inline-flex items-center gap-1 rounded-full bg-secondary pl-3 pr-1 py-0.5 text-[13px] max-w-full">
+                <span className="truncate">{c.name}</span>
+                <button type="button" aria-label={t("dup.remove", { name: c.name })} onClick={() => toggleSelected(c.id)} className="p-1 text-muted-foreground hover:text-foreground">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button variant="outline" onClick={() => setSelectedIds(new Set())}>{t("dup.clear")}</Button>
+            <Button disabled={selected.length < 2} title={selected.length < 2 ? t("dup.pickTwo") : undefined} onClick={() => setMergeOpen(true)}>
+              <GitMerge /> {t("dup.merge", { n: selected.length })}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {mergeOpen && selected.length >= 2 && (
+        <MergeDialog
+          customers={selected}
+          onClose={() => setMergeOpen(false)}
+          onMerged={() => { setMergeOpen(false); setSelectedIds(new Set()); }}
+        />
+      )}
+
       <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} customers={customers} />
     </div>
+  );
+}
+
+function SelectBox({ checked, label, onChange }: { checked: boolean; label: string; onChange: () => void }) {
+  return (
+    <label className="flex h-11 w-11 items-center justify-center cursor-pointer">
+      <input type="checkbox" className="h-4 w-4 accent-primary cursor-pointer" aria-label={label} checked={checked} onChange={onChange} />
+    </label>
   );
 }
