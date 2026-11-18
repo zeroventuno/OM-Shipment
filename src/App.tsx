@@ -24,6 +24,9 @@ const DuplicatesPage = lazy(() => import('@/modules/customers/DuplicatesPage'))
 const ReportPage = lazy(() => import('@/modules/report/ReportPage'))
 // Formulário público de pedido de envio: fora do login (link com token).
 const RequestFormPage = lazy(() => import('@/modules/requests/RequestFormPage'))
+// Formulário público de garantia/assistência, para clientes finais.
+const ServiceFormPage = lazy(() => import('@/modules/service/ServiceFormPage'))
+const ServiceRequestsPage = lazy(() => import('@/modules/service/ServiceRequestsPage'))
 
 function PageFallback() {
     return (
@@ -42,6 +45,7 @@ export default function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pedido/:token" element={page(<RequestFormPage />)} />
             <Route path="/spedizione/:token" element={page(<RequestFormPage />)} />
+            <Route path="/assistenza/:token" element={page(<ServiceFormPage />)} />
             <Route path="/report" element={<ProtectedRoute>{page(<ReportPage />)}</ProtectedRoute>} />
 
             <Route
@@ -65,6 +69,8 @@ export default function App() {
                 <Route path="assistance/:id" element={page(<TicketDetailPage />)} />
                 <Route path="warranties" element={page(<WarrantiesPage />)} />
                 <Route path="warranties/:id" element={page(<WarrantyDetailPage />)} />
+
+                <Route path="service-requests" element={page(<ServiceRequestsPage />)} />
 
                 <Route path="customers" element={page(<CustomersPage />)} />
                 <Route path="customers/duplicates" element={page(<DuplicatesPage />)} />

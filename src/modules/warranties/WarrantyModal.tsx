@@ -15,6 +15,7 @@ interface WarrantyModalProps {
     onClose: () => void;
     warranty: Warranty | null;
     onSubmit: (data: InsertWarranty) => void;
+    prefill?: Partial<InsertWarranty>;
     isLoading?: boolean;
 }
 
@@ -23,6 +24,7 @@ export default function WarrantyModal({
     onClose,
     warranty,
     onSubmit,
+    prefill,
     isLoading,
 }: WarrantyModalProps) {
     const { t } = useTranslation();
@@ -44,6 +46,7 @@ export default function WarrantyModal({
                         onSubmit={onSubmit}
                         onCancel={onClose}
                         defaultValues={warranty || undefined}
+                        prefill={prefill}
                         isLoading={isLoading}
                     />
                 </ScrollArea>

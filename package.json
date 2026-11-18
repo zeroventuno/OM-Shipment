@@ -14,6 +14,7 @@
     "migrate:assist": "node --env-file=.env scripts/migrate-assist-data.mjs",
     "partner-key": "node --env-file=.env scripts/create-partner-key.mjs",
     "request-link": "node --env-file=.env scripts/request-link.mjs",
+    "service-link": "node --env-file=.env scripts/service-link.mjs",
     "import-customers": "node --env-file=.env scripts/import-customers.mjs"
   },
   "dependencies": {

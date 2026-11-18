@@ -1,12 +1,13 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { LogOut, X, Truck, Wrench, ShieldCheck, Users, Contact, FileBarChart, type LucideIcon } from 'lucide-react';
+import { LogOut, X, Truck, Wrench, ShieldCheck, Inbox, Users, Contact, FileBarChart, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { ticketsQuery, ticketAge } from '@/modules/assistance/api';
 import { warrantiesQuery, warrantyAge } from '@/modules/warranties/api';
 import { listRequests, REQUESTS_QUERY_KEY } from '@/modules/requests/api';
+import { listServiceRequests, SERVICE_REQUESTS_QUERY_KEY } from '@/modules/service/api';
 
 export interface Area {
     icon: LucideIcon;
@@ -31,6 +32,7 @@ export const AREAS: Area[] = [
     },
     { icon: Wrench, label: 'nav.assistance', to: '/assistance' },
     { icon: ShieldCheck, label: 'nav.warranties', to: '/warranties' },
+    { icon: Inbox, label: 'nav.serviceRequests', to: '/service-requests' },
     { icon: Users, label: 'nav.customers', to: '/customers' },
     { icon: Contact, label: 'nav.contacts', to: '/contacts' },
 ];
@@ -43,10 +45,12 @@ export function useStaleCounts() {
     // Pedidos de envio aguardando: atualiza a cada 2 minutos.
     const requests = useQuery({ queryKey: REQUESTS_QUERY_KEY, queryFn: listRequests, enabled: !!session, refetchInterval: 120_000 });
     const pendingRequests = (requests.data ?? []).filter((r) => r.status === 'pending').length;
+    const service = useQuery({ queryKey: SERVICE_REQUESTS_QUERY_KEY, queryFn: listServiceRequests, enabled: !!session, refetchInterval: 120_000 });
     return {
         '/assistance': (tickets.data ?? []).filter((t) => ticketAge(t).stale).length,
         '/warranties': (warranties.data ?? []).filter((w) => warrantyAge(w).stale).length,
         '/shipments': pendingRequests,
+        '/service-requests': (service.data ?? []).filter((r) => r.status === 'new').length,
         requests: pendingRequests,
     } as Record<string, number>;
 }
@@ -116,9 +120,9 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
                                         <span
                                             className={cn(
                                                 'min-w-6 h-5 px-2 rounded-full text-[11px] font-bold flex items-center justify-center',
-                                                area.to === '/shipments' ? (inArea ? 'bg-primary text-primary-foreground' : 'bg-white text-primary') : 'bg-destructive text-destructive-foreground'
+                                                area.to === '/shipments' || area.to === '/service-requests' ? (inArea ? 'bg-primary text-primary-foreground' : 'bg-white text-primary') : 'bg-destructive text-destructive-foreground'
                                             )}
-                                            title={area.to === '/shipments' ? t('{{count}} shipment requests waiting', { count }) : t('{{count}} stalled for more than 30 days', { count })}
+                                            title={area.to === '/shipments' ? t('{{count}} shipment requests waiting', { count }) : area.to === '/service-requests' ? t('svc.waiting', { count }) : t('{{count}} stalled for more than 30 days', { count })}
                                         >
                                             {count}
                                         </span>

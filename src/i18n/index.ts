@@ -5,6 +5,7 @@ import { appResources } from './app';
 import { reportResources } from '@/modules/report/i18n';
 import { contactsResources } from '@/modules/contacts/i18n';
 import { duplicatesResources } from '@/modules/customers/duplicates.i18n';
+import { serviceResources } from '@/modules/service/i18n';
 
 const STORAGE_KEY = 'om-language';
 const SUPPORTED = ['it', 'pt'] as const;
@@ -23,8 +24,8 @@ i18n
     .use(initReactI18next)
     .init({
         resources: {
-            pt: { translation: { ...shipmentResources.pt.translation, ...appResources.pt, ...reportResources.pt, ...contactsResources.pt, ...duplicatesResources.pt } },
-            it: { translation: { ...shipmentResources.it.translation, ...appResources.it, ...reportResources.it, ...contactsResources.it, ...duplicatesResources.it } },
+            pt: { translation: { ...shipmentResources.pt.translation, ...appResources.pt, ...reportResources.pt, ...contactsResources.pt, ...duplicatesResources.pt, ...serviceResources.pt } },
+            it: { translation: { ...shipmentResources.it.translation, ...appResources.it, ...reportResources.it, ...contactsResources.it, ...duplicatesResources.it, ...serviceResources.it } },
         },
         lng: savedLanguage(),
         fallbackLng: 'it',

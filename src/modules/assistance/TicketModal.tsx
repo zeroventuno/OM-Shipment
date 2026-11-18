@@ -13,10 +13,11 @@ interface TicketModalProps {
   onClose: () => void;
   ticket?: Ticket | null;
   onSubmit: (data: InsertTicket) => void;
+  prefill?: Partial<InsertTicket>;
   isLoading?: boolean;
 }
 
-export default function TicketModal({ open, onClose, ticket, onSubmit, isLoading }: TicketModalProps) {
+export default function TicketModal({ open, onClose, ticket, onSubmit, prefill, isLoading }: TicketModalProps) {
   const { t } = useTranslation();
   const defaultValues = ticket
     ? {
@@ -46,6 +47,7 @@ export default function TicketModal({ open, onClose, ticket, onSubmit, isLoading
           onSubmit={onSubmit}
           onCancel={onClose}
           defaultValues={defaultValues}
+          prefill={prefill}
           isLoading={isLoading}
         />
       </DialogContent>

@@ -27,7 +27,7 @@ function BottomNav() {
     return (
         <nav
             aria-label={t('Main menu')}
-            className="lg:hidden fixed bottom-0 inset-x-0 z-20 grid grid-cols-5 bg-card border-t border-border pb-[env(safe-area-inset-bottom)]"
+            className="lg:hidden fixed bottom-0 inset-x-0 z-20 grid grid-cols-6 bg-card border-t border-border pb-[env(safe-area-inset-bottom)]"
         >
             {AREAS.map((area) => {
                 const active = pathname.startsWith(area.to);

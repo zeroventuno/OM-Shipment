@@ -27,10 +27,12 @@ interface TicketFormProps {
   onSubmit: (data: InsertTicket) => void;
   onCancel?: () => void;
   defaultValues?: Partial<InsertTicket>;
+  /** Dados iniciais de um processo novo (ex.: pedido de cliente). */
+  prefill?: Partial<InsertTicket>;
   isLoading?: boolean;
 }
 
-export default function TicketForm({ onSubmit, onCancel, defaultValues, isLoading }: TicketFormProps) {
+export default function TicketForm({ onSubmit, onCancel, defaultValues, prefill, isLoading }: TicketFormProps) {
   const { t } = useTranslation();
   const form = useForm<InsertTicket>({
     resolver: zodResolver(insertTicketSchema),
@@ -48,6 +50,7 @@ export default function TicketForm({ onSubmit, onCancel, defaultValues, isLoadin
       trackingNumber: "",
       shippingCompany: "",
       completionDate: "",
+      ...prefill,
     },
   });
 

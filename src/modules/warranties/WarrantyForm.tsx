@@ -33,6 +33,8 @@ interface WarrantyFormProps {
     onSubmit: (data: InsertWarranty) => void;
     onCancel?: () => void;
     defaultValues?: Partial<Warranty>;
+    /** Dados iniciais de um processo novo (ex.: pedido de cliente). */
+    prefill?: Partial<InsertWarranty>;
     isLoading?: boolean;
 }
 
@@ -84,7 +86,7 @@ function toFormValues(w: Partial<Warranty>): InsertWarranty {
     };
 }
 
-export default function WarrantyForm({ onSubmit, onCancel, defaultValues, isLoading }: WarrantyFormProps) {
+export default function WarrantyForm({ onSubmit, onCancel, defaultValues, prefill, isLoading }: WarrantyFormProps) {
     const { t } = useTranslation();
     const form = useForm<InsertWarranty>({
         resolver: zodResolver(insertWarrantySchema),
@@ -109,6 +111,7 @@ export default function WarrantyForm({ onSubmit, onCancel, defaultValues, isLoad
             value: "",
             invoice: "",
             images: [],
+            ...prefill,
         },
     });
 

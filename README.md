@@ -142,6 +142,12 @@ preenchido; salvar o envio marca o pedido como enviado e a equipe vê o rastreio
   (também cria o cadastro de clientes, começando com os nomes dos envios)
 - Links: `npm run request-link -- create "<nome>"` · `list` · `disable <id>`
 
+### Pedidos públicos de garantia e assistência
+
+- Formulário para clientes finais em `/assistenza/<token>`; a equipe confere em `/service-requests`
+- Migration: `supabase/migrations/20261118100000_service_requests.sql`
+- Links: `npm run service-link -- create "<nome>"` · `list` · `disable <id>`
+
 ### Importar clientes dos portais
 
 ```bash
