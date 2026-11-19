@@ -9,6 +9,7 @@ export const PICKUP_LANGUAGE_KEYS = PUBLIC_LANGUAGES;
 
 export const pickupText: Record<PublicLanguage, Record<string, string>> = {
   it: {
+    destination: "Destinazione", destinationHint: "Il corriere consegna a Officine Mattio: non serve indicare altro.", italy: "Italia",
     title: "Richiesta di ritiro",
     intro: "Organizziamo noi il ritiro presso il tuo negozio. Compila il modulo: controlliamo la richiesta e ti contattiamo per confermare data e corriere.",
     reasonLabel: "Motivo del ritiro",
@@ -38,6 +39,7 @@ export const pickupText: Record<PublicLanguage, Record<string, string>> = {
     "err.busy": "Troppe richieste in questo momento. Riprova più tardi.", "err.send": "Invio non riuscito. Controlla la connessione e riprova.",
   },
   fr: {
+    destination: "Destination", destinationHint: "Le transporteur livre chez Officine Mattio : rien d’autre à indiquer.", italy: "Italie",
     title: "Demande d'enlèvement",
     intro: "Nous organisons l'enlèvement dans votre magasin. Remplissez le formulaire : nous vérifions la demande et vous contactons pour confirmer la date et le transporteur.",
     reasonLabel: "Motif de l'enlèvement",
@@ -67,6 +69,7 @@ export const pickupText: Record<PublicLanguage, Record<string, string>> = {
     "err.busy": "Trop de demandes en ce moment. Réessayez plus tard.", "err.send": "Échec de l'envoi. Vérifiez votre connexion et réessayez.",
   },
   en: {
+    destination: "Destination", destinationHint: "The carrier delivers to Officine Mattio: nothing else to fill in.", italy: "Italy",
     title: "Pickup request",
     intro: "We arrange the pickup at your shop. Fill in the form: we will review the request and contact you to confirm the date and carrier.",
     reasonLabel: "Reason for the pickup",
@@ -96,6 +99,7 @@ export const pickupText: Record<PublicLanguage, Record<string, string>> = {
     "err.busy": "Too many requests right now. Please try again later.", "err.send": "Could not send. Check your connection and try again.",
   },
   es: {
+    destination: "Destino", destinationHint: "El transportista entrega en Officine Mattio: no hace falta indicar nada más.", italy: "Italia",
     title: "Solicitud de recogida",
     intro: "Organizamos nosotros la recogida en tu tienda. Rellena el formulario: revisamos la solicitud y te contactamos para confirmar la fecha y el transportista.",
     reasonLabel: "Motivo de la recogida",
@@ -125,6 +129,7 @@ export const pickupText: Record<PublicLanguage, Record<string, string>> = {
     "err.busy": "Demasiadas solicitudes en este momento. Inténtalo más tarde.", "err.send": "No se pudo enviar. Revisa la conexión e inténtalo de nuevo.",
   },
   pt: {
+    destination: "Destino", destinationHint: "A transportadora entrega na Officine Mattio: não precisa informar mais nada.", italy: "Itália",
     title: "Pedido de retirada",
     intro: "Nós organizamos a retirada na sua loja. Preencha o formulário: conferimos o pedido e entramos em contato para confirmar a data e a transportadora.",
     reasonLabel: "Motivo da retirada",

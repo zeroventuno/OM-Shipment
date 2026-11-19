@@ -162,6 +162,16 @@ export default function PickupFormPage() {
               </div>
             </Section>
 
+            {/* Destino fixo: a retirada sempre vem para a Officine Mattio. */}
+            <Section title={tx("destination")}>
+              <div className="flex flex-col gap-0.5 rounded-md bg-secondary p-4 text-sm">
+                <p className="font-semibold">Officine Mattio Srl</p>
+                <p>Via Renzo Gandolfo 6/A, Fraz. Madonna dell’Olmo</p>
+                <p>12100 Cuneo (CN) · {tx("italy")}</p>
+              </div>
+              <p className="text-sm text-muted-foreground">{tx("destinationHint")}</p>
+            </Section>
+
             <Section title={tx("when")}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label={tx("readyFrom")}><Input type="date" min={minReadyDate()} value={draft.ready_from} onChange={(e) => set("ready_from", e.target.value)} /></Field>

@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { LogOut, X, Truck, Wrench, ShieldCheck, Inbox, Users, Contact, FileBarChart, Nfc, type LucideIcon } from 'lucide-react';
+import { LogOut, X, Truck, Wrench, ShieldCheck, Inbox, Users, Contact, FileBarChart, Nfc, Link2, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,6 +9,8 @@ import { warrantiesQuery, warrantyAge } from '@/modules/warranties/api';
 import { listRequests, REQUESTS_QUERY_KEY } from '@/modules/requests/api';
 import { listServiceRequests, SERVICE_REQUESTS_QUERY_KEY } from '@/modules/service/api';
 import { listPickupRequests, PICKUP_REQUESTS_QUERY_KEY } from '@/modules/pickups/api';
+import { useState } from 'react';
+import { LinksDialog } from './LinksDialog';
 
 export interface Area {
     icon: LucideIcon;
@@ -74,6 +76,7 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
     const { user, signOut } = useAuth();
     const { pathname } = useLocation();
     const stale = useStaleCounts();
+    const [linksOpen, setLinksOpen] = useState(false);
 
     const handleSignOut = async () => {
         if (window.confirm(t('Sign out of the system?'))) {
@@ -167,6 +170,15 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
                 </nav>
 
                 <div className="p-4 space-y-4">
+                    {/* Links dos formulários para copiar e mandar */}
+                    <button
+                        type="button"
+                        onClick={() => setLinksOpen(true)}
+                        className="w-full flex items-center justify-center gap-2 h-10 rounded-full border border-white/25 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/80 hover:text-white hover:border-white"
+                    >
+                        <Link2 className="h-4 w-4" />
+                        {t('links.menu')}
+                    </button>
                     <NavLink
                         to="/report"
                         onClick={onClose}
@@ -210,6 +222,7 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
                     </div>
                 </div>
             </aside>
+            <LinksDialog open={linksOpen} onClose={() => setLinksOpen(false)} />
         </>
     );
 }
