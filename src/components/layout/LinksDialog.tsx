@@ -96,7 +96,8 @@ export function LinksDialog({ open, onClose }: { open: boolean; onClose: () => v
 
     return (
         <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-            <DialogContent className="max-w-lg">
+            {/* Coluna minmax(0,1fr): sem ela o link comprido alarga a grade e aparece uma rolagem lateral. */}
+            <DialogContent className="max-w-2xl grid-cols-[minmax(0,1fr)]">
                 <DialogHeader>
                     <DialogTitle>{t('links.title')}</DialogTitle>
                     <DialogDescription>{t('links.intro')}</DialogDescription>
