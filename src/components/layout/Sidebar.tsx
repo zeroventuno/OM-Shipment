@@ -8,12 +8,15 @@ import { ticketsQuery, ticketAge } from '@/modules/assistance/api';
 import { warrantiesQuery, warrantyAge } from '@/modules/warranties/api';
 import { listRequests, REQUESTS_QUERY_KEY } from '@/modules/requests/api';
 import { listServiceRequests, SERVICE_REQUESTS_QUERY_KEY } from '@/modules/service/api';
+import { listPickupRequests, PICKUP_REQUESTS_QUERY_KEY } from '@/modules/pickups/api';
 
 export interface Area {
     icon: LucideIcon;
     label: string;
     to: string;
     sub?: { label: string; to: string; end?: boolean; countKey?: string }[];
+    /** Fora da barra de baixo do celular (cabem 6): fica só no menu lateral. */
+    menuOnly?: boolean;
 }
 
 // As áreas do sistema. Envios tem subpáginas.
@@ -27,6 +30,7 @@ export const AREAS: Area[] = [
             { label: 'New Shipment', to: '/shipments/new' },
             { label: 'Reports', to: '/shipments/reports' },
             { label: 'Shipment requests', to: '/shipments/requests', countKey: 'requests' },
+            { label: 'pk.nav', to: '/shipments/pickups', countKey: 'pickups' },
             { label: 'imp.nav', to: '/shipments/import-docs' },
         ],
     },
@@ -35,7 +39,7 @@ export const AREAS: Area[] = [
     { icon: Inbox, label: 'nav.serviceRequests', to: '/service-requests' },
     { icon: Users, label: 'nav.customers', to: '/customers' },
     { icon: Contact, label: 'nav.contacts', to: '/contacts' },
-    { icon: Nfc, label: 'nav.nfc', to: '/nfc' },
+    { icon: Nfc, label: 'nav.nfc', to: '/nfc', menuOnly: true },
 ];
 
 /** Quantos processos estão parados há mais de 30 dias em cada área. */
@@ -47,12 +51,16 @@ export function useStaleCounts() {
     const requests = useQuery({ queryKey: REQUESTS_QUERY_KEY, queryFn: listRequests, enabled: !!session, refetchInterval: 120_000 });
     const pendingRequests = (requests.data ?? []).filter((r) => r.status === 'pending').length;
     const service = useQuery({ queryKey: SERVICE_REQUESTS_QUERY_KEY, queryFn: listServiceRequests, enabled: !!session, refetchInterval: 120_000 });
+    // Pedidos de retirada de parceiros externos aguardando a equipe.
+    const pickups = useQuery({ queryKey: PICKUP_REQUESTS_QUERY_KEY, queryFn: listPickupRequests, enabled: !!session, refetchInterval: 120_000 });
+    const pendingPickups = (pickups.data ?? []).filter((r) => r.status === 'new').length;
     return {
         '/assistance': (tickets.data ?? []).filter((t) => ticketAge(t).stale).length,
         '/warranties': (warranties.data ?? []).filter((w) => warrantyAge(w).stale).length,
-        '/shipments': pendingRequests,
+        '/shipments': pendingRequests + pendingPickups,
         '/service-requests': (service.data ?? []).filter((r) => r.status === 'new').length,
         requests: pendingRequests,
+        pickups: pendingPickups,
     } as Record<string, number>;
 }
 

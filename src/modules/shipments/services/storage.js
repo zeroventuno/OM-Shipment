@@ -44,6 +44,8 @@ const mapToDb = (s) => ({
     agent: s.agent?.trim() || null,
     // Pedido de envio de origem (o banco marca o pedido como enviado) e caixas
     request_id: s.requestId || null,
+    // Pedido de retirada de parceiro externo (o banco marca o pedido como atendido)
+    pickup_request_id: s.pickupRequestId || null,
     parcels: s.parcels || null
 });
 
@@ -72,6 +74,7 @@ const mapFromDb = (s) => ({
     serviceLevel: s.service_level || 'standard',
     agent: s.agent || '',
     requestId: s.request_id || null,
+    pickupRequestId: s.pickup_request_id || null,
     parcels: s.parcels || null
 });
 

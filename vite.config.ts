@@ -30,6 +30,8 @@ export default defineConfig({
       input: {
         main: path.resolve(import.meta.dirname, 'index.html'),
         assistenza: path.resolve(import.meta.dirname, 'assistenza.html'),
+        // ritiro.html: a mesma aplicação, com a prévia do pedido de retirada.
+        ritiro: path.resolve(import.meta.dirname, 'ritiro.html'),
         // tag.html: página leve do chip NFC (/t/<code>), sem a aplicação inteira.
         tag: path.resolve(import.meta.dirname, 'tag.html'),
       },

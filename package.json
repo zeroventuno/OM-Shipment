@@ -15,7 +15,8 @@
     "partner-key": "node --env-file=.env scripts/create-partner-key.mjs",
     "request-link": "node --env-file=.env scripts/request-link.mjs",
     "service-link": "node --env-file=.env scripts/service-link.mjs",
-    "import-customers": "node --env-file=.env scripts/import-customers.mjs"
+    "import-customers": "node --env-file=.env scripts/import-customers.mjs",
+    "pickup-link": "node --env-file=.env scripts/pickup-link.mjs"
   },
   "dependencies": {
     "@fontsource/aileron": "^5.2.5",

@@ -19,6 +19,7 @@ import { resolveStatus } from '../utils/shipmentStatus';
 import { listTickets } from '@/modules/assistance/api';
 import { listWarranties } from '@/modules/warranties/api';
 import { getRequest, boxSummary, totalWeight, formatAddress, formatMoney } from '@/modules/requests/api';
+import { getPickupRequest, pickupAddress } from '@/modules/pickups/api';
 
 // Pallet/caminhão e tarifas spot são cotados por e-mail: entram como "portal"
 // para poderem ser comparados com os outros.
@@ -33,6 +34,9 @@ export default function NewShipment() {
     const isEditing = !!id;
     const [searchParams] = useSearchParams();
     const requestParam = searchParams.get('request');
+    // Pedido de retirada de loja/parceiro externo (formulário /ritiro)
+    const pickupParam = searchParams.get('pickup');
+    const [pickupReq, setPickupReq] = useState(null);
     // Pedido de envio de origem (feito pela equipe no formulário aberto)
     const [request, setRequest] = useState(null);
 
@@ -59,6 +63,7 @@ export default function NewShipment() {
         serviceLevel: 'standard',
         agent: '',
         requestId: null,
+        pickupRequestId: null,
         parcels: null
     });
 
@@ -115,6 +120,7 @@ export default function NewShipment() {
                             serviceLevel: shipment.serviceLevel || 'standard',
                             agent: shipment.agent || '',
                             requestId: shipment.requestId,
+                            pickupRequestId: shipment.pickupRequestId,
                             parcels: shipment.parcels
                         });
                         setQuotes(shipment.allQuotes || []);
@@ -142,6 +148,23 @@ export default function NewShipment() {
                     }));
                 }
 
+                // Retirada pedida por loja/parceiro externo: país, volumes e motivo.
+                if (!id && pickupParam) {
+                    const pk = await getPickupRequest(pickupParam);
+                    setPickupReq(pk);
+                    setFormData((f) => ({
+                        ...f,
+                        pickupRequestId: pk.id,
+                        isPickup: true,
+                        customerName: pk.shop_name || f.customerName,
+                        destinationCountry: pk.country || f.destinationCountry,
+                        parcels: pk.boxes?.length ? pk.boxes : f.parcels,
+                        quantity: pk.boxes?.length || f.quantity,
+                        orderId: pk.reference || pk.code || f.orderId,
+                        orderType: pk.reason === 'warranty' ? 'Warranty' : f.orderType
+                    }));
+                }
+
                 // Assistências, garantias e agentes para o vínculo. Opcional: se
                 // falhar, o formulário continua funcionando como antes.
                 try {
@@ -159,7 +182,7 @@ export default function NewShipment() {
             }
         };
         loadData();
-    }, [id, requestParam]);
+    }, [id, requestParam, pickupParam]);
 
     // Smart suggestion logic
     useEffect(() => {
@@ -449,6 +472,21 @@ export default function NewShipment() {
                         </p>
                     )}
                     {request.notes && <p className="text-muted-foreground whitespace-pre-line">{request.notes}</p>}
+                </div>
+            )}
+
+            {pickupReq && (
+                <div className="bg-card border border-foreground rounded-lg p-4 flex flex-col gap-1.5 text-sm">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        {t('pk.fromRequest')} · {pickupReq.code} · {t(`pk.reason.${pickupReq.reason}`)}
+                    </span>
+                    <p className="font-semibold text-base">{pickupReq.shop_name}</p>
+                    <p>{pickupAddress({ ...pickupReq, country: countryLabel(pickupReq.country, i18n.language) })}</p>
+                    <p className="text-muted-foreground">{[pickupReq.contact_name, pickupReq.phone, pickupReq.email].join(' · ')}</p>
+                    <p>{t('pk.readyFrom')}: {pickupReq.ready_from.split('-').reverse().join('/')}{pickupReq.opening_hours ? ` · ${t('pk.hours')}: ${pickupReq.opening_hours}` : ''}</p>
+                    <p className="whitespace-pre-line">{pickupReq.description}</p>
+                    <p>{pickupReq.boxes.length ? `${pickupReq.boxes.map(boxSummary).join(' · ')} — ${t('Total')} ${totalWeight(pickupReq.boxes)} kg` : t('Packaging to be defined')}</p>
+                    {pickupReq.notes && <p className="text-muted-foreground whitespace-pre-line">{pickupReq.notes}</p>}
                 </div>
             )}
 

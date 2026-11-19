@@ -9,6 +9,10 @@
             "destination": "/assistenza.html"
         },
         {
+            "source": "/ritiro/:token",
+            "destination": "/ritiro.html"
+        },
+        {
             "source": "/((?!assets/|og-|favicon|logo|apple-touch-icon).*)",
             "destination": "/"
         }

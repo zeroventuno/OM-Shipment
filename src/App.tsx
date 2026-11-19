@@ -30,6 +30,9 @@ const ServiceRequestsPage = lazy(() => import('@/modules/service/ServiceRequests
 // Chips NFC (piloto): cartão do atleta, sem login, e painel da equipe.
 const NfcProfilePage = lazy(() => import('@/modules/nfc/NfcProfilePage'))
 const NfcAdminPage = lazy(() => import('@/modules/nfc/NfcAdminPage'))
+// Pedido de retirada para lojas e parceiros externos: só envia, sem login.
+const PickupFormPage = lazy(() => import('@/modules/pickups/PickupFormPage'))
+const PickupRequestsPage = lazy(() => import('@/modules/pickups/PickupRequestsPage'))
 
 function PageFallback() {
     return (
@@ -49,6 +52,7 @@ export default function App() {
             <Route path="/pedido/:token" element={page(<RequestFormPage />)} />
             <Route path="/spedizione/:token" element={page(<RequestFormPage />)} />
             <Route path="/assistenza/:token" element={page(<ServiceFormPage />)} />
+            <Route path="/ritiro/:token" element={page(<PickupFormPage />)} />
             {/* /t/<code> é a página leve tag.html (vercel.json); estas são as do atleta */}
             <Route path="/t/:code/registra" element={page(<NfcProfilePage key="claim" />)} />
             <Route path="/nfc/profilo" element={page(<NfcProfilePage key="edit" />)} />
@@ -69,6 +73,7 @@ export default function App() {
                 <Route path="shipments/reports" element={page(<Reports />)} />
                 <Route path="shipments/requests" element={page(<RequestsPage />)} />
                 <Route path="shipments/import-docs" element={page(<ImportDocs />)} />
+                <Route path="shipments/pickups" element={page(<PickupRequestsPage />)} />
                 <Route path="shipments/:id" element={page(<NewShipment />)} />
 
                 <Route path="assistance" element={page(<AssistancePage />)} />
