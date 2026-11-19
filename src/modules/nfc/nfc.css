@@ -42,7 +42,8 @@
   background-position: calc(-452px * var(--k)) calc(-12px * var(--k));
   filter: invert(1);
 }
-.nfc-bg .om-mark { --k: 1.9; position: absolute; top: 56px; right: -120px; opacity: .055; }
+/* Presa à coluna de 560px: no celular sai pela borda; no computador fica junto do cartão. */
+.nfc-bg .om-mark { --k: 1.9; position: absolute; top: 56px; right: max(-120px, calc(50% - 400px)); opacity: .055; }
 .om-mark-sm { --k: .14; opacity: .8; }
 
 .om-top, #app, .nfc-wrap { position: relative; z-index: 1; }
