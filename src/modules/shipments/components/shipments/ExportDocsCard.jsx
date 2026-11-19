@@ -12,7 +12,7 @@ import { buildExportPdf, downloadBytes, EUR1_THRESHOLD } from '../../services/ex
 import { itemsTotal, money } from '../../services/importDocs';
 import { originStatementFor, REX_NUMBER, REX_THRESHOLD } from '../../services/commercialInvoice';
 import { findCustomerByName, loadExportCatalog, saveCodeRelations } from '../../services/importDocsApi';
-import { codeBase, itemFromCatalog, matchCatalog, orderTypeFromHs, parseInvoiceText } from '../../services/invoiceParser';
+import { codeBase, itemFromCatalog, matchCatalogInfo, orderTypeFromHs, parseInvoiceText } from '../../services/invoiceParser';
 import { pdfLines } from '../../services/pdfText';
 
 const MAX_BYTES = 15 * 1024 * 1024;
@@ -121,21 +121,23 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, o
             if (r.date) setDate(r.date);
             if (!r.items.length) return setReadInfo('fail');
             let matched = 0;
+            let suggested = 0;
             const rows = r.items.map((it) => {
-                const c = matchCatalog(it.description, catalog, it.code);
-                const base = { ...emptyItem(), code: it.code, qty: String(it.qty).replace('.', ','), unit_value: it.unit_value.toFixed(2).replace('.', ',') };
-                if (!c) return { ...base, description: it.description, hs_code: it.hs_code };
-                matched += 1;
-                const fromCat = itemFromCatalog(c);
-                const note = it.hs_code && it.hs_code.replace(/\D/g, '').slice(0, 6) !== fromCat.hs_code.replace(/\D/g, '').slice(0, 6)
-                    ? t('exp.ci.hsInvoice', { hs: it.hs_code }) : '';
-                return { ...base, ...fromCat, note };
+                const m = matchCatalogInfo(it.description, catalog, it.code);
+                const base = {
+                    ...emptyItem(), code: it.code, qty: String(it.qty).replace('.', ','), unit_value: it.unit_value.toFixed(2).replace('.', ','),
+                    invoice_description: it.description, hs_invoice: it.hs_code,
+                };
+                if (!m) return { ...base, description: it.description, hs_code: it.hs_code };
+                if (m.sure) matched += 1; else suggested += 1;
+                // pelo nome é palpite: fica marcado até alguém confirmar o produto
+                return { ...base, ...itemFromCatalog(m.row, it.description), unconfirmed: !m.sure };
             });
             setItems(rows);
             setFreight(r.freight ? String(r.freight).replace('.', ',') : '');
             const total = r.items.reduce((s, it) => s + it.qty * it.unit_value, 0) + r.freight;
             if (!value) setValue(String(Math.round(total * 100) / 100).replace('.', ','));
-            setReadInfo({ items: r.items.length, matched });
+            setReadInfo({ items: r.items.length, matched, suggested });
             // dados do envio (ordem, tipo, cliente, país, frete pago) para o formulário principal
             onInvoiceRead?.({
                 orderRef: r.orderRef,
@@ -155,7 +157,9 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, o
     const ciTotal = itemsTotal(goods) + freightValue;
     const mismatch = commercial && amount > 0 && goods.length > 0 && Math.abs(ciTotal - amount) > 0.01;
     const ciReady = !commercial || (consignee.name.trim() && goods.length > 0);
-    const ready = invoice && number.trim() && date && ciReady;
+    // produto sugerido pelo nome e ainda não confirmado: não gera
+    const unconfirmed = commercial && items.some((it) => it.unconfirmed && it.description.trim());
+    const ready = invoice && number.trim() && date && ciReady && !unconfirmed;
     const rexMissing = commercial && statement && !REX_NUMBER;
 
     const generate = async () => {
@@ -229,7 +233,7 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, o
                     <input ref={fileRef} type="file" accept="application/pdf,.pdf" className="hidden" onChange={onFile} />
                     {readInfo && (
                         <p role="status" className={`mt-2 text-xs ${readInfo === 'fail' ? 'text-error' : 'text-muted-foreground'}`}>
-                            {readInfo === 'fail' ? t('exp.ci.readFail') : t('exp.ci.read', { n: readInfo.items, m: readInfo.matched })}
+                            {readInfo === 'fail' ? t('exp.ci.readFail') : t('exp.ci.read', { n: readInfo.items, m: readInfo.matched, s: readInfo.suggested })}
                         </p>
                     )}
                 </div>
@@ -318,7 +322,11 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, o
                 <Button type="button" className="w-full" disabled={!ready || busy} onClick={generate}>
                     <Download className="mr-2 h-4 w-4" />{busy ? t('Generating...') : t('exp.download')}
                 </Button>
-                {!ready && <p className="text-xs text-muted-foreground">{commercial && !ciReady ? t('exp.ci.missing') : t('exp.missing')}</p>}
+                {!ready && (
+                    <p className={`text-xs ${unconfirmed ? 'text-error' : 'text-muted-foreground'}`}>
+                        {unconfirmed ? t('exp.ci.unconfirmed') : commercial && !ciReady ? t('exp.ci.missing') : t('exp.missing')}
+                    </p>
+                )}
             </CardContent>
         </Card>
     );

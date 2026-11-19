@@ -37,6 +37,13 @@ describe('parseInvoiceText', () => {
         expect(total).toBeCloseTo(148.12);
     });
 
+    it('variante separada por espaço fica no código (FT 1362)', async () => {
+        const { codeBase } = await import('./invoiceParser');
+        const r = parseInvoiceText(['O330 C1 PARENTINI - JERSEY ML GOLD 2026 C1 VERDE PZ 1,00 61,48 61,48 N08,1']);
+        expect(r.items[0]).toMatchObject({ code: 'O330 C1', description: 'PARENTINI - JERSEY ML GOLD 2026 C1 VERDE', unit_value: 61.48 });
+        expect(codeBase('O330 C1')).toBe('O330');
+    });
+
     it('usa o valor líquido quando há desconto e milhares com ponto', () => {
         const r = parseInvoiceText(['X1 TELAIO OM ALPE PZ 2,00 1.500,00 10% 2.700,00 N08,1']);
         expect(r.items[0]).toMatchObject({ qty: 2, unit_value: 1350, list_price: 1500 });
@@ -92,6 +99,34 @@ describe('relação código da fatura ↔ produto da loja', () => {
         expect(matchCatalog('PARENTINI - OM AUTUMN LS JERSEY TEAM - L', shop, 'X999')?.id).toBe('jl');
         expect(matchCatalog('JERSEY TEAM OM.CC ACQUA', shop, 'X998')?.id).toBe('jc');
         expect(matchCatalog('BIB TEAM OMCC NERO', shop, '')?.id).toBe('bt');
+    });
+    it('ML é manga longa e nunca vira manga curta (FT 1362)', async () => {
+        const { matchCatalogInfo } = await import('./invoiceParser');
+        const longa = matchCatalogInfo('PARENTINI - JERSEY ML GOLD 2026 C1 VERDE', shop, 'O330 C1');
+        expect(longa).toEqual({ row: shop[0], sure: false });
+        const curta = matchCatalogInfo('PARENTINI - JERSEY MC GOLD 2026', shop, 'O312 C2');
+        expect(curta?.row.id).toBe('jc');
+        const semCurta = shop.filter((r) => r.id !== 'jc');
+        expect(matchCatalogInfo('JERSEY MANICA CORTA GOLD', semCurta, '')).toBeNull();
+    });
+    it('só o código já relacionado é certeza; pelo nome é sugestão', async () => {
+        const { matchCatalogInfo } = await import('./invoiceParser');
+        expect(matchCatalogInfo('qualquer', shop, 'C315C1-L')?.sure).toBe(true);
+        expect(matchCatalogInfo('BIB TEAM OMCC NERO', shop, '')?.sure).toBe(false);
+    });
+    it('usa o nome da fatura, sem o tamanho, para os documentos baterem', async () => {
+        const { itemFromCatalog } = await import('./invoiceParser');
+        expect(itemFromCatalog(shop[0], 'PARENTINI - JERSEY ML GOLD 2026 C1 VERDE - L').description)
+            .toBe('Knitted long-sleeve cycling jersey — "PARENTINI - JERSEY ML GOLD 2026 C1 VERDE"');
+    });
+    it('avisa HS diferente da fatura e vestuário sem gênero', async () => {
+        const { hsDiffers, missingGender } = await import('./invoiceParser');
+        expect(hsDiffers('62031200', '6110.30')).toBe(true);
+        expect(hsDiffers('611030', '6110.30')).toBe(false);
+        expect(hsDiffers('', '6110.30')).toBe(false);
+        expect(missingGender({ hs_code: '6110.30', description: 'Knitted cycling jersey' })).toBe(true);
+        expect(missingGender({ hs_code: '6110.30', description: "Men's knitted cycling jersey" })).toBe(false);
+        expect(missingGender({ hs_code: '8714.91', description: 'Carbon frame' })).toBe(false);
     });
     it('monta a linha com descrição, nome comercial e HS', async () => {
         const { itemFromCatalog } = await import('./invoiceParser');

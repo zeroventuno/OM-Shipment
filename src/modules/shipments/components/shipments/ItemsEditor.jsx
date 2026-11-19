@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { itemsTotal, money } from '../../services/importDocs';
-import { itemFromCatalog, matchCatalog } from '../../services/invoiceParser';
+import { hsDiffers, itemFromCatalog, matchCatalogInfo, missingGender } from '../../services/invoiceParser';
 import { emptyItem, cleanItems, productIdSuggestions } from '../../services/docItems';
 
 /**
@@ -23,17 +23,20 @@ export function ItemsEditor({ items, setItems, catalog, label, extraTotal = 0, w
         const row = { ...emptyItem(), ...itemFromCatalog(c) };
         setItems((l) => (l.length === 1 && !l[0].description ? [row] : [...l, row]));
     };
-    // escolher o produto da linha (e assim relacionar o código da fatura)
-    const pickProduct = (i, id) => {
+    // escolher o produto da linha (e assim relacionar o código da fatura);
+    // escolhido à mão, está confirmado
+    const pickProduct = (i, id, sure = true) => {
         const c = catalog.find((x) => x.id === id);
-        setItems((l) => l.map((x, j) => (j === i ? (c ? { ...x, ...itemFromCatalog(c) } : { ...x, catalog_id: '' }) : x)));
+        setItems((l) => l.map((x, j) => (j !== i ? x
+            : c ? { ...x, ...itemFromCatalog(c, x.invoice_description), unconfirmed: !sure }
+                : { ...x, catalog_id: '', unconfirmed: false })));
     };
-    // código digitado: se já estiver relacionado, preenche sozinho
+    // código digitado: se já estiver relacionado, preenche sozinho; pelo nome, só sugere
     const lookupCode = (i) => {
         const it = items[i];
         if (!it?.code?.trim() || it.catalog_id) return;
-        const c = matchCatalog(it.description, catalog, it.code);
-        if (c) pickProduct(i, c.id);
+        const m = matchCatalogInfo(it.description, catalog, it.code);
+        if (m) pickProduct(i, m.row.id, m.sure);
     };
     const products = catalog.filter((c) => c.section === 'shop');
     const total = itemsTotal(cleanItems(items)) + extraTotal;
@@ -63,6 +66,14 @@ export function ItemsEditor({ items, setItems, catalog, label, extraTotal = 0, w
                     )}
                     <textarea rows={2} className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm" placeholder={t('imp.description')} value={it.description} onChange={(e) => setItem(i, 'description', e.target.value)} />
                     {it.note && <p className="text-xs text-muted-foreground">{it.note}</p>}
+                    {it.unconfirmed && (
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-error/40 bg-error/5 px-2 py-1.5">
+                            <p className="text-xs text-error">{t('exp.ci.suggested', { name: it.invoice_description || it.code })}</p>
+                            <Button type="button" variant="outlined" size="sm" onClick={() => setItem(i, 'unconfirmed', false)}>{t('exp.ci.confirm')}</Button>
+                        </div>
+                    )}
+                    {hsDiffers(it.hs_invoice, it.hs_code) && <p className="text-xs text-error">{t('exp.ci.hsInvoice', { hs: it.hs_invoice, ci: it.hs_code })}</p>}
+                    {withCode && missingGender(it) && <p className="text-xs text-muted-foreground">{t('exp.ci.gender')}</p>}
                     <div className="grid grid-cols-[3.5rem_1fr_1fr] gap-2">
                         <input className={small} inputMode="decimal" aria-label={t('imp.qty')} placeholder={t('imp.qty')} value={it.qty} onChange={(e) => setItem(i, 'qty', e.target.value)} />
                         <input className={`${small} ${it.hs_code ? '' : 'border-error'}`} aria-label="HS code" placeholder="HS code" value={it.hs_code} onChange={(e) => setItem(i, 'hs_code', e.target.value)} />

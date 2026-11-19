@@ -56,9 +56,11 @@ export function parseInvoiceText(lines) {
                 continue;
             }
             const q = itNumber(qty) || 1;
+            // variante separada por espaço no código: "O330 C1 PARENTINI…" → código "O330 C1"
+            const variant = /^([A-Z]\d{1,2})\s+(.+)$/.exec(description.trim());
             last = {
-                code,
-                description: description.trim(),
+                code: variant ? `${code} ${variant[1]}` : code,
+                description: variant ? variant[2] : description.trim(),
                 qty: q,
                 // valor unitário líquido (com desconto), para o total bater com a fatura
                 unit_value: Math.round((itNumber(amount) / q) * 100) / 100,
@@ -105,7 +107,7 @@ const KEYWORDS = [
 const SIZE_SUFFIX = /-(?:\d?X{0,3}[SML]|X{1,3}L|\d{1,2}|TU|UNI)$/i;
 
 /** Código da fatura sem o tamanho, para gravar a relação com o produto. */
-export const codeBase = (code) => String(code || '').trim().toUpperCase().replace(SIZE_SUFFIX, '');
+export const codeBase = (code) => String(code || '').trim().toUpperCase().replace(SIZE_SUFFIX, '').replace(/\s+[A-Z]\d{1,2}$/, '');
 
 /** Produto do catálogo ligado a este código da fatura (o mais específico). */
 export function matchByCode(code, catalog) {
@@ -121,39 +123,62 @@ export function matchByCode(code, catalog) {
     return best?.row || null;
 }
 
-// Palavras que identificam o produto ("LS" na fatura = "manica lunga" na loja).
+// Palavras que identificam o produto ("LS"/"ML" na fatura = "manica lunga" na loja).
 const STOP = new Set(['OM', 'OMCC', 'CC', 'TEAM', 'THE', 'CON', 'PER', 'DA', 'DI']);
 const words = (s) => String(s || '').toUpperCase()
-    .replace(/\bLS\b/g, 'MANICA LUNGA').replace(/\bSS\b/g, 'MANICA CORTA')
+    .replace(/\b(LS|ML)\b/g, 'MANICA LUNGA').replace(/\b(SS|MC)\b/g, 'MANICA CORTA')
     .replace(/\bMANICHE\b/g, 'MANICA').replace(/[^A-Z0-9 ]+/g, ' ')
     .split(/\s+/).filter((w) => w.length >= 3 && !STOP.has(w));
+
+// Manga longa ou curta, quando o nome diz.
+const sleeve = (w) => (w.includes('LUNGA') ? 'long' : w.includes('CORTA') ? 'short' : null);
 
 /**
  * Artigo da fatura → produto do catálogo: 1º pelo código da fatura já
  * relacionado; 2º pelos nomes dos produtos da loja; 3º por palavras-chave.
+ * Só o código é certeza (sure); pelo nome é palpite, que alguém confirma antes
+ * de gerar. Nunca troca manga longa por curta.
  */
-export function matchCatalog(description, catalog, code) {
+export function matchCatalogInfo(description, catalog, code) {
     const byCode = matchByCode(code, catalog);
-    if (byCode) return byCode;
+    if (byCode) return { row: byCode, sure: true };
 
-    const inv = new Set(words(description));
+    const invWords = words(description);
+    const inv = new Set(invWords);
+    const invSleeve = sleeve(invWords);
+    const compatible = (item) => {
+        const s = sleeve(words(item));
+        return !invSleeve || !s || s === invSleeve;
+    };
     let best = null;
-    for (const row of catalog.filter((r) => r.section === 'shop')) {
+    for (const row of catalog.filter((r) => r.section === 'shop' && compatible(r.item))) {
         const w = words(row.item);
         const hits = w.filter((x) => inv.has(x)).length;
         // empate: o que tem menos palavras sobrando é o mais exato
         const score = hits * 10 - (w.length - hits);
         if (hits > 0 && (!best || score > best.score)) best = { row, score };
     }
-    if (best) return best.row;
+    if (best) return { row: best.row, sure: false };
 
     for (const [inv2, cat] of KEYWORDS) {
         if (!inv2.test(description)) continue;
-        const hit = catalog.find((c) => cat.test(c.item));
-        if (hit) return hit;
+        const hit = catalog.find((c) => cat.test(c.item) && compatible(c.item));
+        if (hit) return { row: hit, sure: false };
     }
     return null;
 }
+
+export const matchCatalog = (description, catalog, code) => matchCatalogInfo(description, catalog, code)?.row || null;
+
+/** HS diferente nos 6 primeiros dígitos (fatura do gestionale × catálogo). */
+export const hsDiffers = (a, b) => {
+    const d = (h) => String(h || '').replace(/\D/g, '').slice(0, 6);
+    return Boolean(d(a) && d(b) && d(a) !== d(b));
+};
+
+/** Vestuário (cap. 61/62) sem dizer para quem: a alfândega dos EUA pede o gênero. */
+export const missingGender = (item) => /^6[12]/.test(String(item?.hs_code || '').replace(/\D/g, ''))
+    && !/\b(men'?s|women'?s|unisex|boys'?|girls'?|ladies'?)\b/i.test(item?.description || '');
 
 /** Primeiro código de um campo como "6110.30 / 6114.30" → "6110.30" */
 export const firstHs = (hs) => String(hs || '').split('/')[0].trim();
@@ -161,9 +186,15 @@ export const firstHs = (hs) => String(hs || '').split('/')[0].trim();
 /** Nome comercial do produto: "Jersey Team OM.CC (maglia manica corta)" → "Jersey Team OM.CC" */
 export const commercialName = (item) => String(item || '').replace(/\s*\(.*\)\s*$/, '').trim();
 
-/** Campos da linha da Commercial Invoice a partir do produto do catálogo. */
-export function itemFromCatalog(row) {
-    const name = row.section === 'shop' ? commercialName(row.item) : '';
+/** Nome do artigo como está na fatura, sem o tamanho no fim: "… VERDE - L" → "… VERDE" */
+export const invoiceName = (s) => String(s || '').replace(/\s+-\s+(?:\d?X{0,3}[SML]|X{1,3}L|\d{1,2}|TU|UNI)\s*$/i, '').trim();
+
+/**
+ * Campos da linha da Commercial Invoice a partir do produto do catálogo. Com o
+ * nome da fatura, é ele que vai entre aspas: os dois documentos precisam bater.
+ */
+export function itemFromCatalog(row, invoiceDescription = '') {
+    const name = invoiceName(invoiceDescription) || (row.section === 'shop' ? commercialName(row.item) : '');
     return {
         catalog_id: row.id,
         description: [row.description_en || row.item, name && `"${name}"`].filter(Boolean).join(' — '),
