@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { requireSupabase } from "@/lib/supabase";
 import "./nfc.css";
 import {
-  BLOOD_TYPES, DEFAULT_VISIBILITY, NFC_LANGUAGES, PROFILE_FIELDS, isTagCode, nfcLanguage, nfcText,
+  BLOOD_TYPES, DEFAULT_VISIBILITY, NFC_LANGUAGES, NFC_LANGUAGE_NAMES, PROFILE_FIELDS, isTagCode, nfcLanguage, nfcText,
   type EmergencyContact, type NfcLanguage, type ProfileField,
 } from "./text";
 import { blockTag, claimTag, deleteMe, getMe, rememberToken, rememberedToken, saveMe, type NfcMe, type NfcProfile } from "./api";
@@ -150,11 +150,10 @@ export default function NfcProfilePage() {
           <img src="/logo.png" alt="Officine Mattio" className="om-logo" />
           <span className="om-flag" aria-hidden="true" />
         </div>
-        <div className="nfc-lang" role="group" aria-label="Lingua / Language">
-          {NFC_LANGUAGES.map((l) => (
-            <button key={l} type="button" aria-pressed={l === lang} onClick={() => setLang(l)}>{l.toUpperCase()}</button>
-          ))}
-        </div>
+        {/* Lista nativa: no celular abre o seletor do próprio aparelho. */}
+        <select className="nfc-lang" value={lang} aria-label="Lingua / Language" onChange={(e) => setLang(e.target.value as NfcLanguage)}>
+          {NFC_LANGUAGES.map((l) => <option key={l} value={l}>{NFC_LANGUAGE_NAMES[l]}</option>)}
+        </select>
       </div>
       <main className="nfc-wrap">{children}</main>
     </>

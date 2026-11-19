@@ -129,9 +129,10 @@
 /* Formulário do atleta */
 .nfc-wrap { max-width: 560px; margin: 0 auto; padding: 28px 20px 72px; display: flex; flex-direction: column; gap: 24px; }
 .nfc-head { flex-direction: row; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.nfc-lang { display: flex; gap: 4px; }
-.nfc-lang button { min-height: 34px; min-width: 42px; border-radius: 999px; border: 1px solid #34342f; background: transparent; color: var(--om-soft); font: 600 12px Aileron, sans-serif; letter-spacing: .12em; cursor: pointer; }
-.nfc-lang button[aria-pressed="true"] { background: var(--om-ink); color: #070707; border-color: var(--om-ink); }
+.nfc-lang { appearance: none; min-height: 40px; padding: 0 34px 0 16px; border-radius: 999px; border: 1px solid #34342f; color: var(--om-ink);
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23cfcfca' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center;
+  font: 600 16px Aileron, Helvetica, Arial, sans-serif; cursor: pointer; }
+.nfc-lang option { color: #070707; }
 .f-field { display: flex; flex-direction: column; gap: 8px; }
 .f-label { display: flex; align-items: center; justify-content: space-between; gap: 12px;
   font-size: 11px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--om-soft); }

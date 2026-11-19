@@ -79,7 +79,7 @@ function renderCard(card: Partial<Record<string, unknown>>) {
       icon.innerHTML = PHONE_ICON; // ícone fixo, nunca dado do atleta
       const body = el("span", "t-call-body");
       body.append(
-        el("strong", "", `${tx("call")} ${str(c.name)}`.trim()),
+        el("strong", "", `${tx("call")} ${str(c.name) || str(c.phone)}`),
         el("span", "", [str(c.relation), str(c.phone)].filter(Boolean).join(" · ")),
       );
       a.append(icon, body);

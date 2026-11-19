@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isTagCode, nfcLanguage, nfcText, publicOrigin, telHref } from "./text";
+import { NFC_LANGUAGES, isTagCode, nfcLanguage, nfcText, publicOrigin, splitName, telHref } from "./text";
 
 describe("chips NFC", () => {
   it("só aceita códigos de 8 caracteres base62", () => {
@@ -22,7 +22,13 @@ describe("chips NFC", () => {
   it("idioma do navegador, senão inglês; textos com as mesmas chaves", () => {
     expect(nfcLanguage(["it-IT"])).toBe("it");
     expect(nfcLanguage(["de-DE", "en-GB"])).toBe("en");
-    expect(nfcLanguage(["pt-BR"])).toBe("en");
-    expect(Object.keys(nfcText.en).sort()).toEqual(Object.keys(nfcText.it).sort());
+    expect(nfcLanguage(["pt-BR"])).toBe("pt");
+    expect(nfcLanguage(["ja", "es-AR"])).toBe("es");
+    expect(nfcLanguage(["ja"])).toBe("en");
+    for (const l of NFC_LANGUAGES) expect(Object.keys(nfcText[l]).sort()).toEqual(Object.keys(nfcText.it).sort());
+  });
+  it("separa o sobrenome do nome", () => {
+    expect(splitName("  Cristiano   Cunha ")).toEqual(["Cristiano", "Cunha"]);
+    expect(splitName("Ana")).toEqual(["Ana", ""]);
   });
 });
