@@ -43,6 +43,12 @@ export const telHref = (phone: string) => {
   return digits ? `tel:${p.startsWith("+") || p.startsWith("00") ? "+" + digits.replace(/^00/, "") : digits}` : "";
 };
 
+/** "Cristiano Cunha" → ["Cristiano", "Cunha"]: o sobrenome sai em cinza, como no cartão de visitas. */
+export function splitName(name: string): [string, string] {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return [parts[0] ?? "", parts.slice(1).join(" ")];
+}
+
 /** Endereço público do chip. Numa prévia da Vercel (protegida por login), usa o de produção. */
 export function publicOrigin(origin: string): string {
   const host = new URL(origin).host;
@@ -73,7 +79,7 @@ export const nfcText: Record<NfcLanguage, Record<string, string>> = {
     "field.medications": "Farmaci",
     "field.phone": "Telefono",
     "field.notes": "Note",
-    footer: "Chip NFC Officine Mattio",
+    footer: "Officine Mattio · NFC",
     edit: "È tuo? Modifica",
     // cartão do atleta
     registerTitle: "Registra il tuo capo",
@@ -137,7 +143,7 @@ export const nfcText: Record<NfcLanguage, Record<string, string>> = {
     "field.medications": "Medications",
     "field.phone": "Phone",
     "field.notes": "Notes",
-    footer: "Officine Mattio NFC chip",
+    footer: "Officine Mattio · NFC",
     edit: "Is it yours? Edit",
     registerTitle: "Register your garment",
     editTitle: "Your emergency card",

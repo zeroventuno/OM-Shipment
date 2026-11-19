@@ -144,6 +144,7 @@ export default function NfcProfilePage() {
 
   const shell = (children: ReactNode) => (
     <>
+      <div className="nfc-bg" aria-hidden="true"><span className="om-mark" /></div>
       <div className="om-top nfc-head">
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <img src="/logo.png" alt="Officine Mattio" className="om-logo" />
@@ -159,11 +160,21 @@ export default function NfcProfilePage() {
     </>
   );
 
+  // Título como no cartão de visitas: ponto final em cinza, filete dourado e rótulo espaçado.
+  const head = (title: string, extra?: ReactNode) => (
+    <div className="t-head">
+      <h1 className="t-title">{title}<span className="t-dim">.</span></h1>
+      <span className="t-rule" aria-hidden="true" />
+      <p className="t-role">{tx("footer")}</p>
+      {extra}
+    </div>
+  );
+
   if (phase === "loading") return shell(<p className="t-text">{tx("loading")}</p>);
-  if (phase === "invalid") return shell(<><h1 className="t-title">{tx("invalidLink")}</h1><p className="t-text">{tx("invalidHint")}</p></>);
-  if (phase === "unknown") return shell(<><h1 className="t-title">{tx("unknownTitle")}</h1><p className="t-text">{tx("unknownHint")}</p></>);
-  if (phase === "taken") return shell(<><h1 className="t-title">{tx("alreadyRegistered")}</h1><a className="t-btn" href={`/t/${code}`}>{tx("viewCard")}</a></>);
-  if (phase === "deleted") return shell(<h1 className="t-title">{tx("deleted")}</h1>);
+  if (phase === "invalid") return shell(<>{head(tx("invalidLink"))}<p className="t-text">{tx("invalidHint")}</p></>);
+  if (phase === "unknown") return shell(<>{head(tx("unknownTitle"))}<p className="t-text">{tx("unknownHint")}</p></>);
+  if (phase === "taken") return shell(<>{head(tx("alreadyRegistered"))}<a className="t-btn" href={`/t/${code}`}>{tx("viewCard")}</a></>);
+  if (phase === "deleted") return shell(head(tx("deleted")));
 
   const toggle = (field: ProfileField) => (
     <button type="button" className="f-toggle" aria-pressed={form.visibility[field]} onClick={() => setVisible(field, !form.visibility[field])}>
@@ -185,10 +196,8 @@ export default function NfcProfilePage() {
 
   return shell(
     <>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <h1 className="t-title">{claiming ? tx("registerTitle") : tx("editTitle")}</h1>
-        <p className="t-text">{tx("intro")}</p>
-      </div>
+      {head(claiming ? tx("registerTitle") : tx("editTitle"))}
+      <p className="t-text">{tx("intro")}</p>
 
       {!claiming && (
         <section className="f-box f-box-strong">
