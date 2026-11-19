@@ -2,9 +2,23 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
+import type { Plugin } from 'vite'
+
+// Em desenvolvimento, /t/<code> abre a página do chip (em produção quem faz isso é o vercel.json).
+function nfcTagPage(): Plugin {
+  return {
+    name: 'nfc-tag-page',
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        if (req.url && /^\/t\/[^/?#]+\/?(\?.*)?$/.test(req.url)) req.url = '/tag.html'
+        next()
+      })
+    },
+  }
+}
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), nfcTagPage()],
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, 'src'),
@@ -16,6 +30,8 @@ export default defineConfig({
       input: {
         main: path.resolve(import.meta.dirname, 'index.html'),
         assistenza: path.resolve(import.meta.dirname, 'assistenza.html'),
+        // tag.html: página leve do chip NFC (/t/<code>), sem a aplicação inteira.
+        tag: path.resolve(import.meta.dirname, 'tag.html'),
       },
       output: {
         // Separa as bibliotecas pesadas do código da aplicação: elas mudam

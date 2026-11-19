@@ -1,6 +1,10 @@
 {
     "rewrites": [
         {
+            "source": "/t/:code",
+            "destination": "/tag.html"
+        },
+        {
             "source": "/assistenza/:token",
             "destination": "/assistenza.html"
         },
@@ -12,7 +16,12 @@
     "headers": [
         {
             "source": "/og-(.*)",
-            "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }]
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=86400"
+                }
+            ]
         }
     ]
 }

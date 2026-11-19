@@ -1,0 +1,99 @@
+/* Identidade das páginas públicas do chip NFC: preto, Aileron e filete tricolor. */
+@import "@fontsource/aileron/400.css";
+@import "@fontsource/aileron/600.css";
+@import "@fontsource/aileron/700.css";
+
+
+.nfc-page {
+  margin: 0;
+  min-height: 100vh;
+  background: #070707;
+  color: #f4f4f2;
+  font-family: Aileron, Helvetica, Arial, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.om-top {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.om-logo { height: 22px; width: auto; align-self: flex-start; filter: invert(1); }
+.om-flag {
+  display: block;
+  height: 3px;
+  width: 56px;
+  background: linear-gradient(90deg, #008C45 0 33.33%, #FFFFFF 33.33% 66.66%, #CD212A 66.66%);
+}
+
+#app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.t-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #a3a39e; margin: 0; }
+.t-title { font-size: 30px; line-height: 1.1; font-weight: 700; letter-spacing: -.02em; margin: 0; }
+.t-text { font-size: 17px; line-height: 1.45; color: #cfcfca; margin: 0; }
+.t-muted { color: #8d8d88; font-size: 14px; }
+
+.t-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 56px; padding: 12px 20px; border-radius: 999px;
+  font: 700 17px/1.2 Aileron, Helvetica, Arial, sans-serif;
+  text-decoration: none; border: 2px solid #f4f4f2; background: transparent; color: #f4f4f2; cursor: pointer;
+}
+.t-btn-primary { background: #f4f4f2; color: #070707; }
+.t-btn-call { min-height: 72px; font-size: 21px; background: #f4f4f2; color: #070707; border-radius: 18px; flex-direction: column; gap: 2px; }
+.t-btn-call small { font-size: 14px; font-weight: 600; opacity: .7; }
+
+.t-blood {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  border: 2px solid #CD212A; border-radius: 18px; padding: 14px 20px;
+}
+.t-blood strong { font-size: 64px; line-height: 1; font-weight: 700; letter-spacing: -.03em; }
+
+.t-section { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid #262624; padding-top: 14px; }
+.t-section p { margin: 0; font-size: 19px; line-height: 1.4; white-space: pre-line; }
+.t-section a { color: #f4f4f2; }
+
+.t-footer { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px solid #262624; padding-top: 16px; }
+.t-footer a { color: #cfcfca; }
+
+/* Formulário do atleta */
+.nfc-wrap { max-width: 560px; margin: 0 auto; padding: 16px 16px 64px; display: flex; flex-direction: column; gap: 22px; }
+.nfc-head { flex-direction: row; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.nfc-lang { display: flex; gap: 4px; }
+.nfc-lang button { min-height: 36px; min-width: 44px; border-radius: 999px; border: 1px solid #3a3a37; background: transparent; color: #cfcfca; font: 600 13px Aileron, sans-serif; cursor: pointer; }
+.nfc-lang button[aria-pressed="true"] { background: #f4f4f2; color: #070707; border-color: #f4f4f2; }
+.f-field { display: flex; flex-direction: column; gap: 8px; }
+.f-label { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; font-weight: 600; color: #cfcfca; }
+.f-input {
+  width: 100%; box-sizing: border-box; min-height: 50px; padding: 12px 14px; border-radius: 12px;
+  border: 1px solid #3a3a37; background: #111110; color: #f4f4f2; font: 400 16px/1.4 Aileron, Helvetica, Arial, sans-serif;
+}
+.f-input:focus { outline: 2px solid #f4f4f2; outline-offset: 1px; }
+textarea.f-input { min-height: 84px; resize: vertical; }
+select.f-input { appearance: none; }
+.f-toggle { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 4px 12px; border-radius: 999px; border: 1px solid #3a3a37; background: transparent; color: #8d8d88; font: 600 13px Aileron, sans-serif; cursor: pointer; }
+.f-toggle[aria-pressed="true"] { border-color: #008C45; color: #f4f4f2; background: rgba(0, 140, 69, .18); }
+.f-contact { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; border: 1px solid #262624; border-radius: 14px; }
+.f-contact .f-input:last-of-type { grid-column: 1 / -1; }
+.f-link { align-self: flex-start; background: transparent; border: 0; padding: 0; color: #cfcfca; text-decoration: underline; font: 600 14px Aileron, sans-serif; cursor: pointer; justify-self: start; }
+.f-check { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; line-height: 1.45; }
+.f-check input { width: 22px; height: 22px; margin-top: 2px; accent-color: #008C45; flex-shrink: 0; }
+.f-box { border: 1px solid #262624; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.f-box-strong { border-color: #008C45; }
+.f-code { font-family: ui-monospace, Menlo, monospace; font-size: 14px; word-break: break-all; color: #cfcfca; }
+.f-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.f-row .t-btn { flex: 1 1 160px; min-height: 48px; font-size: 15px; }
+.f-error { color: #ff6b73; font-weight: 600; margin: 0; }
+.f-ok { color: #4fd18b; font-weight: 600; margin: 0; }
+.f-tag { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px solid #262624; padding-top: 12px; }
+.t-btn-danger { border-color: #CD212A; color: #ff6b73; }
