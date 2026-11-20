@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { requireSupabase } from "@/lib/supabase";
 import "./nfc.css";
 import {
-  BLOOD_TYPES, DEFAULT_VISIBILITY, NFC_LANGUAGES, NFC_LANGUAGE_NAMES, PROFILE_FIELDS, isTagCode, nfcLanguage, nfcText,
+  BLOOD_TYPES, DEFAULT_VISIBILITY, NFC_LANGUAGES, NFC_LANGUAGE_NAMES, PROFILE_FIELDS, RELATIONS, isRelation, isTagCode, nfcLanguage, nfcText, relationLabel,
   type EmergencyContact, type NfcLanguage, type ProfileField,
 } from "./text";
 import { blockTag, claimTag, deleteMe, getMe, rememberToken, rememberedToken, saveMe, type NfcMe, type NfcProfile } from "./api";
@@ -29,7 +29,7 @@ function fromMe(me: NfcMe): NfcProfile {
   };
 }
 
-type Phase = "loading" | "form" | "invalid" | "taken" | "unknown" | "deleted";
+type Phase = "loading" | "form" | "nolink" | "invalid" | "taken" | "unknown" | "deleted";
 
 export default function NfcProfilePage() {
   const { code } = useParams();
@@ -68,7 +68,7 @@ export default function NfcProfilePage() {
         setPhase(data?.status === "free" ? "form" : data?.status === "unknown" ? "unknown" : "taken");
       });
     } else if (!token) {
-      setPhase("invalid");
+      setPhase("nolink");
     } else {
       getMe(token).then((m) => {
         if (!alive) return;
@@ -170,6 +170,7 @@ export default function NfcProfilePage() {
   );
 
   if (phase === "loading") return shell(<p className="t-text">{tx("loading")}</p>);
+  if (phase === "nolink") return shell(<>{head(tx("noLinkTitle"))}<p className="t-text">{tx("noLinkHint")}</p></>);
   if (phase === "invalid") return shell(<>{head(tx("invalidLink"))}<p className="t-text">{tx("invalidHint")}</p></>);
   if (phase === "unknown") return shell(<>{head(tx("unknownTitle"))}<p className="t-text">{tx("unknownHint")}</p></>);
   if (phase === "taken") return shell(<>{head(tx("alreadyRegistered"))}<a className="t-btn" href={`/t/${code}`}>{tx("viewCard")}</a></>);
@@ -228,7 +229,11 @@ export default function NfcProfilePage() {
           {form.emergency_contacts.map((c, i) => (
             <div key={i} className="f-contact">
               <input className="f-input" aria-label={tx("contactName")} placeholder={tx("contactName")} value={c.name} onChange={(e) => setContact(i, "name", e.target.value)} />
-              <input className="f-input" aria-label={tx("contactRelation")} placeholder={tx("contactRelation")} value={c.relation} onChange={(e) => setContact(i, "relation", e.target.value)} />
+              <select className="f-input" aria-label={tx("contactRelation")} value={c.relation} onChange={(e) => setContact(i, "relation", e.target.value)}>
+                <option value="">{tx("contactRelation")}</option>
+                {RELATIONS.map((r) => <option key={r} value={r}>{relationLabel(lang, r)}</option>)}
+                {c.relation && !isRelation(c.relation) && <option value={c.relation}>{c.relation}</option>}
+              </select>
               <input className="f-input" aria-label={tx("contactPhone")} placeholder={tx("contactPhone")} type="tel" value={c.phone} onChange={(e) => setContact(i, "phone", e.target.value)} />
               {form.emergency_contacts.length > 1 && (
                 <button type="button" className="f-link" onClick={() => set("emergency_contacts", form.emergency_contacts.filter((_, j) => j !== i))}>{tx("remove")}</button>

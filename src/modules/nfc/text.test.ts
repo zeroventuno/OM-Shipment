@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NFC_LANGUAGES, isTagCode, nfcLanguage, nfcText, publicOrigin, splitName, telHref } from "./text";
+import { NFC_LANGUAGES, RELATIONS, isTagCode, nfcLanguage, nfcText, publicOrigin, relationLabel, splitName, telHref } from "./text";
 
 describe("chips NFC", () => {
   it("só aceita códigos de 8 caracteres base62", () => {
@@ -30,5 +30,11 @@ describe("chips NFC", () => {
   it("separa o sobrenome do nome", () => {
     expect(splitName("  Cristiano   Cunha ")).toEqual(["Cristiano", "Cunha"]);
     expect(splitName("Ana")).toEqual(["Ana", ""]);
+  });
+  it("traduz a relação da lista e mantém o texto livre antigo", () => {
+    expect(relationLabel("it", "spouse")).toBe("Coniuge");
+    expect(relationLabel("pt", "partner")).toBe("Namorado(a)");
+    expect(relationLabel("en", "Moglie")).toBe("Moglie");
+    for (const l of NFC_LANGUAGES) for (const r of RELATIONS) expect(relationLabel(l, r)).not.toBe(r);
   });
 });

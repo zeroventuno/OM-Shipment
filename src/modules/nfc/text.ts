@@ -41,7 +41,24 @@ export interface EmergencyContact {
   phone: string;
 }
 
-/** Número para o link tel: (só dígitos e o + inicial). */
+/** Relação com o contato: uma lista, para o cartão sair no idioma de quem lê. */
+export const RELATIONS = ["friend", "partner", "spouse", "sibling", "parent", "child", "family", "other"] as const;
+export type Relation = (typeof RELATIONS)[number];
+
+const RELATION_LABELS: Record<NfcLanguage, Record<Relation, string>> = {
+  it: { friend: "Amico/a", partner: "Fidanzato/a", spouse: "Coniuge", sibling: "Fratello/Sorella", parent: "Genitore", child: "Figlio/a", family: "Altro familiare", other: "Altro" },
+  en: { friend: "Friend", partner: "Partner", spouse: "Spouse", sibling: "Sibling", parent: "Parent", child: "Child", family: "Other relative", other: "Other" },
+  fr: { friend: "Ami(e)", partner: "Compagnon/Compagne", spouse: "Conjoint(e)", sibling: "Frère/Sœur", parent: "Parent", child: "Enfant", family: "Autre membre de la famille", other: "Autre" },
+  es: { friend: "Amigo/a", partner: "Novio/a", spouse: "Cónyuge", sibling: "Hermano/a", parent: "Padre/Madre", child: "Hijo/a", family: "Otro familiar", other: "Otro" },
+  pt: { friend: "Amigo(a)", partner: "Namorado(a)", spouse: "Marido/Esposa", sibling: "Irmão/Irmã", parent: "Pai/Mãe", child: "Filho(a)", family: "Outro familiar", other: "Outro" },
+};
+
+export const isRelation = (v: string): v is Relation => (RELATIONS as readonly string[]).includes(v);
+
+/** Nome da relação no idioma pedido. Texto livre antigo sai como foi escrito. */
+export const relationLabel = (lang: NfcLanguage, value: string) => (isRelation(value) ? RELATION_LABELS[lang][value] : value);
+
+/** Número para o link tel:(só dígitos e o + inicial). */
 export const telHref = (phone: string) => {
   const p = phone.trim();
   const digits = p.replace(/[^\d]/g, "");
@@ -119,8 +136,10 @@ export const nfcText: Record<NfcLanguage, Record<string, string>> = {
     deleteConfirm: "Cancellare tutti i tuoi dati? I capi torneranno liberi e questo link smetterà di funzionare.",
     deleted: "I tuoi dati sono stati cancellati.",
     viewCard: "Vedi la scheda",
-    invalidLink: "Link non valido o scaduto",
-    invalidHint: "Chiedi un link nuovo a Officine Mattio.",
+    invalidLink: "Questo link non è più valido",
+    invalidHint: "Succede se i dati sono stati cancellati o se è stato creato un link nuovo. Per aiuto scrivi a Officine Mattio.",
+    noLinkTitle: "Apri il tuo link personale",
+    noLinkHint: "Per modificare la scheda usa il link personale ricevuto alla registrazione. Se l'hai perso, scrivi a Officine Mattio.",
     alreadyRegistered: "Questo capo è già registrato.",
     errPrivacy: "Per salvare devi accettare l'informativa privacy.",
     errEmail: "E-mail non valida.",
@@ -182,8 +201,10 @@ export const nfcText: Record<NfcLanguage, Record<string, string>> = {
     deleteConfirm: "Delete all your data? Your garments will be freed and this link will stop working.",
     deleted: "Your data has been deleted.",
     viewCard: "View the card",
-    invalidLink: "Invalid or expired link",
-    invalidHint: "Ask Officine Mattio for a new link.",
+    invalidLink: "This link is no longer valid",
+    invalidHint: "This happens when the data was deleted or a new link was created. For help, contact Officine Mattio.",
+    noLinkTitle: "Open your personal link",
+    noLinkHint: "To edit your card, use the personal link you received when you registered. If you lost it, contact Officine Mattio.",
     alreadyRegistered: "This garment is already registered.",
     errPrivacy: "To save, you must accept the privacy notice.",
     errEmail: "Invalid e-mail.",
@@ -245,8 +266,10 @@ export const nfcText: Record<NfcLanguage, Record<string, string>> = {
     deleteConfirm: "Supprimer toutes vos données ? Vos vêtements seront libérés et ce lien ne fonctionnera plus.",
     deleted: "Vos données ont été supprimées.",
     viewCard: "Voir la fiche",
-    invalidLink: "Lien non valide ou expiré",
-    invalidHint: "Demandez un nouveau lien à Officine Mattio.",
+    invalidLink: "Ce lien n'est plus valide",
+    invalidHint: "Cela arrive si les données ont été supprimées ou si un nouveau lien a été créé. Pour de l'aide, contactez Officine Mattio.",
+    noLinkTitle: "Ouvrez votre lien personnel",
+    noLinkHint: "Pour modifier votre fiche, utilisez le lien personnel reçu lors de l'inscription. Si vous l'avez perdu, contactez Officine Mattio.",
     alreadyRegistered: "Ce vêtement est déjà enregistré.",
     errPrivacy: "Pour enregistrer, vous devez accepter l'avis de confidentialité.",
     errEmail: "E-mail non valide.",
@@ -308,8 +331,10 @@ export const nfcText: Record<NfcLanguage, Record<string, string>> = {
     deleteConfirm: "¿Borrar todos tus datos? Tus prendas quedarán libres y este enlace dejará de funcionar.",
     deleted: "Tus datos han sido borrados.",
     viewCard: "Ver la ficha",
-    invalidLink: "Enlace no válido o caducado",
-    invalidHint: "Pide un enlace nuevo a Officine Mattio.",
+    invalidLink: "Este enlace ya no es válido",
+    invalidHint: "Ocurre cuando los datos se borraron o se creó un enlace nuevo. Para ayuda, escribe a Officine Mattio.",
+    noLinkTitle: "Abre tu enlace personal",
+    noLinkHint: "Para editar tu ficha, usa el enlace personal que recibiste al registrarte. Si lo perdiste, escribe a Officine Mattio.",
     alreadyRegistered: "Esta prenda ya está registrada.",
     errPrivacy: "Para guardar debes aceptar el aviso de privacidad.",
     errEmail: "E-mail no válido.",
@@ -371,8 +396,10 @@ export const nfcText: Record<NfcLanguage, Record<string, string>> = {
     deleteConfirm: "Apagar todos os seus dados? Suas peças ficarão livres e este link deixará de funcionar.",
     deleted: "Seus dados foram apagados.",
     viewCard: "Ver o cartão",
-    invalidLink: "Link inválido ou expirado",
-    invalidHint: "Peça um link novo à Officine Mattio.",
+    invalidLink: "Este link não vale mais",
+    invalidHint: "Acontece quando os dados foram apagados ou quando um link novo foi criado. Para ajuda, fale com a Officine Mattio.",
+    noLinkTitle: "Abra o seu link pessoal",
+    noLinkHint: "Para editar o cartão, use o link pessoal que você recebeu no cadastro. Se perdeu o link, fale com a Officine Mattio.",
     alreadyRegistered: "Esta peça já está registrada.",
     errPrivacy: "Para salvar, você precisa aceitar o aviso de privacidade.",
     errEmail: "E-mail inválido.",

@@ -4,7 +4,7 @@
  * nfc_tag_view do banco. Os dados do atleta entram sempre como texto (nunca HTML).
  */
 import "./nfc.css";
-import { isTagCode, nfcLanguage, nfcText, splitName, telHref, type EmergencyContact } from "./text";
+import { isTagCode, nfcLanguage, nfcText, relationLabel, splitName, telHref, type EmergencyContact } from "./text";
 
 type View =
   | { status: "unknown" | "free" | "disabled" }
@@ -80,7 +80,7 @@ function renderCard(card: Partial<Record<string, unknown>>) {
       const body = el("span", "t-call-body");
       body.append(
         el("strong", "", `${tx("call")} ${str(c.name) || str(c.phone)}`),
-        el("span", "", [str(c.relation), str(c.phone)].filter(Boolean).join(" · ")),
+        el("span", "", [relationLabel(lang, str(c.relation)), str(c.phone)].filter(Boolean).join(" · ")),
       );
       a.append(icon, body);
       list.append(a);
