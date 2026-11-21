@@ -15,6 +15,13 @@ async function rpc<T>(fn: string, args: Record<string, unknown> = {}): Promise<T
   return data as T;
 }
 
+/** A gestão dos chips é só para os logins da lista nfc_admins (o banco também confere). */
+export const nfcCanAdminQuery = {
+  queryKey: ["nfc_can_admin"],
+  queryFn: () => rpc<boolean>("nfc_can_admin"),
+  staleTime: Infinity,
+};
+
 export interface NfcProfile {
   name: string;
   email: string;

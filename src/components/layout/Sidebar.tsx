@@ -9,6 +9,7 @@ import { warrantiesQuery, warrantyAge } from '@/modules/warranties/api';
 import { listRequests, REQUESTS_QUERY_KEY } from '@/modules/requests/api';
 import { listServiceRequests, SERVICE_REQUESTS_QUERY_KEY } from '@/modules/service/api';
 import { listPickupRequests, PICKUP_REQUESTS_QUERY_KEY } from '@/modules/pickups/api';
+import { nfcCanAdminQuery } from '@/modules/nfc/api';
 import { useState } from 'react';
 import { LinksDialog } from './LinksDialog';
 
@@ -19,6 +20,8 @@ export interface Area {
     sub?: { label: string; to: string; end?: boolean; countKey?: string }[];
     /** Fora da barra de baixo do celular (cabem 6): fica só no menu lateral. */
     menuOnly?: boolean;
+    /** Só para quem administra os chips NFC (produto à parte do Gestionale). */
+    nfcAdminOnly?: boolean;
 }
 
 // As áreas do sistema. Envios tem subpáginas.
@@ -41,7 +44,7 @@ export const AREAS: Area[] = [
     { icon: Inbox, label: 'nav.serviceRequests', to: '/service-requests' },
     { icon: Users, label: 'nav.customers', to: '/customers' },
     { icon: Contact, label: 'nav.contacts', to: '/contacts' },
-    { icon: Nfc, label: 'nav.nfc', to: '/nfc', menuOnly: true },
+    { icon: Nfc, label: 'nav.nfc', to: '/nfc', menuOnly: true, nfcAdminOnly: true },
 ];
 
 /** Quantos processos estão parados há mais de 30 dias em cada área. */
@@ -77,6 +80,7 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
     const { pathname } = useLocation();
     const stale = useStaleCounts();
     const [linksOpen, setLinksOpen] = useState(false);
+    const nfcAdmin = useQuery({ ...nfcCanAdminQuery, enabled: !!user }).data === true;
 
     const handleSignOut = async () => {
         if (window.confirm(t('Sign out of the system?'))) {
@@ -113,7 +117,7 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
                 </div>
 
                 <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto" aria-label={t('Main menu')}>
-                    {AREAS.map((area) => {
+                    {AREAS.filter((area) => !area.nfcAdminOnly || nfcAdmin).map((area) => {
                         const inArea = pathname.startsWith(area.to);
                         const count = stale[area.to] ?? 0;
                         return (

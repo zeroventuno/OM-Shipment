@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { Navigate } from "react-router-dom";
 import { format } from "date-fns";
 import qrcode from "qrcode-generator";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { PageHeader } from "../common/PageHeader";
 import { publicOrigin } from "./text";
 import {
-  NFC_TAGS_QUERY_KEY, canWriteNfc, generateTags, listTags, markWritten, newOwnerLink, tagAction, writeChip,
+  NFC_TAGS_QUERY_KEY, canWriteNfc, generateTags, nfcCanAdminQuery, listTags, markWritten, newOwnerLink, tagAction, writeChip,
   type NfcTag, type TagStatus,
 } from "./api";
 
@@ -100,7 +101,14 @@ function WriteDialog({ tag, onClose, onWritten }: { tag: NfcTag; onClose: () => 
   );
 }
 
+/** Só para os logins da lista nfc_admins; os outros voltam para Envios. */
 export default function NfcAdminPage() {
+  const { data: allowed, isLoading } = useQuery(nfcCanAdminQuery);
+  if (isLoading) return null;
+  return allowed ? <NfcAdmin /> : <Navigate to="/shipments" replace />;
+}
+
+function NfcAdmin() {
   const { t } = useTranslation();
   const locale = useDateLocale();
   const { toast } = useToast();
