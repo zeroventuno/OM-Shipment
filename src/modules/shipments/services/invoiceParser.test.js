@@ -143,3 +143,27 @@ describe('orderTypeFromHs', () => {
         expect(orderTypeFromHs(['', ''])).toBeNull();
     });
 });
+
+describe('códigos genéricos do Mexal', () => {
+    it('L8PARTS, L22FRAME e afins não ligam a um produto', async () => {
+        const { isGenericCode, matchByCode, matchCatalogInfo } = await import('./invoiceParser');
+        for (const c of ['L8PARTS', 'L22FRAME', 'L8BICI', 'L22WHEELS', 'L8BIKE', 'L8GROUP']) expect(isGenericCode(c)).toBe(true);
+        for (const c of ['C315C1-L', 'BI05KM', 'L8FRAMEX', 'OM-BORRACCIA-ELITE']) expect(isGenericCode(c)).toBe(false);
+        const catalog = [{ id: 'm', section: 'shipped', item: 'Manubrio', erp_codes: ['L8PARTS'] }, { id: 'c', section: 'other', item: 'Catena', erp_codes: [] }];
+        expect(matchByCode('L8PARTS', catalog)).toBeNull();
+        // sem a relação falsa, a linha "Catena red" não vira "Manubrio"
+        expect(matchCatalogInfo('B2B Catena red', catalog, 'L8PARTS')?.row.id).not.toBe('m');
+    });
+});
+
+describe('artigo genérico de peças', () => {
+    it('linha sem dizer a peça sugere o genérico; a peça conhecida vence', async () => {
+        const { matchCatalogInfo } = await import('./invoiceParser');
+        const catalog = [
+            { id: 'g', section: 'other', item: 'Parti di bicicletta (generico)', hs_code: '87149950 91', erp_codes: [] },
+            { id: 'c', section: 'other', item: 'Catena', hs_code: '7315.11', erp_codes: [] },
+        ];
+        expect(matchCatalogInfo('SPARE BIKE PARTS', catalog, 'L22FRAME')).toEqual({ row: catalog[0], sure: false });
+        expect(matchCatalogInfo('B2B Catena red', catalog, 'L8PARTS').row.id).toBe('c');
+    });
+});

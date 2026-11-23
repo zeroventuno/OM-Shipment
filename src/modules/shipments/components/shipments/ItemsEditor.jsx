@@ -38,7 +38,13 @@ export function ItemsEditor({ items, setItems, catalog, label, extraTotal = 0, w
         const m = matchCatalogInfo(it.description, catalog, it.code);
         if (m) pickProduct(i, m.row.id, m.sure);
     };
-    const products = catalog.filter((c) => c.section === 'shop');
+    // todo o catálogo por grupo: produtos da loja primeiro, depois os artigos
+    const groups = [
+        ['shop', t('exp.ci.group.shop')],
+        ['shipped', t('exp.ci.group.shipped')],
+        ['other', t('exp.ci.group.other')],
+    ].map(([key, title]) => [title, catalog.filter((c) => (['shop', 'shipped'].includes(c.section) ? c.section : 'other') === key)])
+        .filter(([, rows]) => rows.length);
     const total = itemsTotal(cleanItems(items)) + extraTotal;
 
     return (
@@ -56,8 +62,12 @@ export function ItemsEditor({ items, setItems, catalog, label, extraTotal = 0, w
                         <div className="grid grid-cols-[7rem_1fr] gap-2">
                             <input className={small} aria-label={t('exp.ci.code')} placeholder={t('exp.ci.code')} value={it.code || ''} onChange={(e) => setItem(i, 'code', e.target.value)} onBlur={() => lookupCode(i)} />
                             <select className={small} aria-label={t('exp.ci.product')} value={it.catalog_id || ''} onChange={(e) => pickProduct(i, e.target.value)}>
-                                <option value="">{t('exp.ci.product')}…</option>
-                                {(products.length ? products : catalog).map((c) => <option key={c.id} value={c.id}>{c.item}</option>)}
+                                <option value="">{t('exp.ci.free')}</option>
+                                {groups.map(([title, rows]) => (
+                                    <optgroup key={title} label={title}>
+                                        {rows.map((c) => <option key={c.id} value={c.id}>{c.item}{c.hs_code ? ` · ${c.hs_code}` : ''}</option>)}
+                                    </optgroup>
+                                ))}
                             </select>
                         </div>
                     )}

@@ -101,6 +101,13 @@ const KEYWORDS = [
     [/\b(SADDLE|SELLA)\b/i, /sella/i],
     [/\b(SEAT ?POST|REGGISELLA)\b/i, /reggisella/i],
     [/\b(TAPE|NASTRO)\b/i, /nastro/i],
+    [/\b(CHAIN|CATENA)\b/i, /^catena/i],
+    [/\b(BRAKES?|FRENI|FRENO|PINZE)\b/i, /freni/i],
+    [/\b(CRANKS?|CRANKSET|GUARNITURA|PEDIVELL[AE])\b/i, /guarnitura/i],
+    [/\b(DERAILLEUR|DERAGLIATORE|CAMBIO|RD)\b/i, /^cambio/i],
+    [/\b(POWER ?METER|POWERMETER|PWR METER|MISURATORE)\b/i, /misuratore di potenza/i],
+    // por último: a fatura não diz que peça é ("SPARE BIKE PARTS") → artigo genérico
+    [/\b(BIKE PARTS|SPARE PARTS|PARTS|RICAMBI|PARTI)\b/i, /\(generico\)/i],
 ];
 
 // Tamanhos no fim do código do artigo: "C315C1-L" → "C315C1".
@@ -109,10 +116,17 @@ const SIZE_SUFFIX = /-(?:\d?X{0,3}[SML]|X{1,3}L|\d{1,2}|TU|UNI)$/i;
 /** Código da fatura sem o tamanho, para gravar a relação com o produto. */
 export const codeBase = (code) => String(code || '').trim().toUpperCase().replace(SIZE_SUFFIX, '').replace(/\s+[A-Z]\d{1,2}$/, '');
 
+/**
+ * Códigos genéricos do Mexal para vendas fora da UE (L8PARTS, L22FRAME,
+ * L8BICI, L22WHEELS…): o mesmo código serve para artigos diferentes, então
+ * nunca vira relação com um produto. Cada linha é escolhida à mão.
+ */
+export const isGenericCode = (code) => /^L\d{1,2}(?:BIKE|BICI|FRAMES?|WHEELS?|GROUPS?|PARTS?)$/i.test(codeBase(code));
+
 /** Produto do catálogo ligado a este código da fatura (o mais específico). */
 export function matchByCode(code, catalog) {
     const c = codeBase(code);
-    if (!c) return null;
+    if (!c || isGenericCode(c)) return null;
     let best = null;
     for (const row of catalog) {
         for (const e of row.erp_codes || []) {

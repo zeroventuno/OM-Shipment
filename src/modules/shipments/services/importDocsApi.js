@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { buildImportPdf, importCode } from './importDocs';
 import { downloadBytes } from './exportDocs';
 import { addressOptions, namesMatch } from './customerShipper';
+import { isGenericCode } from './invoiceParser';
 import { listAddresses, saveAddress } from '@/modules/customers/api';
 
 /** Proforma de importação: leitura, emissão (número dado pelo banco) e PDF. */
@@ -98,7 +99,7 @@ export async function loadExportCatalog() {
 export async function saveCodeRelations(pairs, catalog) {
     for (const { code, catalogId } of pairs) {
         const row = catalog.find((c) => c.id === catalogId);
-        if (!row || !code || (row.erp_codes || []).includes(code)) continue;
+        if (!row || !code || isGenericCode(code) || (row.erp_codes || []).includes(code)) continue;
         const erp_codes = [...(row.erp_codes || []), code];
         const { error } = await supabase.from('export_catalog').update({ erp_codes, updated_at: new Date().toISOString() }).eq('id', catalogId);
         if (!error) row.erp_codes = erp_codes;
