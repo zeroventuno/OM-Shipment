@@ -1,5 +1,6 @@
 import { countryCode } from '../data/countries';
 import { renderCommercialInvoice } from './commercialInvoice';
+import { appendPdf, renderPackingList } from './packingList';
 
 /**
  * Documentos de alfândega para envios fora da UE, num PDF único:
@@ -7,6 +8,8 @@ import { renderCommercialInvoice } from './commercialInvoice';
  *   2. a declaração de livre exportação + procuração (inglês, modelo da OM);
  *   2b. a Commercial Invoice em inglês (artigos com HS e origem e, para o
  *       Reino Unido, a declaração de origem), quando preenchida;
+ *   2c. o packing list (com a referência do DDT) quando o envio tem caixas,
+ *       e a cópia do DDT logo depois da fatura, quando ele foi carregado;
  *   3. o mandato para o EUR.1 (italiano), quando o valor passa de €6.000.
  *
  * Os textos reproduzem os modelos que a OM já usa (fatura FT 1255). Só mudam
@@ -169,7 +172,7 @@ const ACCENT = [0.17, 0.33, 0.55];
  */
 export async function buildExportPdf({
     invoiceBytes, logoBytes, signatureBytes, invoiceNumber, invoiceDate, includeEur1,
-    origin, producer, commercial = null, today = todayRome(),
+    origin, producer, commercial = null, packing = null, ddtBytes = null, today = todayRome(),
 }) {
     const { PDFDocument, StandardFonts, rgb, PDFName, PDFArray } = await import('pdf-lib');
     const doc = await PDFDocument.create();
@@ -188,6 +191,7 @@ export async function buildExportPdf({
             signInvoice(pages[pages.length - 1], signature);
         }
     }
+    if (ddtBytes) await appendPdf(doc, ddtBytes);
 
     const fonts = {
         regular: await doc.embedFont(StandardFonts.Helvetica),
@@ -198,6 +202,7 @@ export async function buildExportPdf({
 
     const ctx = { doc, fonts, logo, signature, color };
     if (commercial) renderCommercialInvoice({ pdf: doc, fonts, logo, signature, color }, { invoiceNumber, invoiceDate, ...commercial });
+    if (packing?.parcels?.length) renderPackingList({ pdf: doc, fonts, logo, signature, color }, { invoice: { number: invoiceNumber, date: invoiceDate }, ...packing });
     renderDocument(ctx, freeExportBlocks({ invoiceNumber, invoiceDate, today }));
     if (includeEur1) renderDocument(ctx, eur1Blocks({ invoiceNumber, invoiceDate, today, origin, producer }));
 

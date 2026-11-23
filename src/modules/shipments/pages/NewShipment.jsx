@@ -9,9 +9,10 @@ import { PodUpload } from '../components/shipments/PodUpload';
 import { ExportDocsCard } from '../components/shipments/ExportDocsCard';
 import { ImportDocsCard } from '../components/shipments/ImportDocsCard';
 import { CustomerSearch } from '../components/shipments/CustomerSearch';
+import { BoxesEditor } from '../components/shipments/BoxesEditor';
 import { isExtraEu } from '../services/exportDocs';
 import { storageService } from '../services/storage';
-import { findCustomerByTokens } from '../services/importDocsApi';
+import { findCustomerByTokens, loadBoxPresets } from '../services/importDocsApi';
 import { useTranslation } from 'react-i18next';
 import { COUNTRIES, countryLabel } from '../data/countries';
 import { analyzeQuotes, calculateProfit } from '../utils/quotes';
@@ -69,6 +70,8 @@ export default function NewShipment() {
 
     const [processes, setProcesses] = useState({ tickets: [], warranties: [] });
     const [agents, setAgents] = useState([]);
+    const [boxPresets, setBoxPresets] = useState([]);
+    useEffect(() => { loadBoxPresets().then(setBoxPresets).catch(() => {}); }, []);
 
 
     const [quotes, setQuotes] = useState([
@@ -694,6 +697,14 @@ export default function NewShipment() {
                                 </div>
                             </div>
                             <div className="space-y-2">
+                                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t('pl.boxes')}</span>
+                                <BoxesEditor
+                                    value={formData.parcels}
+                                    presets={boxPresets}
+                                    onChange={(parcels) => setFormData((f) => ({ ...f, parcels }))}
+                                />
+                            </div>
+                            <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-700">{t('Photos')}</label>
                                 <PhotoUpload
                                     photos={formData.photoUrls || []}
@@ -862,6 +873,7 @@ export default function NewShipment() {
                             invoiceValue={request?.invoice_value}
                             country={formData.destinationCountry}
                             parcels={formData.parcels}
+                            reference={formData.orderId}
                             onInvoiceRead={fillFromInvoice}
                         />
                     )}

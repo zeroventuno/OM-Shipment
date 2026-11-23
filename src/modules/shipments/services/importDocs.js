@@ -168,7 +168,19 @@ export async function buildImportPdf({ doc: d, logoBytes, signatureBytes }) {
     page = pdf.addPage([A4.width, A4.height]);
     y = header(ctx, page, 'PACKING LIST', code, d.issued_on);
     y = importParties(ctx, page, y, d.shipper);
-    const parcels = d.parcels || [];
+    y = packingTable(ctx, page, y, d.parcels || [], items);
+    signatureBlock(ctx, page, Math.min(y - 20, 190), d.issued_on);
+    footer(ctx, page, code, 2, 2);
+
+    return pdf.save();
+}
+
+/**
+ * Tabela do packing list (caixas, medidas, volume e peso), os totais e a
+ * linha "Contents". Usada pela proforma IMP e pelo packing list dos envios.
+ */
+export function packingTable(ctx, page, y, parcels, items = []) {
+    const { fonts } = ctx;
     const pcols = [
         { key: 'n', label: 'PACKAGE', w: 0.14 },
         { key: 'type', label: 'TYPE', w: 0.22 },
@@ -198,10 +210,7 @@ export async function buildImportPdf({ doc: d, logoBytes, signatureBytes }) {
             y -= 11.5;
         }
     }
-    signatureBlock(ctx, page, Math.min(y - 20, 190), d.issued_on);
-    footer(ctx, page, code, 2, 2);
-
-    return pdf.save();
+    return y;
 }
 
 // ---------------------------------------------------------------------------

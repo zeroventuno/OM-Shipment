@@ -123,3 +123,13 @@ export async function downloadImportDoc(row, { sign = true } = {}) {
     const who = (row.shipper?.name || '').replace(/[^\w-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
     downloadBytes(bytes, `${importCode(row.number)}${who ? `_${who}` : ''}.pdf`);
 }
+
+/** Caixas padrão da Officine Mattio (as mesmas do formulário de pedido). */
+export async function loadBoxPresets() {
+    const { data, error } = await supabase.from('box_presets')
+        .select('id, name, width, height, depth, avg_weight')
+        .eq('active', true)
+        .order('sort_order').order('name');
+    if (error) throw error;
+    return data || [];
+}

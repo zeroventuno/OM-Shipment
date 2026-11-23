@@ -14,6 +14,7 @@ import { originStatementFor, REX_NUMBER, REX_THRESHOLD } from '../../services/co
 import { findCustomerByName, loadExportCatalog, saveCodeRelations } from '../../services/importDocsApi';
 import { codeBase, itemFromCatalog, matchCatalogInfo, orderTypeFromHs, parseInvoiceText } from '../../services/invoiceParser';
 import { pdfLines } from '../../services/pdfText';
+import { ddtNumberFromName, parseDdtText } from '../../services/ddtParser';
 
 const MAX_BYTES = 15 * 1024 * 1024;
 const emptyConsignee = { name: '', address: '', postal_code: '', city: '', country: '', tax_id: '', contact: '', phone: '', email: '' };
@@ -24,11 +25,20 @@ const num = (v) => Number(String(v ?? '').trim().replace(/\./g, '').replace(',',
  *   - a fatura do gestionale (PDF enviado aqui, não fica salvo), assinada;
  *   - a Commercial Invoice em inglês, com artigos, HS, origem e, para o Reino
  *     Unido, a declaração de origem com o número REX;
+ *   - o packing list, quando o envio tem caixas, com a referência do DDT;
+ *   - a cópia do DDT (bolla di scarico), quando carregado (também não fica salvo);
  *   - a declaração de livre exportação e, se precisar, o mandato EUR.1.
  */
-export function ExportDocsCard({ customerName, invoiceValue, country, parcels, onInvoiceRead }) {
+export function ExportDocsCard({ customerName, invoiceValue, country, parcels, reference, onInvoiceRead }) {
     const { t } = useTranslation();
     const fileRef = useRef(null);
+    const ddtRef = useRef(null);
+    // DDT: { name, bytes } + número e data (lidos do PDF, editáveis)
+    const [ddt, setDdt] = useState(null);
+    const [ddtNumber, setDdtNumber] = useState('');
+    const [ddtDate, setDdtDate] = useState('');
+    const [ddtAttach, setDdtAttach] = useState(false);
+    const [ddtRead, setDdtRead] = useState(null); // 'ok' | 'fail' | null
     const statementKind = originStatementFor(country);
     const [invoice, setInvoice] = useState(null); // { name, bytes }
     const [number, setNumber] = useState('');
@@ -109,6 +119,30 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, o
         readInvoice(bytes);
     };
 
+    const onDdtFile = async (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+        setError('');
+        if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) return setError(t('pl.err.pdf'));
+        if (file.size > MAX_BYTES) return setError(t('exp.err.size'));
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        setDdt({ name: file.name, bytes });
+        setDdtRead(null);
+        const fromName = ddtNumberFromName(file.name);
+        try {
+            const r = parseDdtText(await pdfLines(bytes));
+            setDdtNumber(r.number || fromName);
+            setDdtDate(r.date || '');
+            setDdtRead(r.number && r.date ? 'ok' : 'fail');
+        } catch (err) {
+            console.error('DDT read error:', err);
+            setDdtNumber(fromName);
+            setDdtRead('fail');
+        }
+    };
+    const removeDdt = () => { setDdt(null); setDdtNumber(''); setDdtDate(''); setDdtRead(null); };
+
     // Lê a fatura do gestionale: número, data, artigos (com o produto da loja
     // quando o código já está relacionado) e frete. O que não der para ler
     // continua sendo preenchido à mão.
@@ -159,6 +193,8 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, o
     const ciReady = !commercial || (consignee.name.trim() && goods.length > 0);
     // produto sugerido pelo nome e ainda não confirmado: não gera
     const unconfirmed = commercial && items.some((it) => it.unconfirmed && it.description.trim());
+    const boxes = (parcels || []).filter((p) => Number(p.weight) > 0);
+    const ddtInfo = ddtNumber.trim() ? { number: ddtNumber.trim(), date: ddtDate } : null;
     const ready = invoice && number.trim() && date && ciReady && !unconfirmed;
     const rexMissing = commercial && statement && !REX_NUMBER;
 
@@ -175,9 +211,17 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, o
                     items: goods,
                     freight: freightValue,
                     terms: terms.trim(),
-                    parcels: (parcels || []).filter((p) => Number(p.weight) > 0),
+                    parcels: boxes,
                     statement: statement ? statementKind || 'uk' : null,
                 } : null,
+                packing: boxes.length ? {
+                    consignee: Object.fromEntries(Object.entries(consignee).map(([k, v]) => [k, String(v).trim()])),
+                    parcels: boxes,
+                    items: commercial ? goods : [],
+                    ddt: ddtInfo,
+                    reference: String(reference || '').trim(),
+                } : null,
+                ddtBytes: boxes.length && ddt && ddtAttach ? ddt.bytes : null,
             });
             if (commercial) {
                 // relação código da fatura → produto, para as próximas faturas
@@ -244,6 +288,38 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, o
                 <div>
                     <Input label={t('exp.value')} inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} placeholder="9990" />
                 </div>
+
+                {/* ------------------------------------------------ DDT e packing list: só com caixas */}
+                {boxes.length > 0 && (
+                    <div className="space-y-3 rounded-md border border-border p-3">
+                        <span className={eyebrow}>{t('pl.ddt')}</span>
+                        {ddt ? (
+                            <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm">
+                                <span className="truncate">{ddt.name}</span>
+                                <button type="button" aria-label={t('pl.ddtRemove')} className="text-muted-foreground hover:text-error" onClick={removeDdt}>
+                                    <X className="h-4 w-4" />
+                                </button>
+                            </div>
+                        ) : (
+                            <Button type="button" variant="outlined" className="w-full" onClick={() => ddtRef.current?.click()}>
+                                <Upload className="mr-2 h-4 w-4" />{t('pl.ddtUpload')}
+                            </Button>
+                        )}
+                        <input ref={ddtRef} type="file" accept="application/pdf,.pdf" className="hidden" onChange={onDdtFile} />
+                        {ddtRead === 'fail' && <p role="status" className="text-xs text-error">{t('pl.ddtReadFail')}</p>}
+                        <div className="grid grid-cols-2 gap-3">
+                            <Input label={t('pl.ddtNumber')} value={ddtNumber} onChange={(e) => setDdtNumber(e.target.value)} placeholder="2/380" />
+                            <Input label={t('pl.ddtDate')} type="date" value={ddtDate} onChange={(e) => setDdtDate(e.target.value)} />
+                        </div>
+                        {ddt && (
+                            <label className="flex items-start gap-2 text-sm cursor-pointer">
+                                <input type="checkbox" className="mt-1 accent-primary" checked={ddtAttach} onChange={(e) => setDdtAttach(e.target.checked)} />
+                                <span>{t('pl.ddtAttach')}</span>
+                            </label>
+                        )}
+                        <p className="text-xs text-muted-foreground">{t('pl.included', { n: boxes.length })}</p>
+                    </div>
+                )}
 
                 {/* ------------------------------------------------ Commercial Invoice */}
                 <label className="flex items-start gap-2 text-sm cursor-pointer">
