@@ -11,7 +11,7 @@ status: no-ar
 papel: [Produto, UX/UI, Desenvolvimento]
 capa: imagens/00-capa.jpg
 estado: rascunho
-atualizado: 2026-11-20
+atualizado: 2026-11-24
 
 cliente: Officine Mattio
 mostrar_cliente: true
@@ -27,7 +27,7 @@ numeros:
     rotulo: economizados escolhendo o orçamento mais barato
   - valor: "5"
     rotulo: idiomas nos formulários públicos
-  - valor: "178"
+  - valor: "189"
     rotulo: testes automatizados
 galeria:
   - arquivo: imagens/01-cartao-de-emergencia.jpg
@@ -56,7 +56,7 @@ Os mesmos clientes estavam cadastrados duas vezes, com dados diferentes. Pedidos
 
 ## Solução
 
-Um arquivo de clientes compartilhado, com envios, assistências e garantias na mesma ficha. A Commercial Invoice sai do PDF da fatura, com descrições em inglês e códigos HS do catálogo. Processos parados há mais de 30 dias aparecem no menu.
+Um arquivo de clientes compartilhado, com envios, assistências e garantias na mesma ficha. A Commercial Invoice e o packing list saem do PDF da fatura, com descrições em inglês e códigos HS do catálogo. Processos parados há mais de 30 dias aparecem no menu.
 
 ## Formulários
 
@@ -74,4 +74,4 @@ No ar e em uso diário pela equipe. O NFC está em piloto, testado com chips pr�
 
 *Documentos de exportação*
 
-A Commercial Invoice é montada a partir do PDF da fatura do sistema contábil: o OM Service lê os artigos, liga cada código ao produto do catálogo e preenche descrição em inglês, código HS e origem. Depois que a FedEx reteve um envio porque uma camisa de manga longa saiu como manga curta, a ferramenta passou a pedir confirmação sempre que reconhece um produto só pelo nome, e avisa quando o HS da fatura diverge do catálogo ou quando falta o gênero que a alfândega americana exige.
+A Commercial Invoice é montada a partir do PDF da fatura do sistema contábil: o OM Service lê os artigos, liga cada código ao produto do catálogo e preenche descrição em inglês, código HS e origem. Depois que a FedEx reteve um envio porque uma camisa de manga longa saiu como manga curta, a ferramenta passou a pedir confirmação sempre que reconhece um produto só pelo nome, e avisa quando o HS da fatura diverge do catálogo ou quando falta o gênero que a alfândega americana exige. Cada linha da fatura pode ser trocada por qualquer artigo do catálogo ou por texto livre, e o packing list cita o número do DDT lido do PDF da bolla.

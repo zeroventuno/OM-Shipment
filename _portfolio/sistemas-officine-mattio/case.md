@@ -35,6 +35,12 @@ Em novembro de 2026 a FedEx reteve um envio para os Estados Unidos: a ferramenta
 - produto reconhecido só pelo nome vira sugestão, e o documento só é gerado depois que alguém confirma;
 - a tela avisa quando o HS da fatura diverge do catálogo e quando falta o gênero (men's, women's, unisex) que a alfândega americana pede para roupa.
 
+Também em novembro de 2026, três ajustes pedidos pela equipe:
+
+- envios cadastrados à mão, sem passar pelo formulário, passaram a ter as caixas usadas (com as caixas padrão da empresa), e assim o PDF de exportação ganha a página do packing list;
+- quando o envio tem caixas, dá para anexar o DDT (documento de transporte). O sistema lê o número com a série, como "2/380", e a data direto do PDF, e o packing list cita esse documento;
+- faturas com códigos genéricos do sistema contábil, como "L22FRAME" ou "SPARE BIKE PARTS", não são mais ligadas sozinhas a um produto. Cada linha pode ser trocada por qualquer artigo do catálogo ou por texto livre, e peças não especificadas usam um artigo genérico com o HS de partes de bicicleta.
+
 ## O produto NFC
 
 Uma proposta de produto de baixo custo e alto valor para a marca: um chip NFC costurado ou termocolado na roupa. O chip guarda só um link; todo o conteúdo fica no sistema e pode mudar sem regravar o chip.
@@ -51,7 +57,7 @@ Custo estimado: etiquetas NFC laváveis de 0,40 a 0,80 € por peça em lotes de
 
 - Tabelas com dado sensível ficam fechadas: tudo passa por funções do banco com permissões explícitas, e o que é público só recebe ou devolve o mínimo.
 - Migrations testadas dentro de uma transação desfeita antes de aplicar.
-- Cada mudança passa por lint, checagem de tipos, 178 testes automatizados e build no CI antes de ir para produção, sempre por uma prévia na Vercel aprovada antes.
+- Cada mudança passa por lint, checagem de tipos, 189 testes automatizados e build no CI antes de ir para produção, sempre por uma prévia na Vercel aprovada antes.
 - Prévias de link próprias para cada formulário, para o WhatsApp mostrar o título e a imagem certos.
 
 ## Números
