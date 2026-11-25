@@ -79,6 +79,8 @@ export interface AgendaEvent {
   van_id?: string | null;
   /** quem registrou pelo link pessoal */
   booked_by?: string | null;
+  /** reserva de furgão criada junto com uma trasferta */
+  parent_id?: string | null;
 }
 
 /** Como os nomes aparecem: "Mario Rossi" ou "Rossi Mario" (mais comum na Itália). */

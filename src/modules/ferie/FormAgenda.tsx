@@ -34,15 +34,18 @@ export function AgendaForm({ token, mode, vans, events, onDone }: {
 }) {
   const { t, i18n } = useTranslation();
   const today = todayRome();
-  const [d, setD] = useState(() => empty(vans[0]?.id));
+  // na trasferta o furgão é opcional e começa sem nenhum
+  const firstVan = mode === "van" ? vans[0]?.id : "";
+  const [d, setD] = useState(() => empty(firstVan));
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
   const fmt = (x: string) => new Date(`${x}T12:00:00`).toLocaleDateString(i18n.language, { day: "2-digit", month: "short" });
-  const taken = mode === "van" ? vanTaken(events, d) : undefined;
+  const withVan = mode === "van" || (mode === "travel" && !!d.van_id);
+  const taken = withVan ? vanTaken(events, d) : undefined;
 
   const submit = useMutation({
-    mutationFn: () => ferieFormEvent(token, { ...d, kind: mode, van_id: mode === "van" ? d.van_id : "" }),
-    onSuccess: () => { setD(empty(vans[0]?.id)); setSent(true); onDone(); },
+    mutationFn: () => ferieFormEvent(token, { ...d, kind: mode, van_id: withVan ? d.van_id : "" }),
+    onSuccess: () => { setD(empty(firstVan)); setSent(true); onDone(); },
     onError: (e: { code?: string; hint?: string }) => setError(t(e.hint === "van_taken" ? "fe.err.vanTaken" : e.code === "53400" ? "fe.err.busy" : "fe.err.send")),
   });
 
@@ -65,9 +68,15 @@ export function AgendaForm({ token, mode, vans, events, onDone }: {
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
-      {mode === "van" && (
-        <Field label={t("fe.van")}>
+      {(mode === "van" || (mode === "travel" && vans.length > 0)) && (
+        <Field label={mode === "travel" ? `${t("fe.form.travelVan")} (${t("fe.optional")})` : t("fe.van")}>
           <div role="radiogroup" aria-label={t("fe.van")} className="flex flex-wrap gap-2">
+            {mode === "travel" && (
+              <button type="button" role="radio" aria-checked={!d.van_id} onClick={() => setD({ ...d, van_id: "" })}
+                className={cn("h-10 rounded-full border px-4 text-sm", !d.van_id ? "border-foreground bg-secondary font-semibold" : "border-border bg-card")}>
+                {t("fe.form.noVan")}
+              </button>
+            )}
             {vans.map((v) => (
               <button key={v.id} type="button" role="radio" aria-checked={d.van_id === v.id} onClick={() => setD({ ...d, van_id: v.id })}
                 className={cn("h-10 rounded-full border px-4 text-sm", d.van_id === v.id ? "border-foreground bg-secondary font-semibold" : "border-border bg-card")}>
@@ -96,7 +105,7 @@ export function AgendaForm({ token, mode, vans, events, onDone }: {
       {error && !taken && <p role="alert" className="text-sm font-medium text-destructive">{error}</p>}
       {sent && <p role="status" className="flex items-center gap-2 text-sm font-medium"><CheckCircle2 className="h-4 w-4" />{t("fe.form.saved")}</p>}
       <Button type="submit" size="lg" className="self-start" disabled={submit.isPending || !!taken}>
-        {submit.isPending && <Loader2 className="animate-spin" />}{t(mode === "van" ? "fe.form.bookVan" : "fe.form.addAgenda")}
+        {submit.isPending && <Loader2 className="animate-spin" />}{t(mode === "van" ? "fe.form.bookVan" : withVan ? "fe.form.addTravelVan" : "fe.form.addAgenda")}
       </Button>
     </form>
   );
@@ -107,7 +116,8 @@ export function MyAgenda({ token, events, vans, onDone }: { token: string; event
   const { t, i18n } = useTranslation();
   const today = todayRome();
   const cancel = useMutation({ mutationFn: (id: string) => ferieFormEventCancel(token, id), onSuccess: onDone });
-  const mine = events.filter((e) => e.mine && e.end_date >= today).sort((a, b) => a.start_date.localeCompare(b.start_date));
+  const mine = events.filter((e) => e.mine && !e.parent_id && e.end_date >= today).sort((a, b) => a.start_date.localeCompare(b.start_date));
+  const linkedVan = (id: string) => vans.find((v) => v.id === events.find((e) => e.parent_id === id)?.van_id)?.name;
   const fmt = (x: string) => new Date(`${x}T12:00:00`).toLocaleDateString(i18n.language, { weekday: "short", day: "2-digit", month: "short" });
   if (!mine.length) return null;
   return (
@@ -119,6 +129,7 @@ export function MyAgenda({ token, events, vans, onDone }: { token: string; event
               <span className="block font-semibold">{ev.title}</span>
               <span className="block text-muted-foreground">
                 {t(`fe.kind.${ev.kind}`)}{ev.kind === "van" && ` · ${vans.find((v) => v.id === ev.van_id)?.name ?? ""}`}
+                {linkedVan(ev.id) && ` · ${t("fe.form.withVan", { name: linkedVan(ev.id) })}`}
                 {" · "}{ev.start_date === ev.end_date ? fmt(ev.start_date) : `${fmt(ev.start_date)} → ${fmt(ev.end_date)}`}
                 {ev.start_time && ` · ${ev.start_time.slice(0, 5)}${ev.end_time ? `–${ev.end_time.slice(0, 5)}` : ""}`}
               </span>

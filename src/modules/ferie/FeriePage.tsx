@@ -425,7 +425,7 @@ function EventDialog({ value, employees, vans, onClose }: { value: Partial<Staff
         </div>
         <DialogFooter className="gap-2 sm:justify-between">
           {f.id ? <Button variant="ghost" className="text-destructive" disabled={remove.isPending}
-            onClick={() => { if (window.confirm(t("fe.confirmDelete", { title: f.title }))) remove.mutate(); }}>{t("Delete")}</Button> : <span />}
+            onClick={() => { if (window.confirm(t("fe.confirmDeleteEvent", { title: f.title }))) remove.mutate(); }}>{t("Delete")}</Button> : <span />}
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>{t("Cancel")}</Button>
             <Button disabled={!ok || save.isPending} onClick={() => save.mutate({
