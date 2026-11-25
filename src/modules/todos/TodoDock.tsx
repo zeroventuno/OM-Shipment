@@ -10,6 +10,8 @@ import { warrantiesQuery, warrantyAge } from "@/modules/warranties/api";
 import { REQUESTS_QUERY_KEY, listRequests } from "@/modules/requests/api";
 import { PICKUP_REQUESTS_QUERY_KEY, listPickupRequests } from "@/modules/pickups/api";
 import { FERIE_KEY, listEmployees, listLeaves } from "@/modules/ferie/api";
+import { myAccessQuery } from "@/modules/access/api";
+import { isAreaOn } from "@/modules/access/areas";
 import { AUTO_ORDER, TODOS_KEY, addTodo, autoItems, deleteTodo, listTodos, setTodoDone, type AutoKind } from "./api";
 
 /*
@@ -60,14 +62,20 @@ export function TodoDock({ onDocked }: { onDocked?: (docked: boolean) => void })
   const leaves = useQuery({ queryKey: [...FERIE_KEY, "leaves"], queryFn: listLeaves, enabled, refetchInterval: 120_000 });
   const employees = useQuery({ queryKey: [...FERIE_KEY, "employees"], queryFn: listEmployees, enabled });
 
+  const access = useQuery({ ...myAccessQuery, enabled }).data;
   const auto = useMemo(() => {
     const now = new Date();
-    return autoItems({
+    const items = autoItems({
       requests: requests.data, pickups: pickups.data, leaves: leaves.data, employees: employees.data,
       tickets: (tickets.data ?? []).map((item) => ({ item, age: ticketAge(item, now) })).filter((x) => x.age.stale).map((x) => ({ item: x.item, days: x.age.days })),
       warranties: (warranties.data ?? []).map((item) => ({ item, age: warrantyAge(item, now) })).filter((x) => x.age.stale).map((x) => ({ item: x.item, days: x.age.days })),
     });
-  }, [requests.data, pickups.data, tickets.data, warranties.data, leaves.data, employees.data]);
+    // só o que este login pode abrir (painel Accessi)
+    return items.filter((a) => (a.kind === "request" || a.kind === "pickup") ? isAreaOn(access, "spedizioni")
+      : a.kind === "ticket" ? isAreaOn(access, "assistenza")
+        : a.kind === "warranty" ? isAreaOn(access, "garanzie")
+          : !!access && access.ferie !== "none");
+  }, [requests.data, pickups.data, tickets.data, warranties.data, leaves.data, employees.data, access]);
 
   const refresh = () => qc.invalidateQueries({ queryKey: TODOS_KEY });
   const add = useMutation({ mutationFn: () => addTodo(title, due || null), onSuccess: () => { setTitle(""); setDue(""); refresh(); } });

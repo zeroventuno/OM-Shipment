@@ -12,6 +12,7 @@ import { listPickupRequests, PICKUP_REQUESTS_QUERY_KEY } from '@/modules/pickups
 import { nfcCanAdminQuery } from '@/modules/nfc/api';
 import { FERIE_KEY, listLeaves } from '@/modules/ferie/api';
 import { myAccessQuery } from '@/modules/access/api';
+import { isAreaOn, type AreaKey } from '@/modules/access/areas';
 import { useState } from 'react';
 import { LinksDialog } from './LinksDialog';
 
@@ -28,6 +29,8 @@ export interface Area {
     ferieOnly?: boolean;
     /** Só para o administrador do Gestionale. */
     adminOnly?: boolean;
+    /** Área que o painel Accessi liga e desliga por login. */
+    areaKey?: AreaKey;
 }
 
 // As áreas do sistema. Envios tem subpáginas.
@@ -36,6 +39,7 @@ export const AREAS: Area[] = [
         icon: Truck,
         label: 'nav.shipments',
         to: '/shipments',
+        areaKey: 'spedizioni',
         sub: [
             { label: 'Dashboard', to: '/shipments', end: true },
             { label: 'New Shipment', to: '/shipments/new' },
@@ -45,11 +49,11 @@ export const AREAS: Area[] = [
             { label: 'imp.nav', to: '/shipments/import-docs' },
         ],
     },
-    { icon: Wrench, label: 'nav.assistance', to: '/assistance' },
-    { icon: ShieldCheck, label: 'nav.warranties', to: '/warranties' },
-    { icon: Inbox, label: 'nav.serviceRequests', to: '/service-requests' },
-    { icon: Users, label: 'nav.customers', to: '/customers' },
-    { icon: Contact, label: 'nav.contacts', to: '/contacts' },
+    { icon: Wrench, label: 'nav.assistance', to: '/assistance', areaKey: 'assistenza' },
+    { icon: ShieldCheck, label: 'nav.warranties', to: '/warranties', areaKey: 'garanzie' },
+    { icon: Inbox, label: 'nav.serviceRequests', to: '/service-requests', areaKey: 'richieste' },
+    { icon: Users, label: 'nav.customers', to: '/customers', areaKey: 'clienti' },
+    { icon: Contact, label: 'nav.contacts', to: '/contacts', areaKey: 'referenti' },
     { icon: Palmtree, label: 'nav.ferie', to: '/ferie', menuOnly: true, ferieOnly: true },
     { icon: KeyRound, label: 'nav.access', to: '/access', menuOnly: true, adminOnly: true },
     { icon: Nfc, label: 'nav.nfc', to: '/nfc', menuOnly: true, nfcAdminOnly: true },
@@ -129,7 +133,7 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
                 </div>
 
                 <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto" aria-label={t('Main menu')}>
-                    {AREAS.filter((area) => (!area.nfcAdminOnly || nfcAdmin) && (!area.ferieOnly || (access && access.ferie !== 'none')) && (!area.adminOnly || access?.admin)).map((area) => {
+                    {AREAS.filter((area) => (!area.nfcAdminOnly || nfcAdmin) && (!area.ferieOnly || (access && access.ferie !== 'none')) && (!area.adminOnly || access?.admin) && (!area.areaKey || isAreaOn(access, area.areaKey))).map((area) => {
                         const inArea = pathname.startsWith(area.to);
                         const count = stale[area.to] ?? 0;
                         return (
@@ -195,14 +199,14 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
                         <Link2 className="h-4 w-4" />
                         {t('links.menu')}
                     </button>
-                    <NavLink
+                    {isAreaOn(access, 'report') && <NavLink
                         to="/report"
                         onClick={onClose}
                         className="flex items-center justify-center gap-2 h-10 rounded-full border border-white/25 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/80 hover:text-white hover:border-white"
                     >
                         <FileBarChart className="h-4 w-4" />
                         {t('rep.menu')}
-                    </NavLink>
+                    </NavLink>}
                     <div className="flex gap-1.5" role="group" aria-label={t('Language')}>
                         {(['pt', 'it'] as const).map((lng) => (
                             <button

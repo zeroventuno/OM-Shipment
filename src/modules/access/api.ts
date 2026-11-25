@@ -8,8 +8,8 @@ import { requireSupabase } from "@/lib/supabase";
 export type FerieLevel = "none" | "view" | "approve";
 export const FERIE_LEVELS: FerieLevel[] = ["none", "view", "approve"];
 
-export interface MyAccess { admin: boolean; ferie: FerieLevel }
-export interface UserAccess { user_id: string; email: string; last_sign_in_at: string | null; admin: boolean; ferie: FerieLevel }
+export interface MyAccess { admin: boolean; ferie: FerieLevel; areas: Record<string, boolean> }
+export interface UserAccess { user_id: string; email: string; last_sign_in_at: string | null; admin: boolean; ferie: FerieLevel; areas: Record<string, boolean> }
 
 async function rpc<T>(fn: string, args?: Record<string, unknown>): Promise<T> {
   const { data, error } = await requireSupabase().rpc(fn, args);
@@ -36,3 +36,4 @@ export async function createLogin(email: string, ferie: FerieLevel): Promise<{ o
 }
 
 export const setAccess = (target: string, level: FerieLevel) => rpc("access_admin_set", { target, area: "ferie", level });
+export const setArea = (target: string, area: string, on: boolean) => rpc("access_admin_set", { target, area, level: on ? "on" : "off" });

@@ -38,6 +38,7 @@ const FeriePage = lazy(() => import('@/modules/ferie/FeriePage'))
 const FerieFormPage = lazy(() => import('@/modules/ferie/FerieFormPage'))
 // Painel de acessos por login (só administrador).
 const AccessPage = lazy(() => import('@/modules/access/AccessPage'))
+const ReportGate = lazy(() => import('@/modules/access/ReportGate'))
 
 function PageFallback() {
     return (
@@ -62,7 +63,7 @@ export default function App() {
             {/* /t/<code> é a página leve tag.html (vercel.json); estas são as do atleta */}
             <Route path="/t/:code/registra" element={page(<NfcProfilePage key="claim" />)} />
             <Route path="/nfc/profilo" element={page(<NfcProfilePage key="edit" />)} />
-            <Route path="/report" element={<ProtectedRoute>{page(<ReportPage />)}</ProtectedRoute>} />
+            <Route path="/report" element={<ProtectedRoute>{page(<ReportGate><ReportPage /></ReportGate>)}</ProtectedRoute>} />
 
             <Route
                 path="/"
@@ -72,7 +73,8 @@ export default function App() {
                     </ProtectedRoute>
                 }
             >
-                <Route index element={<Navigate to="/shipments" replace />} />
+                <Route index element={null} />
+                <Route path="no-access" element={null} />
 
                 <Route path="shipments" element={page(<ShipmentsDashboard />)} />
                 <Route path="shipments/new" element={page(<NewShipment />)} />

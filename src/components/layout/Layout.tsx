@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { TodoDock } from '@/modules/todos/TodoDock';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { myAccessQuery } from '@/modules/access/api';
+import { areaForPath, firstAllowedPath, isAreaOn } from '@/modules/access/areas';
 import { Menu } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Sidebar, AREAS, useStaleCounts } from './Sidebar';
@@ -25,12 +28,13 @@ function BottomNav() {
     const { t } = useTranslation();
     const { pathname } = useLocation();
     const stale = useStaleCounts();
+    const access = useQuery(myAccessQuery).data;
     return (
         <nav
             aria-label={t('Main menu')}
             className="lg:hidden fixed bottom-0 inset-x-0 z-20 grid grid-cols-6 bg-card border-t border-border pb-[env(safe-area-inset-bottom)]"
         >
-            {AREAS.filter((area) => !area.menuOnly).map((area) => {
+            {AREAS.filter((area) => !area.menuOnly && (!area.areaKey || isAreaOn(access, area.areaKey))).map((area) => {
                 const active = pathname.startsWith(area.to);
                 const count = stale[area.to] ?? 0;
                 return (
@@ -54,6 +58,18 @@ function BottomNav() {
             })}
         </nav>
     );
+}
+
+/** Página de área desligada no painel Accessi: manda para a primeira que o login pode abrir. */
+function AreaGate({ children }: { children: React.ReactNode }) {
+    const { t } = useTranslation();
+    const { pathname } = useLocation();
+    const { data: access, isLoading } = useQuery(myAccessQuery);
+    if (isLoading) return null;
+    if (pathname === '/no-access') return <p className="py-16 text-center text-muted-foreground">{t('acc.noAreas')}</p>;
+    const area = areaForPath(pathname);
+    if (pathname === '/' || (area && !isAreaOn(access, area))) return <Navigate to={firstAllowedPath(access)} replace />;
+    return <>{children}</>;
 }
 
 export default function Layout() {
@@ -96,7 +112,7 @@ export default function Layout() {
 
             <main className={cn('lg:pl-64 flex-1 pb-20 lg:pb-0', docked && 'xl:pr-[380px]')}>
                 <div className="w-full max-w-[1600px] px-4 py-6 md:px-8 lg:px-12 lg:py-10">
-                    <Outlet />
+                    <AreaGate><Outlet /></AreaGate>
                 </div>
             </main>
 

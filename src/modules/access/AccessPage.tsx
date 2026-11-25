@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "../common/PageHeader";
-import { ACCESS_LIST_KEY, FERIE_LEVELS, MY_ACCESS_KEY, createLogin, listAccess, myAccessQuery, setAccess, type FerieLevel } from "./api";
+import { ACCESS_LIST_KEY, FERIE_LEVELS, MY_ACCESS_KEY, createLogin, listAccess, myAccessQuery, setAccess, setArea, type FerieLevel } from "./api";
+import { AREA_KEYS } from "./areas";
 
 /** Painel de acessos: quem vê e quem aprova em Ferie. Só para o administrador. */
 export default function AccessPage() {
@@ -32,11 +33,21 @@ function AccessPanel() {
     },
     onError: (e: Error) => toast({ title: t("Error"), description: e.message, variant: "destructive" }),
   });
+  const area = useMutation({
+    mutationFn: ({ id, key, on }: { id: string; key: string; on: boolean }) => setArea(id, key, on),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ACCESS_LIST_KEY });
+      qc.invalidateQueries({ queryKey: MY_ACCESS_KEY });
+      toast({ title: t("Saved") });
+    },
+    onError: (e: Error) => toast({ title: t("Error"), description: e.message, variant: "destructive" }),
+  });
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader eyebrow={t("acc.eyebrow")} title={t("acc.title")} />
       <p className="max-w-3xl text-sm text-muted-foreground">{t("acc.intro")}</p>
+      <p className="max-w-3xl text-sm text-muted-foreground">{t("acc.areasHint")}</p>
       <ul className="max-w-3xl text-sm flex flex-col gap-1">
         {FERIE_LEVELS.map((l) => <li key={l}><span className="font-semibold">{t(`acc.level.${l}`)}</span>: {t(`acc.levelHint.${l}`)}</li>)}
       </ul>
@@ -45,7 +56,8 @@ function AccessPanel() {
         : users.error ? <p className="py-12 text-center text-destructive">{(users.error as Error).message}</p> : (
           <ul className="flex flex-col divide-y divide-border rounded-lg border border-border bg-card">
             {users.data!.map((u) => (
-              <li key={u.user_id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+              <li key={u.user_id} className="flex flex-col gap-3 px-4 py-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                 <span className="min-w-0">
                   <span className="flex items-center gap-1.5 font-semibold">
                     {u.email}
@@ -68,6 +80,21 @@ function AccessPanel() {
                   </span>
                   {save.isPending && save.variables?.id === u.user_id && <Loader2 className="h-4 w-4 animate-spin" />}
                 </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={`${t("acc.areas")} · ${u.email}`}>
+                  <span className="eyebrow mr-1">{t("acc.areas")}</span>
+                  {AREA_KEYS.map((k) => {
+                    const on = u.areas?.[k] !== false;
+                    return (
+                      <button key={k} type="button" role="switch" aria-checked={on} disabled={area.isPending}
+                        onClick={() => area.mutate({ id: u.user_id, key: k, on: !on })}
+                        className={cn("h-8 rounded-full border px-3 text-xs font-semibold",
+                          on ? "border-foreground bg-foreground text-background" : "border-border bg-card text-muted-foreground line-through")}>
+                        {t(`acc.area.${k}`)}
+                      </button>
+                    );
+                  })}
+                </div>
               </li>
             ))}
           </ul>
