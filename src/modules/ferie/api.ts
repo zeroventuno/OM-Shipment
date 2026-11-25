@@ -1,5 +1,5 @@
 import { requireSupabase } from "@/lib/supabase";
-import type { AgendaEvent, DayPart, Employee, Leave, LeaveStatus, Sector } from "./logic";
+import type { AgendaEvent, DayPart, Employee, Leave, LeaveStatus, NameOrder, Sector, SectorInfo } from "./logic";
 
 /*
  * Férias e agenda. Quem tem login lê e grava as tabelas direto; o link
@@ -46,12 +46,35 @@ export const listLeaves = async () =>
   check(await db().from("leave_requests").select("*").order("start_date", { ascending: false })) as StaffLeave[];
 export const listEvents = async () =>
   check(await db().from("agenda_events").select("*").order("start_date")) as StaffEvent[];
+export const listSectors = async () =>
+  check(await db().from("sectors").select("*").order("sort_order").order("name")) as SectorInfo[];
+
+export async function saveSector(s: SectorInfo, isNew: boolean) {
+  const row = { name: s.name.trim(), sort_order: s.sort_order, active: s.active };
+  check(await (isNew ? db().from("sectors").insert({ id: s.id, ...row }) : db().from("sectors").update(row).eq("id", s.id)));
+}
+
+/** Só apaga setor sem ninguém nem evento ligado (o banco recusa os outros). */
+export const deleteSector = async (id: string) => check(await db().from("sectors").delete().eq("id", id));
+
+export async function getNameOrder(): Promise<NameOrder> {
+  const { data, error } = await db().from("app_settings").select("value").eq("key", "ferie.name_order").maybeSingle();
+  if (error) throw error;
+  return data?.value === "last_first" ? "last_first" : "first_last";
+}
+
+export const setNameOrder = async (order: NameOrder) =>
+  check(await db().from("app_settings").upsert({ key: "ferie.name_order", value: order, updated_at: new Date().toISOString() }));
+
 export const listVans = async () =>
   check(await db().from("vans").select("*").order("sort_order").order("name")) as Van[];
 
-export async function saveEmployee(e: Partial<StaffEmployee> & { name: string; primary_sector: Sector }) {
+export async function saveEmployee(e: Partial<StaffEmployee> & { first_name: string; last_name: string; primary_sector: Sector }) {
+  const first_name = e.first_name.trim(), last_name = e.last_name.trim();
   const row = {
-    name: e.name.trim(), email: e.email?.trim() || null, primary_sector: e.primary_sector,
+    first_name: first_name || null, last_name: last_name || null,
+    // name fica sempre "Nome Sobrenome" (busca e telas que não separam)
+    name: [first_name, last_name].filter(Boolean).join(" "), email: e.email?.trim() || null, primary_sector: e.primary_sector,
     secondary_sector: e.secondary_sector || null, active: e.active ?? true,
     ...(e.link_token !== undefined ? { link_token: e.link_token } : {}),
   };
@@ -125,6 +148,8 @@ export interface FormRequest extends Leave {
 
 export interface FormData {
   me: Employee;
+  name_order: NameOrder;
+  sectors: SectorInfo[];
   requests: FormRequest[];
   employees: Employee[];
   leaves: Leave[];

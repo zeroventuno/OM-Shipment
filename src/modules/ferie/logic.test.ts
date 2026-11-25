@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  absences, blockingEvent, conflictsFor, sectorConflictDays, validateLeave, vanClashes, workingDays,
+  absences, blockingEvent, conflictsFor, displayName, orderedSectors, sectorConflictDays, sectorId, splitName, validateLeave, vanClashes, workingDays,
   type AgendaEvent, type Employee, type Leave,
 } from "./logic";
 
@@ -79,5 +79,28 @@ describe("pedido", () => {
     expect(validateLeave({ start_date: "2026-11-20", end_date: "2026-11-21", part: "full" }, today)).toBe("fe.err.past");
     expect(validateLeave({ start_date: "2026-12-01", end_date: "2026-12-02", part: "am" }, today)).toBe("fe.err.half");
     expect(validateLeave({ start_date: "2026-12-01", end_date: "2026-12-01", part: "pm" }, today)).toBeNull();
+  });
+});
+
+describe("nomes e setores", () => {
+  it("mostra nome e sobrenome na ordem escolhida", () => {
+    const e = { name: "Mario Rossi", first_name: "Mario", last_name: "Rossi" };
+    expect(displayName(e, "first_last")).toBe("Mario Rossi");
+    expect(displayName(e, "last_first")).toBe("Rossi Mario");
+    expect(displayName({ name: "Cadastro Antigo" }, "last_first")).toBe("Cadastro Antigo");
+  });
+
+  it("sugere a separação de um nome antigo", () => {
+    expect(splitName("  Gian Luca  Bianchi ")).toEqual({ first_name: "Gian", last_name: "Luca Bianchi" });
+  });
+
+  it("cria chave de setor sem repetir", () => {
+    expect(sectorId("Abbigliamento / E-commerce", [])).toBe("abbigliamento_e_commerce");
+    expect(sectorId("Officina", ["officina"])).toBe("officina_2");
+  });
+
+  it("ordena os setores do cadastro e inclui os que só existem nas pessoas", () => {
+    const list = [{ id: "b", name: "B", sort_order: 20, active: true }, { id: "a", name: "A", sort_order: 10, active: true }];
+    expect(orderedSectors(list, [{ primary_sector: "z", secondary_sector: "a" }])).toEqual(["a", "b", "z"]);
   });
 });

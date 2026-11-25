@@ -1,12 +1,17 @@
-import type { ReactNode } from "react";
-import { useState } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { addDays, todayRome, type DayPart, type LeaveStatus } from "./logic";
+import { addDays, sectorNamer, todayRome, type DayPart, type LeaveStatus, type SectorInfo } from "./logic";
 
 /* Peças usadas pela página do escritório e pelo link pessoal. */
+
+/** Setores do banco, para nomes e listas em qualquer tela de Ferie. */
+const SectorsContext = createContext<SectorInfo[]>([]);
+export const SectorsProvider = SectorsContext.Provider;
+export const useSectors = () => useContext(SectorsContext);
+export const useSectorName = () => sectorNamer(useContext(SectorsContext));
 
 /** Janela do mapa: começa uma semana antes de hoje; as setas andam 4 semanas. */
 export function useMonthWindow(months = 2) {

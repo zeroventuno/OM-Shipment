@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/modules/customers/fields";
 import { LeaveMap } from "./LeaveMap";
-import { MonthNav, PartPicker, Section, StatusChip, useMonthWindow } from "./parts";
+import { MonthNav, PartPicker, Section, SectorsProvider, StatusChip, useMonthWindow } from "./parts";
 import { ferieFormAnswer, ferieFormCancel, ferieFormData, ferieFormSubmit, type FormRequest } from "./api";
-import { absences, blockingEvent, conflictsFor, todayRome, validateLeave, workingDays, type DayPart } from "./logic";
+import { absences, blockingEvent, conflictsFor, displayName, sectorNamer, todayRome, validateLeave, workingDays, type DayPart } from "./logic";
 
 /*
  * Link pessoal do funcionário (/ferie/<token>): pedir férias, ver a resposta
@@ -24,7 +24,15 @@ export default function FerieFormPage() {
   const { t, i18n } = useTranslation();
   const qc = useQueryClient();
   const key = ["ferie-form", token];
-  const data = useQuery({ queryKey: key, queryFn: () => ferieFormData(token), retry: false });
+  const data = useQuery({
+    queryKey: key, retry: false,
+    // nomes já na ordem escolhida pelo escritório
+    queryFn: async () => {
+      const r = await ferieFormData(token);
+      const o = r.name_order ?? "first_last";
+      return { ...r, me: { ...r.me, name: displayName(r.me, o) }, employees: r.employees.map((e) => ({ ...e, name: displayName(e, o) })) };
+    },
+  });
   const [draft, setDraft] = useState(empty);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
@@ -76,9 +84,11 @@ export default function FerieFormPage() {
     );
   }
   const d = data.data;
-  const sectors = [d.me.primary_sector, d.me.secondary_sector].filter(Boolean).map((s) => t(`fe.sector.${s}`)).join(" + ");
+  const sn = sectorNamer(d.sectors ?? []);
+  const sectors = [d.me.primary_sector, d.me.secondary_sector].filter(Boolean).map((s) => sn(s)).join(" + ");
 
   return (
+    <SectorsProvider value={d.sectors ?? []}>
     <div className="min-h-screen bg-background">
       <header className="bg-primary text-primary-foreground">
         <div className="max-w-5xl mx-auto px-4 md:px-8 py-5 flex items-center justify-between gap-4">
@@ -90,11 +100,17 @@ export default function FerieFormPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="page-title">{t("fe.form.title")}</h1>
-          <p className="text-muted-foreground">{t("fe.form.intro")}</p>
+      {/* Mesma foto da prévia do WhatsApp: Alpes, lago e um avião */}
+      <div className="relative h-56 sm:h-72 overflow-hidden bg-primary">
+        <img src="/og-ferie-foto.jpg" alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover object-[70%_center]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-transparent" />
+        <div className="relative max-w-5xl mx-auto h-full px-4 md:px-8 flex flex-col justify-end gap-2 pb-6 text-white">
+          <h1 className="page-title text-white">{t("fe.form.title")}</h1>
+          <p className="max-w-xl text-sm sm:text-base text-white/85">{t("fe.form.intro")}</p>
         </div>
+      </div>
+
+      <main className="max-w-5xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-6">
 
         <form onSubmit={onSubmit} noValidate>
           <Section title={t("fe.form.new")}>
@@ -123,7 +139,7 @@ export default function FerieFormPage() {
                 {preview.peers.length > 0 && (
                   <div className="rounded-md border border-border bg-secondary/50 px-3 py-2 text-xs">
                     <p className="font-semibold">{t("fe.form.alsoAway")}</p>
-                    {preview.peers.map((p, i) => <p key={i}>{p.employee.name} · {t(`fe.sector.${p.sector}`)} · {span(p.start_date, p.end_date)}</p>)}
+                    {preview.peers.map((p, i) => <p key={i}>{p.employee.name} · {sn(p.sector)} · {span(p.start_date, p.end_date)}</p>)}
                     <p className="mt-1 text-muted-foreground">{t("fe.form.alsoAwayHint")}</p>
                   </div>
                 )}
@@ -173,5 +189,6 @@ export default function FerieFormPage() {
         </Section>
       </main>
     </div>
+    </SectorsProvider>
   );
 }

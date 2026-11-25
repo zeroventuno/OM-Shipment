@@ -9,8 +9,35 @@
  * deixam a pessoa fora.
  */
 
-export const SECTORS = ["officina", "amministrazione", "magazzino", "commerciali", "marketing", "cycling_tour"] as const;
-export type Sector = (typeof SECTORS)[number];
+/** Chave do setor (tabela sectors, editável no menu Ferie › Settori). */
+export type Sector = string;
+
+export interface SectorInfo {
+  id: Sector;
+  name: string;
+  sort_order: number;
+  active: boolean;
+}
+
+/** Setores na ordem do cadastro, mais os que só aparecem nos funcionários. */
+export function orderedSectors(sectors: SectorInfo[], employees: Pick<Employee, "primary_sector" | "secondary_sector">[] = []): Sector[] {
+  const ids = [...sectors].sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name)).map((s) => s.id);
+  for (const e of employees) for (const s of sectorsOf(e)) if (!ids.includes(s)) ids.push(s);
+  return ids;
+}
+
+/** Chave → nome para mostrar (e a própria chave, se o setor sumiu). */
+export const sectorNamer = (sectors: SectorInfo[]) => (id: Sector | null | undefined) =>
+  id ? sectors.find((s) => s.id === id)?.name ?? id : "";
+
+/** Chave nova a partir do nome: "Abbigliamento / E-commerce" → "abbigliamento_e_commerce". */
+export function sectorId(name: string, taken: Sector[]): Sector {
+  const base = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 32) || "settore";
+  let id = base;
+  for (let n = 2; taken.includes(id); n++) id = `${base}_${n}`;
+  return id;
+}
 
 export type LeaveStatus = "pending" | "approved" | "rejected" | "proposed" | "cancelled";
 export type DayPart = "full" | "am" | "pm";
@@ -20,6 +47,8 @@ export const EVENT_KINDS: EventKind[] = ["block", "meeting", "travel", "external
 export interface Employee {
   id: string;
   name: string;
+  first_name?: string | null;
+  last_name?: string | null;
   primary_sector: Sector;
   secondary_sector: Sector | null;
 }
@@ -46,6 +75,22 @@ export interface AgendaEvent {
   sector: Sector | null;
   employee_ids: string[];
   van_id?: string | null;
+}
+
+/** Como os nomes aparecem: "Mario Rossi" ou "Rossi Mario" (mais comum na Itália). */
+export type NameOrder = "first_last" | "last_first";
+
+/** Nome para mostrar; quem ainda não tem os dois campos separados fica com o nome cadastrado. */
+export function displayName(e: Pick<Employee, "name" | "first_name" | "last_name">, order: NameOrder): string {
+  const first = e.first_name?.trim() ?? "", last = e.last_name?.trim() ?? "";
+  if (!first && !last) return e.name;
+  return (order === "last_first" ? [last, first] : [first, last]).filter(Boolean).join(" ");
+}
+
+/** Sugestão para separar um nome antigo: a primeira palavra é o nome, o resto o sobrenome. */
+export function splitName(name: string): { first_name: string; last_name: string } {
+  const parts = name.trim().split(/\s+/);
+  return { first_name: parts[0] ?? "", last_name: parts.slice(1).join(" ") };
 }
 
 /** Situações que ocupam o dia no mapa e contam para conflito. */
@@ -157,7 +202,7 @@ export function sectorConflictDays(
   employees: Employee[], all: Absence[], from: string, to: string,
 ): Map<Sector, Set<string>> {
   const result = new Map<Sector, Set<string>>();
-  for (const sector of SECTORS) {
+  for (const sector of new Set(employees.flatMap(sectorsOf))) {
     const members = new Set(employees.filter((e) => sectorsOf(e).includes(sector)).map((e) => e.id));
     const perDay = new Map<string, Set<string>>();
     for (const a of all) {

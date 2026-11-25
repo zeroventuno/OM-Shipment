@@ -2,8 +2,9 @@ import { useMemo, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSectorName, useSectors } from "./parts";
 import {
-  SECTORS, absences, addDays, dayRange, daysBetween, isActive, isWeekend, sectorConflictDays, vanClashes,
+  absences, addDays, orderedSectors, dayRange, daysBetween, isActive, isWeekend, sectorConflictDays, vanClashes,
   type AgendaEvent, type Employee, type Leave, type Sector,
 } from "./logic";
 
@@ -37,6 +38,8 @@ type Bar = { key: string; start: string; end: string; label: string; style: CSSP
 
 export function LeaveMap({ from, days, employees, leaves, events, vans = [], meId, today, onLeave, onEvent }: Props) {
   const { t, i18n } = useTranslation();
+  const sectorList = useSectors();
+  const sn = useSectorName();
   const [closed, setClosed] = useState<Set<string>>(new Set());
   const to = addDays(from, days - 1);
   const width = days * DAY_W;
@@ -170,7 +173,7 @@ export function LeaveMap({ from, days, employees, leaves, events, vans = [], meI
 
           <Row name={t("fe.map.company")} header bars={companyEvents.map((ev) => eventBar(ev))} />
 
-          {SECTORS.map((sector: Sector) => {
+          {orderedSectors(sectorList, employees).map((sector: Sector) => {
             const primary = employees.filter((e) => e.primary_sector === sector);
             const secondary = employees.filter((e) => e.secondary_sector === sector);
             if (!primary.length && !secondary.length) return null;
@@ -179,16 +182,16 @@ export function LeaveMap({ from, days, employees, leaves, events, vans = [], meI
             const sectorEvents = events.filter((ev) => (ev.kind === "block" || ev.kind === "meeting") && ev.sector === sector);
             return (
               <div key={sector}>
-                <Row name={t(`fe.sector.${sector}`)} header open={open} onToggle={() => toggle(sector)}
+                <Row name={sn(sector)} header open={open} onToggle={() => toggle(sector)}
                   sub={conflicts?.size ? t("fe.map.conflicts", { count: conflicts.size }) : undefined}
                   conflicts={conflicts} bars={sectorEvents.map((ev) => eventBar(ev))} />
                 {open && primary.map((e) => (
                   <Row key={e.id} name={e.name} me={e.id === meId} bars={personBars(e)}
-                    sub={e.secondary_sector ? `+ ${t(`fe.sector.${e.secondary_sector}`)}` : undefined} />
+                    sub={e.secondary_sector ? `+ ${sn(e.secondary_sector)}` : undefined} />
                 ))}
                 {open && secondary.map((e) => (
                   <Row key={`s${e.id}`} name={e.name} faded me={e.id === meId} bars={personBars(e)}
-                    sub={t("fe.map.secondaryOf", { sector: t(`fe.sector.${e.primary_sector}`) })} />
+                    sub={t("fe.map.secondaryOf", { sector: sn(e.primary_sector) })} />
                 ))}
               </div>
             );
