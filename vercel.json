@@ -13,6 +13,10 @@
             "destination": "/ritiro.html"
         },
         {
+            "source": "/ferie/:token",
+            "destination": "/ferie.html"
+        },
+        {
             "source": "/((?!assets/|og-|favicon|logo|apple-touch-icon).*)",
             "destination": "/"
         }

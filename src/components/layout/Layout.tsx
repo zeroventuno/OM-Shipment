@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { TodoDock } from '@/modules/todos/TodoDock';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -59,6 +60,8 @@ export default function Layout() {
     const { t } = useTranslation();
     const [connStatus, setConnStatus] = useState<ConnStatus>({ status: 'checking' });
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    // To Do preso à lateral: o conteúdo abre espaço à direita
+    const [docked, setDocked] = useState(false);
 
     useEffect(() => {
         const run = async () => setConnStatus(await checkConnection());
@@ -91,19 +94,20 @@ export default function Layout() {
                 </div>
             )}
 
-            <main className="lg:pl-64 flex-1 pb-20 lg:pb-0">
+            <main className={cn('lg:pl-64 flex-1 pb-20 lg:pb-0', docked && 'xl:pr-[380px]')}>
                 <div className="w-full max-w-[1600px] px-4 py-6 md:px-8 lg:px-12 lg:py-10">
                     <Outlet />
                 </div>
             </main>
 
-            <footer className="hidden lg:block lg:pl-64">
+            <footer className={cn('hidden lg:block lg:pl-64', docked && 'xl:pr-[380px]')}>
                 <p className="px-12 py-6 text-xs text-muted-foreground">
                     © {new Date().getFullYear()} Officine Mattio · Ventuno
                 </p>
             </footer>
 
             <BottomNav />
+            <TodoDock onDocked={setDocked} />
         </div>
     );
 }

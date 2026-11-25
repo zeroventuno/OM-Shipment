@@ -33,6 +33,9 @@ const NfcAdminPage = lazy(() => import('@/modules/nfc/NfcAdminPage'))
 // Pedido de retirada para lojas e parceiros externos: só envia, sem login.
 const PickupFormPage = lazy(() => import('@/modules/pickups/PickupFormPage'))
 const PickupRequestsPage = lazy(() => import('@/modules/pickups/PickupRequestsPage'))
+// Férias e agenda: página do escritório e link pessoal do funcionário (sem login).
+const FeriePage = lazy(() => import('@/modules/ferie/FeriePage'))
+const FerieFormPage = lazy(() => import('@/modules/ferie/FerieFormPage'))
 
 function PageFallback() {
     return (
@@ -53,6 +56,7 @@ export default function App() {
             <Route path="/spedizione/:token" element={page(<RequestFormPage />)} />
             <Route path="/assistenza/:token" element={page(<ServiceFormPage />)} />
             <Route path="/ritiro/:token" element={page(<PickupFormPage />)} />
+            <Route path="/ferie/:token" element={page(<FerieFormPage />)} />
             {/* /t/<code> é a página leve tag.html (vercel.json); estas são as do atleta */}
             <Route path="/t/:code/registra" element={page(<NfcProfilePage key="claim" />)} />
             <Route path="/nfc/profilo" element={page(<NfcProfilePage key="edit" />)} />
@@ -88,6 +92,7 @@ export default function App() {
                 <Route path="customers/duplicates" element={page(<DuplicatesPage />)} />
                 <Route path="customers/:id" element={page(<CustomerDetailPage />)} />
                 <Route path="contacts" element={page(<ContactsPage />)} />
+                <Route path="ferie" element={page(<FeriePage />)} />
 
                 {/* Endereços antigos do OM-Shipment, para favoritos continuarem funcionando */}
                 <Route path="dashboard" element={<Navigate to="/shipments" replace />} />

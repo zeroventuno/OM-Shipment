@@ -9,6 +9,8 @@ import { serviceResources } from '@/modules/service/i18n';
 import { nfcResources } from '@/modules/nfc/i18n';
 import { pickupResources } from '@/modules/pickups/i18n';
 import { linksResources } from '@/components/layout/links.i18n';
+import { ferieResources } from '@/modules/ferie/i18n';
+import { todoResources } from '@/modules/todos/i18n';
 
 const STORAGE_KEY = 'om-language';
 const SUPPORTED = ['it', 'pt'] as const;
@@ -27,8 +29,8 @@ i18n
     .use(initReactI18next)
     .init({
         resources: {
-            pt: { translation: { ...shipmentResources.pt.translation, ...appResources.pt, ...reportResources.pt, ...contactsResources.pt, ...duplicatesResources.pt, ...serviceResources.pt, ...nfcResources.pt, ...pickupResources.pt, ...linksResources.pt } },
-            it: { translation: { ...shipmentResources.it.translation, ...appResources.it, ...reportResources.it, ...contactsResources.it, ...duplicatesResources.it, ...serviceResources.it, ...nfcResources.it, ...pickupResources.it, ...linksResources.it } },
+            pt: { translation: { ...shipmentResources.pt.translation, ...appResources.pt, ...reportResources.pt, ...contactsResources.pt, ...duplicatesResources.pt, ...serviceResources.pt, ...nfcResources.pt, ...pickupResources.pt, ...linksResources.pt, ...ferieResources.pt, ...todoResources.pt } },
+            it: { translation: { ...shipmentResources.it.translation, ...appResources.it, ...reportResources.it, ...contactsResources.it, ...duplicatesResources.it, ...serviceResources.it, ...nfcResources.it, ...pickupResources.it, ...linksResources.it, ...ferieResources.it, ...todoResources.it } },
         },
         lng: savedLanguage(),
         fallbackLng: 'it',

@@ -1,0 +1,53 @@
+// Testi della lista To Do (todo.*). Il genitore li unisce alle risorse i18n.
+
+const it = {
+  "todo.title": "Cose da fare",
+  "todo.count_one": "{{count}} cosa da fare",
+  "todo.count_other": "{{count}} cose da fare",
+  "todo.side": "Fissa a lato",
+  "todo.float": "Rendi mobile",
+  "todo.collapse": "Chiudi",
+  "todo.placeholder": "Nuova cosa da fare…",
+  "todo.add": "Aggiungi",
+  "todo.due": "Entro il",
+  "todo.mine": "Le mie",
+  "todo.mineEmpty": "Niente di scritto. Aggiungi qui sopra.",
+  "todo.markDone": "Segna come fatta",
+  "todo.reopen": "Riapri",
+  "todo.done": "Fatte",
+  "todo.days_one": "ferma da {{count}} giorno",
+  "todo.days_other": "ferma da {{count}} giorni",
+  "todo.more": "e altre {{count}}",
+  "todo.auto.request": "Richieste di spedizione",
+  "todo.auto.pickup": "Ritiri da fare",
+  "todo.auto.leave": "Ferie da decidere",
+  "todo.auto.ticket": "Assistenze in ritardo",
+  "todo.auto.warranty": "Garanzie in ritardo",
+};
+
+const pt: typeof it = {
+  "todo.title": "A fazer",
+  "todo.count_one": "{{count}} coisa a fazer",
+  "todo.count_other": "{{count}} coisas a fazer",
+  "todo.side": "Prender na lateral",
+  "todo.float": "Soltar",
+  "todo.collapse": "Fechar",
+  "todo.placeholder": "Nova tarefa…",
+  "todo.add": "Adicionar",
+  "todo.due": "Até",
+  "todo.mine": "Minhas",
+  "todo.mineEmpty": "Nada escrito. Adicione aqui em cima.",
+  "todo.markDone": "Marcar como feita",
+  "todo.reopen": "Reabrir",
+  "todo.done": "Feitas",
+  "todo.days_one": "parada há {{count}} dia",
+  "todo.days_other": "parada há {{count}} dias",
+  "todo.more": "e mais {{count}}",
+  "todo.auto.request": "Pedidos de envio",
+  "todo.auto.pickup": "Retiradas a fazer",
+  "todo.auto.leave": "Férias para decidir",
+  "todo.auto.ticket": "Assistências em atraso",
+  "todo.auto.warranty": "Garantias em atraso",
+};
+
+export const todoResources = { it, pt };

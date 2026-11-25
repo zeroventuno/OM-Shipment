@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { LogOut, X, Truck, Wrench, ShieldCheck, Inbox, Users, Contact, FileBarChart, Nfc, Link2, type LucideIcon } from 'lucide-react';
+import { LogOut, X, Truck, Wrench, ShieldCheck, Inbox, Users, Contact, FileBarChart, Nfc, Link2, Palmtree, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,6 +10,7 @@ import { listRequests, REQUESTS_QUERY_KEY } from '@/modules/requests/api';
 import { listServiceRequests, SERVICE_REQUESTS_QUERY_KEY } from '@/modules/service/api';
 import { listPickupRequests, PICKUP_REQUESTS_QUERY_KEY } from '@/modules/pickups/api';
 import { nfcCanAdminQuery } from '@/modules/nfc/api';
+import { FERIE_KEY, listLeaves } from '@/modules/ferie/api';
 import { useState } from 'react';
 import { LinksDialog } from './LinksDialog';
 
@@ -44,6 +45,7 @@ export const AREAS: Area[] = [
     { icon: Inbox, label: 'nav.serviceRequests', to: '/service-requests' },
     { icon: Users, label: 'nav.customers', to: '/customers' },
     { icon: Contact, label: 'nav.contacts', to: '/contacts' },
+    { icon: Palmtree, label: 'nav.ferie', to: '/ferie', menuOnly: true },
     { icon: Nfc, label: 'nav.nfc', to: '/nfc', menuOnly: true, nfcAdminOnly: true },
 ];
 
@@ -59,7 +61,10 @@ export function useStaleCounts() {
     // Pedidos de retirada de parceiros externos aguardando a equipe.
     const pickups = useQuery({ queryKey: PICKUP_REQUESTS_QUERY_KEY, queryFn: listPickupRequests, enabled: !!session, refetchInterval: 120_000 });
     const pendingPickups = (pickups.data ?? []).filter((r) => r.status === 'new').length;
+    // Pedidos de férias esperando resposta.
+    const leaves = useQuery({ queryKey: [...FERIE_KEY, 'leaves'], queryFn: listLeaves, enabled: !!session, refetchInterval: 120_000 });
     return {
+        '/ferie': (leaves.data ?? []).filter((l) => l.status === 'pending').length,
         '/assistance': (tickets.data ?? []).filter((t) => ticketAge(t).stale).length,
         '/warranties': (warranties.data ?? []).filter((w) => warrantyAge(w).stale).length,
         '/shipments': pendingRequests + pendingPickups,
@@ -138,7 +143,7 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
                                                 'min-w-6 h-5 px-2 rounded-full text-[11px] font-bold flex items-center justify-center',
                                                 area.to === '/shipments' || area.to === '/service-requests' ? (inArea ? 'bg-primary text-primary-foreground' : 'bg-white text-primary') : 'bg-destructive text-destructive-foreground'
                                             )}
-                                            title={area.to === '/shipments' ? t('{{count}} shipment requests waiting', { count }) : area.to === '/service-requests' ? t('svc.waiting', { count }) : t('{{count}} stalled for more than 30 days', { count })}
+                                            title={area.to === '/shipments' ? t('{{count}} shipment requests waiting', { count }) : area.to === '/service-requests' ? t('svc.waiting', { count }) : area.to === '/ferie' ? t('fe.waiting', { count }) : t('{{count}} stalled for more than 30 days', { count })}
                                         >
                                             {count}
                                         </span>
