@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, Copy, MessageCircle, Link2, Loader2, Plus } from "lucide-react";
+import { AlertTriangle, Copy, Mail, MessageCircle, Link2, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -314,6 +314,29 @@ function DecideDialog({ leave, employees, leaves, events, onClose }: {
   );
 }
 
+/** WhatsApp e e-mail da pessoa: acesos se cadastrados (abrem a conversa / o e-mail), apagados se faltam. */
+function ContactIcons({ person }: { person: StaffEmployee }) {
+  const { t } = useTranslation();
+  const number = waNumber(person.phone);
+  const email = person.email?.trim();
+  const on = "inline-flex h-8 w-8 items-center justify-center rounded-full border";
+  return (
+    <span className="flex shrink-0 gap-1.5">
+      {number ? (
+        <a href={`https://wa.me/${number}`} target="_blank" rel="noopener noreferrer" title={`WhatsApp · ${person.phone}`} aria-label={`WhatsApp ${person.name}`}
+          className={cn(on, "border-transparent text-white")} style={{ backgroundColor: "#25D366" }}><MessageCircle className="h-4 w-4" /></a>
+      ) : (
+        <span title={t("fe.missingPhone")} aria-label={t("fe.missingPhone")} className={cn(on, "border-dashed border-border text-muted-foreground/40")}><MessageCircle className="h-4 w-4" /></span>
+      )}
+      {email ? (
+        <a href={`mailto:${email}`} title={email} aria-label={`E-mail ${person.name}`} className={cn(on, "border-transparent bg-foreground text-background")}><Mail className="h-4 w-4" /></a>
+      ) : (
+        <span title={t("fe.missingEmail")} aria-label={t("fe.missingEmail")} className={cn(on, "border-dashed border-border text-muted-foreground/40")}><Mail className="h-4 w-4" /></span>
+      )}
+    </span>
+  );
+}
+
 /** Abre o WhatsApp com a resposta pronta para a pessoa (sem celular cadastrado, avisa). */
 function WaButton({ leave, person, size = "sm" }: { leave: StaffLeave; person?: StaffEmployee; size?: "sm" | "default" }) {
   const { t } = useTranslation();
@@ -505,6 +528,11 @@ function PeopleTab({ employees, leaves, order }: { employees: StaffEmployee[]; l
   };
   const sectorOrder = orderedSectors(sectorList, employees);
   const sorted = [...employees].sort((a, b) => Number(b.active) - Number(a.active) || sectorOrder.indexOf(a.primary_sector) - sectorOrder.indexOf(b.primary_sector) || a.name.localeCompare(b.name));
+  // um grupo por setor principal (ativos) e, no fim, os desativados
+  const groups: [string, string, StaffEmployee[]][] = [
+    ...sectorOrder.map((s) => [s, sn(s), sorted.filter((e) => e.active && e.primary_sector === s)] as [string, string, StaffEmployee[]]),
+    ["inactive", t("fe.inactive"), sorted.filter((e) => !e.active)] as [string, string, StaffEmployee[]],
+  ].filter(([, , l]) => l.length > 0);
 
   return (
     <div className="flex flex-col gap-4">
@@ -522,31 +550,44 @@ function PeopleTab({ employees, leaves, order }: { employees: StaffEmployee[]; l
         ))}
       </div>
       {sorted.length === 0 ? <p className="py-12 text-center text-muted-foreground">{t("fe.noPeople")}</p> : (
-        <ul className="flex flex-col divide-y divide-border rounded-lg border border-border bg-card">
-          {sorted.map((e) => (
-            <li key={e.id} className={cn("flex flex-wrap items-center justify-between gap-3 px-4 py-3", !e.active && "opacity-50")}>
-              <button type="button" className="min-w-0 text-left" disabled={!canEdit} onClick={() => setEditing(e)}>
-                <span className="block font-semibold hover:underline">{e.name}</span>
-                <span className="block text-sm text-muted-foreground">
-                  {sn(e.primary_sector)}{e.secondary_sector && ` + ${sn(e.secondary_sector)}`}
-                  {" · "}{t("fe.usedThisYear", { count: used.days.get(e.id) ?? 0, year })}{used.hours.get(e.id) ? ` + ${t("fe.permitHours", { count: used.hours.get(e.id), n: String(used.hours.get(e.id)).replace(".", ",") })}` : ""}
-                </span>
-              </button>
-              {e.active && (
-                <div className="flex flex-wrap gap-2">
-                  {e.link_token ? (
-                    <>
-                      <Button size="sm" variant="outline" onClick={() => copy(e.link_token!)}><Copy className="h-3.5 w-3.5" />{t("fe.copyLink")}</Button>
-                      {canEdit && <Button size="sm" variant="ghost" onClick={() => { if (window.confirm(t("fe.confirmNewLink", { name: e.name }))) link.mutate({ id: e.id, token: newLinkToken() }); }}>{t("fe.newLink")}</Button>}
-                    </>
-                  ) : canEdit ? (
-                    <Button size="sm" onClick={() => link.mutate({ id: e.id, token: newLinkToken() })}><Link2 className="h-3.5 w-3.5" />{t("fe.createLink")}</Button>
-                  ) : null}
-                </div>
-              )}
-            </li>
+        <div className="flex flex-col gap-5">
+          {groups.map(([key, title, list]) => (
+            <section key={key} className="flex flex-col gap-2">
+              {/* faixa do setor: separa os grupos de nomes */}
+              <h3 className="flex items-center gap-2 border-l-4 border-foreground pl-2 text-xs font-bold uppercase tracking-[0.12em]">
+                {title}<span className="font-semibold text-muted-foreground tabular-nums">· {list.length}</span>
+              </h3>
+              <ul className="flex flex-col divide-y divide-border rounded-lg border border-border bg-card">
+                {list.map((e) => (
+                  <li key={e.id} className={cn("flex flex-wrap items-center justify-between gap-3 px-4 py-3", !e.active && "opacity-50")}>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <ContactIcons person={e} />
+                      <button type="button" className="min-w-0 text-left" disabled={!canEdit} onClick={() => setEditing(e)}>
+                        <span className="block font-semibold hover:underline">{e.name}</span>
+                        <span className="block text-sm text-muted-foreground">
+                          {e.secondary_sector ? `+ ${sn(e.secondary_sector)} · ` : ""}
+                          {t("fe.usedThisYear", { count: used.days.get(e.id) ?? 0, year })}{used.hours.get(e.id) ? ` + ${t("fe.permitHours", { count: used.hours.get(e.id), n: String(used.hours.get(e.id)).replace(".", ",") })}` : ""}
+                        </span>
+                      </button>
+                    </div>
+                    {e.active && (
+                      <div className="flex flex-wrap gap-2">
+                        {e.link_token ? (
+                          <>
+                            <Button size="sm" variant="outline" onClick={() => copy(e.link_token!)}><Copy className="h-3.5 w-3.5" />{t("fe.copyLink")}</Button>
+                            {canEdit && <Button size="sm" variant="ghost" onClick={() => { if (window.confirm(t("fe.confirmNewLink", { name: e.name }))) link.mutate({ id: e.id, token: newLinkToken() }); }}>{t("fe.newLink")}</Button>}
+                          </>
+                        ) : canEdit ? (
+                          <Button size="sm" onClick={() => link.mutate({ id: e.id, token: newLinkToken() })}><Link2 className="h-3.5 w-3.5" />{t("fe.createLink")}</Button>
+                        ) : null}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
       )}
       {editing && <PersonDialog value={editing} others={employees} onClose={() => setEditing(null)} />}
     </div>
