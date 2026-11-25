@@ -11,6 +11,7 @@ export const LEAVES_KEY = ["ferie", "leaves"];
 
 export interface StaffEmployee extends Employee {
   email: string | null;
+  phone: string | null;
   link_token: string | null;
   active: boolean;
 }
@@ -74,7 +75,7 @@ export async function saveEmployee(e: Partial<StaffEmployee> & { first_name: str
   const row = {
     first_name: first_name || null, last_name: last_name || null,
     // name fica sempre "Nome Sobrenome" (busca e telas que não separam)
-    name: [first_name, last_name].filter(Boolean).join(" "), email: e.email?.trim() || null, primary_sector: e.primary_sector,
+    name: [first_name, last_name].filter(Boolean).join(" "), email: e.email?.trim() || null, phone: e.phone?.trim() || null, primary_sector: e.primary_sector,
     secondary_sector: e.secondary_sector || null, active: e.active ?? true,
     ...(e.link_token !== undefined ? { link_token: e.link_token } : {}),
   };

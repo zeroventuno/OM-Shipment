@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, Copy, Link2, Loader2, Plus } from "lucide-react";
+import { AlertTriangle, Copy, MessageCircle, Link2, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +12,7 @@ import { Field } from "@/modules/customers/fields";
 import { PageHeader } from "../common/PageHeader";
 import { myAccessQuery } from "../access/api";
 import { LeaveMap } from "./LeaveMap";
+import { waMessage, waNumber, waUrl } from "./whatsapp";
 import { CanEditProvider, MonthNav, PartPicker, SectorsProvider, useCanEdit, StatusChip, useDuration, useMonthWindow, useSectorName, useSectors } from "./parts";
 import {
   FERIE_KEY, addLeave, decideLeave, deleteEvent, ferieLink, listEmployees, listEvents, listLeaves, listVans,
@@ -226,6 +227,7 @@ function RequestsTab({ employees, leaves, events, onDecide }: {
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusChip status={l.status} />
+                    {canEdit && <WaButton leave={l} person={person} />}
                     {canEdit && <Button size="sm" variant={l.status === "pending" ? "default" : "outline"} onClick={() => onDecide(l)}>{l.status === "pending" ? t("fe.decide") : t("Edit")}</Button>}
                   </div>
                 </div>
@@ -250,7 +252,13 @@ function DecideDialog({ leave, employees, leaves, events, onClose }: {
   const [proposing, setProposing] = useState(leave.status === "proposed");
   const [start, setStart] = useState(leave.proposed_start ?? leave.start_date);
   const [end, setEnd] = useState(leave.proposed_end ?? leave.end_date);
-  const save = useSave(decideLeave.bind(null, leave.id) as (d: Parameters<typeof decideLeave>[1]) => Promise<void>, onClose);
+  // depois de salvar, o diálogo fica aberto para avisar pelo WhatsApp
+  const [saved, setSaved] = useState<StaffLeave | null>(null);
+  const save = useSave(async (d: Parameters<typeof decideLeave>[1]) => {
+    await decideLeave(leave.id, d);
+    setSaved({ ...leave, status: d.status, response_note: d.note?.trim() || null,
+      proposed_start: d.status === "proposed" ? d.start : null, proposed_end: d.status === "proposed" ? d.end : null });
+  });
   const okDates = !!start && !!end && end >= start;
 
   return (
@@ -274,6 +282,15 @@ function DecideDialog({ leave, employees, leaves, events, onClose }: {
           )}
           <Field label={t("fe.responseNote")}><Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
         </div>
+        {saved ? (
+          <DialogFooter className="flex-wrap items-center gap-2 sm:justify-between">
+            <span className="flex items-center gap-2 text-sm font-medium"><StatusChip status={saved.status} />{t("Saved")}</span>
+            <div className="flex flex-wrap gap-2">
+              {saved.status !== "pending" && <WaButton leave={saved} person={person} size="default" />}
+              <Button variant="outline" onClick={onClose}>{t("fe.close")}</Button>
+            </div>
+          </DialogFooter>
+        ) : (
         <DialogFooter className="flex-wrap gap-2">
           {proposing ? (
             <>
@@ -289,8 +306,24 @@ function DecideDialog({ leave, employees, leaves, events, onClose }: {
             </>
           )}
         </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Abre o WhatsApp com a resposta pronta para a pessoa (sem celular cadastrado, avisa). */
+function WaButton({ leave, person, size = "sm" }: { leave: StaffLeave; person?: StaffEmployee; size?: "sm" | "default" }) {
+  const { t } = useTranslation();
+  const number = waNumber(person?.phone);
+  const first = person?.first_name || person?.name.split(" ")[0] || "";
+  const text = waMessage(leave, first, person?.link_token ? ferieLink(person.link_token) : null);
+  if (!text || leave.status === "pending") return null;
+  if (!number) return <span className="text-xs text-muted-foreground" title={t("fe.noPhoneHint")}>{t("fe.noPhone")}</span>;
+  return (
+    <Button asChild size={size} variant="outline">
+      <a href={waUrl(number, text)} target="_blank" rel="noopener noreferrer"><MessageCircle className="h-4 w-4" />{t("fe.waNotify")}</a>
+    </Button>
   );
 }
 
@@ -537,7 +570,7 @@ function PersonDialog({ value, others, onClose }: { value: Partial<StaffEmployee
     ...(value.first_name || value.last_name
       ? { first_name: value.first_name ?? "", last_name: value.last_name ?? "" }
       : splitName(value.name ?? "")),
-    email: value.email ?? "", primary_sector: (value.primary_sector ?? sectorList.find((x) => x.active)?.id ?? "") as Sector,
+    email: value.email ?? "", phone: value.phone ?? "", primary_sector: (value.primary_sector ?? sectorList.find((x) => x.active)?.id ?? "") as Sector,
     secondary_sector: (value.secondary_sector ?? "") as Sector | "", active: value.active ?? true,
   });
   const save = useSave(saveEmployee, onClose);
@@ -554,7 +587,8 @@ function PersonDialog({ value, others, onClose }: { value: Partial<StaffEmployee
           <Field label={t("fe.firstName")}><Input value={f.first_name} autoComplete="off" onChange={(e) => setF({ ...f, first_name: e.target.value })} /></Field>
           <Field label={t("fe.lastName")}><Input value={f.last_name} autoComplete="off" onChange={(e) => setF({ ...f, last_name: e.target.value })} /></Field>
           {twin && <p className="sm:col-span-2 -mt-1 text-xs font-medium text-destructive">{t("fe.duplicateName")}</p>}
-          <div className="sm:col-span-2"><Field label="E-mail" hint={t("fe.emailHint")}><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field></div>
+          <Field label="E-mail" hint={t("fe.emailHint")}><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
+          <Field label={t("fe.phone")} hint={t("fe.phoneHint")}><Input type="tel" inputMode="tel" value={f.phone} placeholder="+39 347 123 4567" onChange={(e) => setF({ ...f, phone: e.target.value })} /></Field>
           <Field label={t("fe.primarySector")}>
             <select className={select} value={f.primary_sector} onChange={(e) => {
               const s = e.target.value as Sector;
