@@ -28,16 +28,16 @@ export function PeopleChecklist({ employees, value, onChange, locked, sectorName
   const picked = employees.filter((e) => value.includes(e.id));
 
   return (
-    <fieldset className="flex flex-col gap-2">
+    <fieldset className="flex min-w-0 flex-col gap-2">
       <legend className="eyebrow mb-1">{t("fe.who")}</legend>
       <p className="text-xs text-muted-foreground">{t("fe.whoHint")}</p>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-md border border-input bg-card px-2.5">
+        <label className="flex h-10 min-w-[10rem] flex-1 items-center gap-2 rounded-md border border-input bg-card px-2.5">
           <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("fe.whoSearch")} aria-label={t("fe.whoSearch")}
-            className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
+            className="min-w-0 flex-1 bg-transparent text-base sm:text-sm outline-none" />
         </label>
-        <span className="text-xs font-semibold tabular-nums">{t("fe.whoCount", { count: picked.length })}</span>
+        <span className="shrink-0 text-xs font-semibold tabular-nums">{t("fe.whoCount", { count: picked.length })}</span>
       </div>
       <ul className="max-h-64 overflow-y-auto rounded-md border border-border bg-card divide-y divide-border">
         {shown.map((e) => {
@@ -51,7 +51,7 @@ export function PeopleChecklist({ employees, value, onChange, locked, sectorName
                   {on && <Check className="h-3.5 w-3.5" />}
                 </span>
                 <span className="min-w-0 flex-1 truncate font-medium">{e.name}{e.id === locked && ` (${t("fe.you")})`}</span>
-                {sectorName && <span className="shrink-0 text-xs text-muted-foreground">{sectorName(e.primary_sector)}</span>}
+                {sectorName && <span className="max-w-[45%] shrink truncate text-right text-xs text-muted-foreground">{sectorName(e.primary_sector)}</span>}
               </button>
             </li>
           );

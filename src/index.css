@@ -74,6 +74,26 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+
+  /* iPhone: data e hora têm largura própria e passam da borda do cartão.
+     Sem a aparência nativa, ocupam a largura do campo como os outros. */
+  input[type="date"],
+  input[type="time"] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+    max-width: 100%;
+    display: block;
+  }
+  input[type="date"]::-webkit-date-and-time-value,
+  input[type="time"]::-webkit-date-and-time-value {
+    text-align: left;
+  }
+
+  /* fieldset tem largura mínima do conteúdo por padrão: com listas longas, estoura a tela */
+  fieldset {
+    min-width: 0;
+  }
 }
 
 /* Barra de rolagem discreta */

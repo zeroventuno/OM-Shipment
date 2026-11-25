@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -41,6 +41,13 @@ export function LeaveMap({ from, days, employees, leaves, events, vans = [], meI
   const sectorList = useSectors();
   const sn = useSectorName();
   const [closed, setClosed] = useState<Set<string>>(new Set());
+  // no celular cabem poucos dias: começa com hoje perto da esquerda
+  const scroller = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scroller.current;
+    const i = daysBetween(from, today);
+    if (el && i >= 0 && i < days) el.scrollLeft = Math.max(0, (i - 1) * DAY_W);
+  }, [from, today, days]);
   const to = addDays(from, days - 1);
   const width = days * DAY_W;
   const dates = useMemo(() => dayRange(from, to), [from, to]);
@@ -131,7 +138,7 @@ export function LeaveMap({ from, days, employees, leaves, events, vans = [], meI
         </button>
       ) : (
         <div className={cn(nameCell, "px-2 py-1.5 pl-7 max-sm:pl-2", faded && "text-muted-foreground")} style={{ width: "var(--map-name)" }}>
-          <div className={cn("truncate text-sm", me ? "font-bold" : "font-medium")}>{name}</div>
+          <div className={cn("truncate text-sm max-sm:text-xs", me ? "font-bold" : "font-medium")}>{name}</div>
           {sub && <div className="truncate text-[10px] text-muted-foreground">{sub}</div>}
         </div>
       )}
@@ -149,13 +156,16 @@ export function LeaveMap({ from, days, employees, leaves, events, vans = [], meI
         <Legend style={{ backgroundColor: "hsl(var(--muted-foreground))" }}>{t("fe.legend.away")}</Legend>
         <Legend className="bg-destructive/25">{t("fe.legend.conflict")}</Legend>
       </div>
-      <div className="overflow-x-auto rounded-lg border border-border bg-card [--map-name:200px] max-sm:[--map-name:118px]">
+      <div ref={scroller} className="overflow-x-auto rounded-lg border border-border bg-card [--map-name:200px] max-sm:[--map-name:104px]">
         <div className="min-w-max">
           <div className="flex">
             <div className={nameCell} style={{ width: "var(--map-name)" }} />
             <div className="flex shrink-0" style={{ width }}>
               {months.map((m, i) => (
-                <div key={i} className="truncate border-r border-border bg-secondary py-1.5 text-center text-xs font-semibold capitalize" style={{ width: m.days * DAY_W }}>{m.label}</div>
+                <div key={i} className="border-r border-border bg-secondary py-1.5 text-left text-xs font-semibold capitalize" style={{ width: m.days * DAY_W }}>
+                  {/* o nome do mês acompanha a rolagem, para não sumir à esquerda */}
+                  <span className="sticky left-[var(--map-name)] block w-max max-w-full truncate px-2">{m.label}</span>
+                </div>
               ))}
             </div>
           </div>
