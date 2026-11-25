@@ -13,6 +13,7 @@ import { StageBoard, AgeChip, Tag, ViewToggle, StaleBanner, useViewMode } from "
 import WarrantyTable from "./WarrantyTable";
 import WarrantyModal from "./WarrantyModal";
 import { warrantiesQuery, WARRANTIES_QUERY_KEY, createWarranty, deleteWarranty, updateWarranty, warrantyAge } from "./api";
+import { LIVE } from "@/lib/live";
 
 export default function WarrantiesPage() {
   const { t } = useTranslation();
@@ -24,7 +25,7 @@ export default function WarrantiesPage() {
   const [onlyStale, setOnlyStale] = useState(false);
   const [view, setView] = useViewMode("om-view-warranties");
 
-  const { data: warranties = [], isLoading, error } = useQuery(warrantiesQuery);
+  const { data: warranties = [], isLoading, error } = useQuery({ ...warrantiesQuery, ...LIVE });
 
   const onError = (error: Error) =>
     toast({ title: t("Error"), description: error.message, variant: "destructive" });

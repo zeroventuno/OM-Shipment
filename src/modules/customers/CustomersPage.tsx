@@ -16,6 +16,7 @@ import { findDuplicateGroups } from "./duplicates.js";
 import { key as nameKey } from "./importer.js";
 import ImportDialog from "./ImportDialog";
 import MergeDialog from "./MergeDialog";
+import { LIVE } from "@/lib/live";
 
 type Activity = "all" | "shipments" | "service" | "none" | "noAddress";
 type Sort = "name" | "last" | "count" | "cost";
@@ -58,7 +59,7 @@ export default function CustomersPage() {
     setShown(PAGE);
   };
 
-  const { data: customers = [], isLoading, error } = useQuery({ queryKey: CUSTOMERS_KEY, queryFn: listCustomers });
+  const { data: customers = [], isLoading, error } = useQuery({ queryKey: CUSTOMERS_KEY, queryFn: listCustomers, ...LIVE });
   const { data: dismissed } = useQuery({ queryKey: DISMISSALS_KEY, queryFn: listDismissals });
   const duplicateGroups = useMemo(() => (dismissed && customers.length ? findDuplicateGroups(customers, dismissed).length : 0), [customers, dismissed]);
   const selected = useMemo(() => customers.filter((c) => selectedIds.has(c.id)), [customers, selectedIds]);

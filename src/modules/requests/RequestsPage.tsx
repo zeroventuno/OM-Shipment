@@ -12,6 +12,7 @@ import { PageHeader } from "../common/PageHeader";
 import { listRequests, setRequestStatus, formatAddress, formatMoney, boxSummary, totalWeight, quoteCarrier, REQUESTS_QUERY_KEY, type ShipmentRequest, type Customer } from "./api";
 import { TrackingInfo } from "./TrackingInfo";
 import CustomerDialog from "./CustomerDialog";
+import { LIVE } from "@/lib/live";
 
 type Filter = "pending" | "shipped" | "cancelled";
 
@@ -23,7 +24,7 @@ export default function RequestsPage() {
   const [filter, setFilter] = useState<Filter>("pending");
   const [customerOpen, setCustomerOpen] = useState<Customer | null>(null);
 
-  const { data: requests = [], isLoading, error } = useQuery({ queryKey: REQUESTS_QUERY_KEY, queryFn: listRequests });
+  const { data: requests = [], isLoading, error } = useQuery({ queryKey: REQUESTS_QUERY_KEY, queryFn: listRequests, ...LIVE });
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: ShipmentRequest["status"] }) => setRequestStatus(id, status),

@@ -73,6 +73,25 @@ export default function Dashboard() {
         loadData();
     }, []);
 
+    // Atualiza os números e a lista a cada minuto com a aba visível e ao voltar
+    // para ela. Só relê o banco: o rastreio (API paga) fica na primeira carga.
+    useEffect(() => {
+        const refresh = async () => {
+            if (document.visibilityState !== 'visible') return;
+            try {
+                setStats(await storageService.getStats());
+            } catch (err) {
+                console.error('Failed to refresh stats:', err);
+            }
+        };
+        const timer = setInterval(refresh, 60_000);
+        document.addEventListener('visibilitychange', refresh);
+        return () => {
+            clearInterval(timer);
+            document.removeEventListener('visibilitychange', refresh);
+        };
+    }, []);
+
     return (
         <div className="space-y-5 md:space-y-8 pb-8">
             <div className="flex flex-wrap gap-3 justify-between items-center">

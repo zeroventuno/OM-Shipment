@@ -12,6 +12,7 @@ import { countryLabel } from "@/modules/shipments/data/countries";
 import { PageHeader } from "../common/PageHeader";
 import { boxSummary, totalWeight } from "../requests/api";
 import { PICKUP_REQUESTS_QUERY_KEY, listPickupRequests, pickupAddress, setPickupStatus, type PickupRequest } from "./api";
+import { LIVE } from "@/lib/live";
 
 type Filter = PickupRequest["status"];
 
@@ -23,7 +24,7 @@ export default function PickupRequestsPage() {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<Filter>("new");
 
-  const { data: requests = [], isLoading, error } = useQuery({ queryKey: PICKUP_REQUESTS_QUERY_KEY, queryFn: listPickupRequests });
+  const { data: requests = [], isLoading, error } = useQuery({ queryKey: PICKUP_REQUESTS_QUERY_KEY, queryFn: listPickupRequests, ...LIVE });
   const status = useMutation({
     mutationFn: ({ id, value }: { id: string; value: "new" | "rejected" }) => setPickupStatus(id, value),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: PICKUP_REQUESTS_QUERY_KEY }),

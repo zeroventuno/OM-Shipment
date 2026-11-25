@@ -16,6 +16,7 @@ import {
   archiveContact, buildContactsCsv, buildVCards, CATEGORY_SUGGESTIONS, CONTACTS_KEY, listContacts, saveContact,
   type PartnerContact, type PartnerContactInput,
 } from "./api";
+import { LIVE } from "@/lib/live";
 
 const EMPTY: PartnerContactInput = { company: "", category: "", name: "", role: "", phone: "", mobile: "", email: "", notes: "" };
 
@@ -27,7 +28,7 @@ export default function ContactsPage() {
   const [editing, setEditing] = useState<{ id: string | null; form: PartnerContactInput } | null>(null);
   const lang = i18n.language || "it";
 
-  const { data: contacts = [], isLoading, error } = useQuery({ queryKey: CONTACTS_KEY, queryFn: listContacts });
+  const { data: contacts = [], isLoading, error } = useQuery({ queryKey: CONTACTS_KEY, queryFn: listContacts, ...LIVE });
 
   const filtered = useMemo(() => {
     const term = nameKey(q);

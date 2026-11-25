@@ -13,6 +13,7 @@ import { StageBoard, AgeChip, Tag, ViewToggle, StaleBanner, useViewMode } from "
 import TicketTable from "./TicketTable";
 import TicketModal from "./TicketModal";
 import { ticketsQuery, TICKETS_QUERY_KEY, createTicket, deleteTicket, updateTicket, ticketAge } from "./api";
+import { LIVE } from "@/lib/live";
 
 export default function AssistancePage() {
   const { t } = useTranslation();
@@ -26,7 +27,7 @@ export default function AssistancePage() {
   const [onlyStale, setOnlyStale] = useState(false);
   const [view, setView] = useViewMode("om-view-assistance");
 
-  const { data: tickets = [], isLoading, error } = useQuery(ticketsQuery);
+  const { data: tickets = [], isLoading, error } = useQuery({ ...ticketsQuery, ...LIVE });
 
   const onError = (error: Error) =>
     toast({ title: t("Error"), description: error.message, variant: "destructive" });

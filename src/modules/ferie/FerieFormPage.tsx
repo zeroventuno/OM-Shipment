@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { MonthNav, PartPicker, Section, SectorsProvider, StatusChip, useDuration, useMonthWindow } from "./parts";
 import { ferieFormAnswer, ferieFormCancel, ferieFormData, ferieFormSubmit, type FormRequest } from "./api";
 import { absences, blockingEvent, conflictsFor, displayName, parseHours, sectorNamer, todayRome, validateLeave, type DayPart } from "./logic";
+import { LIVE } from "@/lib/live";
 
 /*
  * Link pessoal do funcionário (/ferie/<token>): pedir férias, ver a resposta
@@ -27,7 +28,7 @@ export default function FerieFormPage() {
   const qc = useQueryClient();
   const key = ["ferie-form", token];
   const data = useQuery({
-    queryKey: key, retry: false,
+    queryKey: key, retry: false, ...LIVE,
     // nomes já na ordem escolhida pelo escritório
     queryFn: async () => {
       const r = await ferieFormData(token);

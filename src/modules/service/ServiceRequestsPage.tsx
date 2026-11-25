@@ -19,6 +19,7 @@ import {
   setServiceRequestStatus, signedFileUrls, type ServiceRequest,
 } from "./api";
 import { requestNotes, ticketPrefill, warrantyPrefill, type ServiceKind } from "./intake";
+import { LIVE } from "@/lib/live";
 
 type Filter = ServiceRequest["status"];
 
@@ -69,7 +70,7 @@ export default function ServiceRequestsPage() {
   const [filter, setFilter] = useState<Filter>("new");
   const [opening, setOpening] = useState<{ request: ServiceRequest; kind: ServiceKind } | null>(null);
 
-  const { data: requests = [], isLoading, error } = useQuery({ queryKey: SERVICE_REQUESTS_QUERY_KEY, queryFn: listServiceRequests });
+  const { data: requests = [], isLoading, error } = useQuery({ queryKey: SERVICE_REQUESTS_QUERY_KEY, queryFn: listServiceRequests, ...LIVE });
   const refresh = () => queryClient.invalidateQueries({ queryKey: SERVICE_REQUESTS_QUERY_KEY });
   const onError = (e: Error) => toast({ title: t("Error"), description: e.message, variant: "destructive" });
 

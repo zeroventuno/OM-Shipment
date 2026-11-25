@@ -23,6 +23,7 @@ import {
   EVENT_KINDS, absences, displayName, orderedSectors, sectorId, splitName, blockingEvent, conflictsFor, isActive, leaveHours, newLinkToken, parseHours, todayRome, workingDays,
   type DayPart, type EventKind, type NameOrder, type Sector, type SectorInfo,
 } from "./logic";
+import { LIVE } from "@/lib/live";
 
 type Tab = "map" | "requests" | "agenda" | "people" | "sectors" | "vans";
 const select = "h-11 w-full rounded-md border border-input bg-card px-3 text-sm";
@@ -39,9 +40,9 @@ export default function FeriePage() {
 function FerieInner({ canEdit }: { canEdit: boolean }) {
   const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("map");
-  const employees = useQuery({ queryKey: [...FERIE_KEY, "employees"], queryFn: listEmployees });
-  const leaves = useQuery({ queryKey: [...FERIE_KEY, "leaves"], queryFn: listLeaves });
-  const events = useQuery({ queryKey: [...FERIE_KEY, "events"], queryFn: listEvents });
+  const employees = useQuery({ queryKey: [...FERIE_KEY, "employees"], queryFn: listEmployees, ...LIVE });
+  const leaves = useQuery({ queryKey: [...FERIE_KEY, "leaves"], queryFn: listLeaves, ...LIVE });
+  const events = useQuery({ queryKey: [...FERIE_KEY, "events"], queryFn: listEvents, ...LIVE });
   const vans = useQuery({ queryKey: [...FERIE_KEY, "vans"], queryFn: listVans });
   const sectors = useQuery({ queryKey: [...FERIE_KEY, "sectors"], queryFn: listSectors });
   const nameOrder = useQuery({ queryKey: [...FERIE_KEY, "nameOrder"], queryFn: getNameOrder });
