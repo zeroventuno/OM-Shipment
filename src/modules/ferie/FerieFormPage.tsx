@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/modules/customers/fields";
 import { LeaveMap } from "./LeaveMap";
+import { InstallHint } from "@/components/InstallHint";
 import { AgendaForm, MyAgenda, type AgendaMode } from "./FormAgenda";
 import { cn } from "@/lib/utils";
 import { MonthNav, PartPicker, Section, SectorsProvider, StatusChip, useDuration, useMonthWindow } from "./parts";
@@ -95,7 +96,7 @@ export default function FerieFormPage() {
   return (
     <SectorsProvider value={d.sectors ?? []}>
     <div className="min-h-screen bg-background">
-      <header className="bg-primary text-primary-foreground">
+      <header className="bg-primary text-primary-foreground pt-[env(safe-area-inset-top)]">
         <div className="max-w-5xl mx-auto px-4 md:px-8 py-5 flex items-center justify-between gap-4">
           <div className="flex flex-col gap-2 shrink-0">
             <img src="/logo.png" alt="Officine Mattio" className="h-6 w-auto invert self-start" />
@@ -116,6 +117,7 @@ export default function FerieFormPage() {
       </div>
 
       <main className="max-w-5xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-6">
+        <InstallHint storageKey="om-pwa-ferie-hidden" />
 
         {/* O que a pessoa quer registrar: férias/permesso, agenda ou furgão */}
         <div role="tablist" aria-label={t("fe.form.what")} className="grid grid-cols-2 sm:grid-cols-4 gap-2">

@@ -39,6 +39,8 @@ const FerieFormPage = lazy(() => import('@/modules/ferie/FerieFormPage'))
 // Painel de acessos por login (só administrador).
 const AccessPage = lazy(() => import('@/modules/access/AccessPage'))
 const ReportGate = lazy(() => import('@/modules/access/ReportGate'))
+// To Do em tela cheia para o celular (vira app na tela de início).
+const TodoPage = lazy(() => import('@/modules/todos/TodoPage'))
 
 function PageFallback() {
     return (
@@ -63,6 +65,7 @@ export default function App() {
             {/* /t/<code> é a página leve tag.html (vercel.json); estas são as do atleta */}
             <Route path="/t/:code/registra" element={page(<NfcProfilePage key="claim" />)} />
             <Route path="/nfc/profilo" element={page(<NfcProfilePage key="edit" />)} />
+            <Route path="/todo" element={<ProtectedRoute>{page(<TodoPage />)}</ProtectedRoute>} />
             <Route path="/report" element={<ProtectedRoute>{page(<ReportGate><ReportPage /></ReportGate>)}</ProtectedRoute>} />
 
             <Route

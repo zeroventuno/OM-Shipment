@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="/favicon.png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Officine Mattio - Richiesta di ferie</title>
   <meta name="description" content="Chiedi le ferie e guarda la mappa della squadra." />
   <meta name="theme-color" content="#0A0A0A" />
@@ -24,6 +24,22 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Officine Mattio: montagne e un aereo, per le ferie" />
   <meta property="og:locale" content="it_IT" />
+  <!-- App de celular: o manifest leva o link pessoal (token) como página de início. -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Ferie OM" />
+  <meta name="robots" content="noindex" />
+  <script>
+    (function () {
+      var m = location.pathname.match(/^\/ferie\/([A-Za-z0-9_-]{20,64})\/?$/);
+      if (!m) return;
+      var l = document.createElement('link');
+      l.rel = 'manifest';
+      l.href = '/api/manifest?t=' + encodeURIComponent(m[1]);
+      document.head.appendChild(l);
+    })();
+  </script>
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Officine Mattio – Richiesta di ferie" />
   <meta name="twitter:image" content="https://om-shipment.vercel.app/og-ferie.jpg" />

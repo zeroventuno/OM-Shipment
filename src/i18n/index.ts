@@ -13,6 +13,7 @@ import { ferieResources } from '@/modules/ferie/i18n';
 import { todoResources } from '@/modules/todos/i18n';
 import { accessResources } from '@/modules/access/i18n';
 import { notifyResources } from '@/modules/notify/i18n';
+import { pwaResources } from '@/components/pwa.i18n';
 
 const STORAGE_KEY = 'om-language';
 const SUPPORTED = ['it', 'pt'] as const;
@@ -31,8 +32,8 @@ i18n
     .use(initReactI18next)
     .init({
         resources: {
-            pt: { translation: { ...shipmentResources.pt.translation, ...appResources.pt, ...reportResources.pt, ...contactsResources.pt, ...duplicatesResources.pt, ...serviceResources.pt, ...nfcResources.pt, ...pickupResources.pt, ...linksResources.pt, ...ferieResources.pt, ...todoResources.pt, ...accessResources.pt, ...notifyResources.pt } },
-            it: { translation: { ...shipmentResources.it.translation, ...appResources.it, ...reportResources.it, ...contactsResources.it, ...duplicatesResources.it, ...serviceResources.it, ...nfcResources.it, ...pickupResources.it, ...linksResources.it, ...ferieResources.it, ...todoResources.it, ...accessResources.it, ...notifyResources.it } },
+            pt: { translation: { ...shipmentResources.pt.translation, ...appResources.pt, ...reportResources.pt, ...contactsResources.pt, ...duplicatesResources.pt, ...serviceResources.pt, ...nfcResources.pt, ...pickupResources.pt, ...linksResources.pt, ...ferieResources.pt, ...todoResources.pt, ...accessResources.pt, ...notifyResources.pt, ...pwaResources.pt } },
+            it: { translation: { ...shipmentResources.it.translation, ...appResources.it, ...reportResources.it, ...contactsResources.it, ...duplicatesResources.it, ...serviceResources.it, ...nfcResources.it, ...pickupResources.it, ...linksResources.it, ...ferieResources.it, ...todoResources.it, ...accessResources.it, ...notifyResources.it, ...pwaResources.it } },
         },
         lng: savedLanguage(),
         fallbackLng: 'it',

@@ -17,7 +17,11 @@
             "destination": "/ferie.html"
         },
         {
-            "source": "/((?!api/|assets/|og-|favicon|logo|apple-touch-icon).*)",
+            "source": "/todo",
+            "destination": "/todo.html"
+        },
+        {
+            "source": "/((?!api/|assets/|og-|app-icon|todo\\.webmanifest|favicon|logo|apple-touch-icon).*)",
             "destination": "/"
         }
     ],

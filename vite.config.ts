@@ -34,6 +34,8 @@ export default defineConfig({
         ritiro: path.resolve(import.meta.dirname, 'ritiro.html'),
         // ferie.html: a mesma aplicação, com a prévia do pedido de férias.
         ferie: path.resolve(import.meta.dirname, 'ferie.html'),
+        // todo.html: o To Do como app de celular (/todo), com o manifest.
+        todo: path.resolve(import.meta.dirname, 'todo.html'),
         // tag.html: página leve do chip NFC (/t/<code>), sem a aplicação inteira.
         tag: path.resolve(import.meta.dirname, 'tag.html'),
       },
