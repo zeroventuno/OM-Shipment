@@ -11,14 +11,14 @@ import { cn } from "@/lib/utils";
 import { Field } from "@/modules/customers/fields";
 import { PageHeader } from "../common/PageHeader";
 import { LeaveMap } from "./LeaveMap";
-import { MonthNav, PartPicker, SectorsProvider, StatusChip, useMonthWindow, useSectorName, useSectors } from "./parts";
+import { MonthNav, PartPicker, SectorsProvider, StatusChip, useDuration, useMonthWindow, useSectorName, useSectors } from "./parts";
 import {
   FERIE_KEY, addLeave, decideLeave, deleteEvent, ferieLink, listEmployees, listEvents, listLeaves, listVans,
   deleteEmployee, saveEmployee, saveEvent, saveSector, getNameOrder, setNameOrder, saveVan, setEmployeeToken, deleteSector, listSectors,
   type StaffEmployee, type StaffEvent, type StaffLeave, type Van,
 } from "./api";
 import {
-  EVENT_KINDS, absences, displayName, orderedSectors, sectorId, splitName, blockingEvent, conflictsFor, isActive, newLinkToken, todayRome, workingDays,
+  EVENT_KINDS, absences, displayName, orderedSectors, sectorId, splitName, blockingEvent, conflictsFor, isActive, leaveHours, newLinkToken, parseHours, todayRome, workingDays,
   type DayPart, type EventKind, type NameOrder, type Sector, type SectorInfo,
 } from "./logic";
 
@@ -178,6 +178,7 @@ function RequestsTab({ employees, leaves, events, onDecide }: {
   const sn = useSectorName();
   const sectorList = useSectors();
   const span = useDates();
+  const duration = useDuration();
   const [filter, setFilter] = useState<"open" | "approved" | "closed">("open");
   const groups = {
     open: leaves.filter((l) => l.status === "pending" || l.status === "proposed").sort((a, b) => a.start_date.localeCompare(b.start_date)),
@@ -204,7 +205,7 @@ function RequestsTab({ employees, leaves, events, onDecide }: {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-semibold">{person?.name ?? "—"} <span className="text-xs font-normal text-muted-foreground">· {person && sn(person.primary_sector)}</span></p>
-                    <p className="text-sm">{span(l.start_date, l.end_date)} · {t("fe.workingDays", { count: workingDays(l) })}{l.part !== "full" && ` · ${t(`fe.part.${l.part}`)}`}</p>
+                    <p className="text-sm">{span(l.start_date, l.end_date)} · {duration(l)}</p>
                     {l.note && <p className="text-sm text-muted-foreground">“{l.note}”</p>}
                     {l.status === "proposed" && l.proposed_start && <p className="text-sm font-medium">{t("fe.proposedDates", { dates: span(l.proposed_start, l.proposed_end!) })}</p>}
                     {l.response_note && <p className="text-xs text-muted-foreground">{t("fe.response")}: {l.response_note}</p>}
@@ -229,6 +230,7 @@ function DecideDialog({ leave, employees, leaves, events, onClose }: {
 }) {
   const { t } = useTranslation();
   const span = useDates();
+  const duration = useDuration();
   const person = employees.find((e) => e.id === leave.employee_id);
   const [note, setNote] = useState(leave.response_note ?? "");
   const [proposing, setProposing] = useState(leave.status === "proposed");
@@ -246,7 +248,7 @@ function DecideDialog({ leave, employees, leaves, events, onClose }: {
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <StatusChip status={leave.status} />
-            <span className="text-sm">{span(leave.start_date, leave.end_date)} · {t("fe.workingDays", { count: workingDays(leave) })}</span>
+            <span className="text-sm">{span(leave.start_date, leave.end_date)} · {duration(leave)}</span>
           </div>
           {leave.note && <p className="text-sm text-muted-foreground">“{leave.note}”</p>}
           <Conflicts leave={leave} employees={employees} leaves={leaves} events={events} />
@@ -281,9 +283,10 @@ function DecideDialog({ leave, employees, leaves, events, onClose }: {
 function AddLeaveDialog({ employees, onClose }: { employees: StaffEmployee[]; onClose: () => void }) {
   const { t } = useTranslation();
   const today = todayRome();
-  const [f, setF] = useState({ employee_id: employees[0]?.id ?? "", start_date: today, end_date: today, part: "full" as DayPart, note: "" });
+  const [f, setF] = useState({ employee_id: employees[0]?.id ?? "", start_date: today, end_date: today, part: "full" as DayPart, hours: "", note: "" });
   const save = useSave(addLeave, onClose);
-  const ok = f.employee_id && f.start_date && f.end_date >= f.start_date && (f.part === "full" || f.start_date === f.end_date);
+  const hoursValue = f.part === "full" ? null : parseHours(f.hours);
+  const ok = f.employee_id && f.start_date && f.end_date >= f.start_date && (f.part === "full" || f.start_date === f.end_date) && !Number.isNaN(hoursValue);
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
@@ -297,12 +300,12 @@ function AddLeaveDialog({ employees, onClose }: { employees: StaffEmployee[]; on
           </Field></div>
           <Field label={t("fe.from")}><Input type="date" value={f.start_date} onChange={(e) => setF({ ...f, start_date: e.target.value, end_date: e.target.value > f.end_date ? e.target.value : f.end_date })} /></Field>
           <Field label={t("fe.to")}><Input type="date" value={f.end_date} min={f.start_date} onChange={(e) => setF({ ...f, end_date: e.target.value })} /></Field>
-          <div className="sm:col-span-2"><PartPicker value={f.part} singleDay={f.start_date === f.end_date} onChange={(part) => setF({ ...f, part })} /></div>
+          <div className="sm:col-span-2"><PartPicker value={f.part} singleDay={f.start_date === f.end_date} onChange={(part) => setF({ ...f, part })} hours={f.hours} onHours={(hours) => setF({ ...f, hours })} /></div>
           <div className="sm:col-span-2"><Field label={t("fe.note")}><Input value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} /></Field></div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t("Cancel")}</Button>
-          <Button disabled={!ok || save.isPending} onClick={() => save.mutate(f)}>{t("Save")}</Button>
+          <Button disabled={!ok || save.isPending} onClick={() => save.mutate({ ...f, hours: hoursValue })}>{t("Save")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -320,6 +323,7 @@ function AgendaTab({ events, employees, vans, onEdit }: { events: StaffEvent[]; 
   const [past, setPast] = useState(false);
   const list = events.filter((e) => (past ? e.end_date < today : e.end_date >= today));
   if (past) list.reverse();
+  const bookedBy = (ev: StaffEvent) => ev.booked_by ? ` · ${t("fe.bookedBy", { name: employees.find((e) => e.id === ev.booked_by)?.name ?? "—" })}` : "";
   const who = (ev: StaffEvent) => ev.kind === "van" ? vans.find((v) => v.id === ev.van_id)?.name
     : ev.employee_ids.length ? ev.employee_ids.map((id) => employees.find((e) => e.id === id)?.name).filter(Boolean).join(", ")
       : ev.sector ? sn(ev.sector) : t("fe.everyone");
@@ -333,7 +337,7 @@ function AgendaTab({ events, employees, vans, onEdit }: { events: StaffEvent[]; 
               <button type="button" onClick={() => onEdit(ev)} className="flex w-full flex-wrap items-center justify-between gap-2 px-4 py-3 text-left hover:bg-secondary/50">
                 <span className="min-w-0">
                   <span className="block font-semibold">{ev.title}</span>
-                  <span className="block text-sm text-muted-foreground">{span(ev.start_date, ev.end_date)}{ev.start_time && ` · ${ev.start_time.slice(0, 5)}${ev.end_time ? `–${ev.end_time.slice(0, 5)}` : ""}`} · {who(ev)}</span>
+                  <span className="block text-sm text-muted-foreground">{span(ev.start_date, ev.end_date)}{ev.start_time && ` · ${ev.start_time.slice(0, 5)}${ev.end_time ? `–${ev.end_time.slice(0, 5)}` : ""}`} · {who(ev)}{bookedBy(ev)}</span>
                 </span>
                 <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em]", ev.kind === "block" ? "bg-destructive/10 text-destructive" : "bg-secondary")}>{t(`fe.kind.${ev.kind}`)}</span>
               </button>
@@ -445,8 +449,12 @@ function PeopleTab({ employees, leaves, order }: { employees: StaffEmployee[]; l
   const year = todayRome().slice(0, 4);
   const used = useMemo(() => {
     const m = new Map<string, number>();
-    for (const l of leaves) if (l.status === "approved" && l.start_date.startsWith(year)) m.set(l.employee_id, (m.get(l.employee_id) ?? 0) + workingDays(l));
-    return m;
+    const h = new Map<string, number>();
+    for (const l of leaves) if (l.status === "approved" && l.start_date.startsWith(year)) {
+      m.set(l.employee_id, (m.get(l.employee_id) ?? 0) + workingDays(l));
+      if (leaveHours(l)) h.set(l.employee_id, (h.get(l.employee_id) ?? 0) + leaveHours(l));
+    }
+    return { days: m, hours: h };
   }, [leaves, year]);
   const link = useSave(({ id, token }: { id: string; token: string | null }) => setEmployeeToken(id, token));
   const setOrder = useSave(setNameOrder);
@@ -479,7 +487,7 @@ function PeopleTab({ employees, leaves, order }: { employees: StaffEmployee[]; l
                 <span className="block font-semibold hover:underline">{e.name}</span>
                 <span className="block text-sm text-muted-foreground">
                   {sn(e.primary_sector)}{e.secondary_sector && ` + ${sn(e.secondary_sector)}`}
-                  {" · "}{t("fe.usedThisYear", { count: used.get(e.id) ?? 0, year })}
+                  {" · "}{t("fe.usedThisYear", { count: used.days.get(e.id) ?? 0, year })}{used.hours.get(e.id) ? ` + ${t("fe.permitHours", { count: used.hours.get(e.id), n: String(used.hours.get(e.id)).replace(".", ",") })}` : ""}
                 </span>
               </button>
               {e.active && (

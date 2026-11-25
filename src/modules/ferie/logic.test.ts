@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  absences, blockingEvent, conflictsFor, displayName, orderedSectors, sectorConflictDays, sectorId, splitName, validateLeave, vanClashes, workingDays,
+  absences, blockingEvent, conflictsFor, displayName, leaveHours, orderedSectors, parseHours, sectorConflictDays, sectorId, splitName, validateLeave, vanClashes, workingDays,
   type AgendaEvent, type Employee, type Leave,
 } from "./logic";
 
@@ -102,5 +102,23 @@ describe("nomes e setores", () => {
   it("ordena os setores do cadastro e inclui os que só existem nas pessoas", () => {
     const list = [{ id: "b", name: "B", sort_order: 20, active: true }, { id: "a", name: "A", sort_order: 10, active: true }];
     expect(orderedSectors(list, [{ primary_sector: "z", secondary_sector: "a" }])).toEqual(["a", "b", "z"]);
+  });
+});
+
+describe("ore di permesso", () => {
+  it("lê as horas digitadas", () => {
+    expect(parseHours("")).toBeNull();
+    expect(parseHours("2,5")).toBe(2.5);
+    expect(parseHours("9")).toBeNaN();
+    expect(parseHours("1.3")).toBeNaN();
+  });
+  it("permesso por horas não conta dia", () => {
+    expect(leaveHours({ part: "pm", hours: 2 })).toBe(2);
+    expect(leaveHours({ part: "full", hours: 2 })).toBe(0);
+    expect(workingDays({ start_date: "2026-12-07", end_date: "2026-12-07", part: "am", hours: 3 })).toBe(0);
+  });
+  it("recusa horas inválidas no pedido", () => {
+    expect(validateLeave({ start_date: "2026-12-01", end_date: "2026-12-01", part: "am", hours: "10" }, "2026-11-25")).toBe("fe.err.hours");
+    expect(validateLeave({ start_date: "2026-12-01", end_date: "2026-12-01", part: "am", hours: "2" }, "2026-11-25")).toBeNull();
   });
 });

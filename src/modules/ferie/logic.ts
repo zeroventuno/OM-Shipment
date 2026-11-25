@@ -59,6 +59,8 @@ export interface Leave {
   start_date: string;
   end_date: string;
   part: DayPart;
+  /** ore di permesso: só com manhã ou tarde */
+  hours?: number | null;
   status: LeaveStatus;
   proposed_start?: string | null;
   proposed_end?: string | null;
@@ -75,6 +77,8 @@ export interface AgendaEvent {
   sector: Sector | null;
   employee_ids: string[];
   van_id?: string | null;
+  /** quem registrou pelo link pessoal */
+  booked_by?: string | null;
 }
 
 /** Como os nomes aparecem: "Mario Rossi" ou "Rossi Mario" (mais comum na Itália). */
@@ -117,10 +121,23 @@ export function dayRange(start: string, end: string): string[] {
   return out;
 }
 
-/** Dias úteis (seg–sex) de um pedido; meio dia vale 0,5. */
-export function workingDays(l: Pick<Leave, "start_date" | "end_date" | "part">): number {
+/** Dias úteis (seg–sex) de um pedido; meio dia vale 0,5; permesso por horas não conta dia. */
+export function workingDays(l: Pick<Leave, "start_date" | "end_date" | "part"> & { hours?: number | string | null }): number {
+  if (leaveHours(l)) return 0;
   const n = dayRange(l.start_date, l.end_date).filter((d) => !isWeekend(d)).length;
   return l.part === "full" ? n : n * 0.5;
+}
+
+/** Horas de permesso do pedido (0 se for dia ou meio dia). */
+export const leaveHours = (l: { part: DayPart; hours?: number | string | null }) =>
+  l.part !== "full" && l.hours ? Number(l.hours) || 0 : 0;
+
+/** Horas digitadas: de 0,5 em 0,5, até 8 ("2,5" vale). null = sem horas; NaN = inválido. */
+export function parseHours(v: string): number | null {
+  const s = v.trim().replace(",", ".");
+  if (!s) return null;
+  const n = Number(s);
+  return n > 0 && n <= 8 && Number.isInteger(n * 2) ? n : NaN;
 }
 
 export const sectorsOf = (e: Pick<Employee, "primary_sector" | "secondary_sector">): Sector[] =>
@@ -242,12 +259,13 @@ export function vanClashes(events: AgendaEvent[]): Set<string> {
 }
 
 /** Problema no pedido do formulário (chave de tradução) ou null. */
-export function validateLeave(d: { start_date: string; end_date: string; part: DayPart }, today: string): string | null {
+export function validateLeave(d: { start_date: string; end_date: string; part: DayPart; hours?: string }, today: string): string | null {
   if (!d.start_date || !d.end_date) return "fe.err.dates";
   if (d.end_date < d.start_date) return "fe.err.order";
   if (d.start_date < today) return "fe.err.past";
   if (daysBetween(d.start_date, d.end_date) > 60) return "fe.err.long";
   if (d.part !== "full" && d.start_date !== d.end_date) return "fe.err.half";
+  if (d.part !== "full" && Number.isNaN(parseHours(d.hours ?? ""))) return "fe.err.hours";
   return null;
 }
 

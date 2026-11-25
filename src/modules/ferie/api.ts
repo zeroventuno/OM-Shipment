@@ -109,10 +109,10 @@ export async function decideLeave(id: string, decision:
 }
 
 /** Pedido lançado pelo escritório (já aprovado). */
-export async function addLeave(l: { employee_id: string; start_date: string; end_date: string; part: DayPart; note?: string }) {
+export async function addLeave(l: { employee_id: string; start_date: string; end_date: string; part: DayPart; hours?: number | null; note?: string }) {
   const { data: { user } } = await db().auth.getUser();
   check(await db().from("leave_requests").insert({
-    ...l, note: l.note?.trim() || null, status: "approved", decided_by: user?.id ?? null, decided_at: new Date().toISOString(),
+    ...l, hours: l.part === "full" ? null : l.hours ?? null, note: l.note?.trim() || null, status: "approved", decided_by: user?.id ?? null, decided_at: new Date().toISOString(),
   }));
 }
 
@@ -146,14 +146,17 @@ export interface FormRequest extends Leave {
   created_at: string;
 }
 
+export interface FormVan { id: string; name: string; plate: string | null }
+
 export interface FormData {
   me: Employee;
+  vans: FormVan[];
   name_order: NameOrder;
   sectors: SectorInfo[];
   requests: FormRequest[];
   employees: Employee[];
   leaves: Leave[];
-  events: AgendaEvent[];
+  events: (AgendaEvent & { mine?: boolean })[];
 }
 
 async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
@@ -163,10 +166,14 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
 }
 
 export const ferieFormData = (token: string) => rpc<FormData>("ferie_form_data", { token });
-export const ferieFormSubmit = (token: string, r: { start_date: string; end_date: string; part: DayPart; note: string }) =>
+export const ferieFormSubmit = (token: string, r: { start_date: string; end_date: string; part: DayPart; hours: number | null; note: string }) =>
   rpc<{ id: string }>("ferie_form_submit", { token, request: r });
 export const ferieFormCancel = (token: string, id: string) => rpc("ferie_form_cancel", { token, request_id: id });
 export const ferieFormAnswer = (token: string, id: string, accept: boolean) =>
   rpc("ferie_form_answer", { token, request_id: id, accept });
+
+export const ferieFormEvent = (token: string, r: { kind: string; title: string; start_date: string; end_date: string; start_time: string; end_time: string; van_id: string; notes: string }) =>
+  rpc<{ id: string }>("ferie_form_event", { token, request: r });
+export const ferieFormEventCancel = (token: string, id: string) => rpc("ferie_form_event_cancel", { token, event_id: id });
 
 export const ferieLink = (token: string) => `${window.location.origin}/ferie/${token}`;

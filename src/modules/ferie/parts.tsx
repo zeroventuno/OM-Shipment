@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { addDays, sectorNamer, todayRome, type DayPart, type LeaveStatus, type SectorInfo } from "./logic";
+import { addDays, leaveHours, sectorNamer, todayRome, workingDays, type DayPart, type LeaveStatus, type SectorInfo } from "./logic";
 
 /* Peças usadas pela página do escritório e pelo link pessoal. */
 
@@ -48,19 +48,43 @@ export function StatusChip({ status }: { status: LeaveStatus }) {
   );
 }
 
-export function PartPicker({ value, singleDay, onChange }: { value: DayPart; singleDay: boolean; onChange: (p: DayPart) => void }) {
+/** Dia inteiro, manhã ou tarde; com manhã/tarde, as horas de permesso (opcionais). */
+export function PartPicker({ value, singleDay, onChange, hours, onHours }: {
+  value: DayPart; singleDay: boolean; onChange: (p: DayPart) => void; hours?: string; onHours?: (h: string) => void;
+}) {
   const { t } = useTranslation();
   const parts: DayPart[] = singleDay ? ["full", "am", "pm"] : ["full"];
   return (
-    <div role="radiogroup" aria-label={t("fe.partLabel")} className="flex flex-wrap gap-2">
-      {parts.map((p) => (
-        <button key={p} type="button" role="radio" aria-checked={value === p} onClick={() => onChange(p)}
-          className={cn("h-10 rounded-full border px-4 text-sm", value === p ? "border-foreground bg-secondary font-semibold" : "border-border bg-card")}>
-          {t(`fe.part.${p}`)}
-        </button>
-      ))}
+    <div className="flex flex-col gap-2">
+      <div role="radiogroup" aria-label={t("fe.partLabel")} className="flex flex-wrap gap-2">
+        {parts.map((p) => (
+          <button key={p} type="button" role="radio" aria-checked={value === p} onClick={() => onChange(p)}
+            className={cn("h-10 rounded-full border px-4 text-sm", value === p ? "border-foreground bg-secondary font-semibold" : "border-border bg-card")}>
+            {t(`fe.part.${p}`)}
+          </button>
+        ))}
+      </div>
+      {value !== "full" && onHours && (
+        <label className="flex flex-wrap items-center gap-2 text-sm">
+          <span>{t("fe.hoursLabel")}</span>
+          <input inputMode="decimal" value={hours ?? ""} onChange={(e) => onHours(e.target.value)} placeholder="2"
+            className="h-10 w-20 rounded-md border border-input bg-card px-3 text-base tabular-nums" aria-label={t("fe.hoursLabel")} />
+          <span className="text-xs text-muted-foreground">{t("fe.hoursHint")}</span>
+        </label>
+      )}
     </div>
   );
+}
+
+/** "3 giorni lavorativi", "Mattina · mezza giornata" ou "Pomeriggio · 2 ore di permesso". */
+export function useDuration() {
+  const { t } = useTranslation();
+  return (l: { start_date: string; end_date: string; part: DayPart; hours?: number | string | null }) => {
+    const h = leaveHours(l);
+    if (h) return `${t(`fe.part.${l.part}`)} · ${t("fe.permitHours", { count: h, n: String(h).replace(".", ",") })}`;
+    if (l.part !== "full") return `${t(`fe.part.${l.part}`)} · ${t("fe.halfDay")}`;
+    return t("fe.workingDays", { count: workingDays(l) });
+  };
 }
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {

@@ -66,7 +66,7 @@ export function LeaveMap({ from, days, employees, leaves, events, vans = [], meI
     const approved = l.status === "approved";
     const label = t(`fe.status.${l.status}`);
     return {
-      key: `l${l.id}`, start: l.start_date, end: l.end_date, label: l.part !== "full" ? `½ ${label}` : label,
+      key: `l${l.id}`, start: l.start_date, end: l.end_date, label: l.hours ? `${String(l.hours).replace(".", ",")}h ${label}` : l.part !== "full" ? `½ ${label}` : label,
       title: `${nameOf(l.employee_id)} · ${label} · ${span(l.start_date, l.end_date)}`,
       style: approved ? { backgroundColor: "hsl(var(--italy-green))", color: "white" }
         : { backgroundImage: "repeating-linear-gradient(135deg, hsl(var(--foreground) / .18) 0 4px, hsl(var(--foreground) / .06) 4px 8px)" },
