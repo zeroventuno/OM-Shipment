@@ -319,19 +319,21 @@ function ContactIcons({ person }: { person: StaffEmployee }) {
   const { t } = useTranslation();
   const number = waNumber(person.phone);
   const email = person.email?.trim();
-  const on = "inline-flex h-8 w-8 items-center justify-center rounded-full border";
+  // discretos: só o traço do ícone; cadastrado = escuro e clicável, faltando = quase apagado
+  const base = "inline-flex h-6 w-6 items-center justify-center rounded";
   return (
-    <span className="flex shrink-0 gap-1.5">
+    <span className="flex shrink-0 items-center gap-0.5">
       {number ? (
         <a href={`https://wa.me/${number}`} target="_blank" rel="noopener noreferrer" title={`WhatsApp · ${person.phone}`} aria-label={`WhatsApp ${person.name}`}
-          className={cn(on, "border-transparent text-white")} style={{ backgroundColor: "#25D366" }}><MessageCircle className="h-4 w-4" /></a>
+          className={cn(base, "text-foreground/70 hover:text-foreground hover:bg-secondary")}><MessageCircle className="h-3.5 w-3.5" /></a>
       ) : (
-        <span title={t("fe.missingPhone")} aria-label={t("fe.missingPhone")} className={cn(on, "border-dashed border-border text-muted-foreground/40")}><MessageCircle className="h-4 w-4" /></span>
+        <span title={t("fe.missingPhone")} aria-label={t("fe.missingPhone")} className={cn(base, "text-muted-foreground/25")}><MessageCircle className="h-3.5 w-3.5" /></span>
       )}
       {email ? (
-        <a href={`mailto:${email}`} title={email} aria-label={`E-mail ${person.name}`} className={cn(on, "border-transparent bg-foreground text-background")}><Mail className="h-4 w-4" /></a>
+        <a href={`mailto:${email}`} title={email} aria-label={`E-mail ${person.name}`}
+          className={cn(base, "text-foreground/70 hover:text-foreground hover:bg-secondary")}><Mail className="h-3.5 w-3.5" /></a>
       ) : (
-        <span title={t("fe.missingEmail")} aria-label={t("fe.missingEmail")} className={cn(on, "border-dashed border-border text-muted-foreground/40")}><Mail className="h-4 w-4" /></span>
+        <span title={t("fe.missingEmail")} aria-label={t("fe.missingEmail")} className={cn(base, "text-muted-foreground/25")}><Mail className="h-3.5 w-3.5" /></span>
       )}
     </span>
   );
