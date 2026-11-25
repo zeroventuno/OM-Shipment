@@ -15,6 +15,7 @@ import { myAccessQuery } from '@/modules/access/api';
 import { isAreaOn, type AreaKey } from '@/modules/access/areas';
 import { useState } from 'react';
 import { LinksDialog } from './LinksDialog';
+import { NotifyButton } from '@/modules/notify/Notifier';
 
 export interface Area {
     icon: LucideIcon;
@@ -190,6 +191,8 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
                 </nav>
 
                 <div className="p-4 space-y-4">
+                    {/* Notificações do navegador para pedidos novos */}
+                    <NotifyButton />
                     {/* Links dos formulários para copiar e mandar */}
                     <button
                         type="button"

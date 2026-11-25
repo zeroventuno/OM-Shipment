@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TodoDock } from '@/modules/todos/TodoDock';
+import { Notifier } from '@/modules/notify/Notifier';
 import { Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { myAccessQuery } from '@/modules/access/api';
@@ -124,6 +125,7 @@ export default function Layout() {
 
             <BottomNav />
             <TodoDock onDocked={setDocked} />
+            <Notifier />
         </div>
     );
 }
