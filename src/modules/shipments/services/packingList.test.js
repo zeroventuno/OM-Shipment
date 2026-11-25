@@ -31,4 +31,16 @@ describe('packing list', () => {
         expect(await pages({ packing })).toBe(now + 1);
         expect(await pages({ packing, ddtBytes: await blank(1) })).toBe(now + 2);
     });
+
+    it('com despachante, comprador e destino final entram na mesma página', async () => {
+        const base = { invoiceNumber: '1411', invoiceDate: '2026-11-25', today: '2026-11-25', invoiceBytes: await blank(1), includeEur1: false };
+        const fwd = { name: 'Forwarder Pte Ltd', city: 'Singapore', country: 'SG' };
+        const buyer = { name: 'Buyer', city: 'Surabaya', country: 'ID' };
+        const goods = [{ qty: 1, description: 'Bicycle parts', hs_code: '87149950', origin: 'Italy', unit_value: 100 }];
+        const parcels = [{ width: 56, height: 33, depth: 45, weight: 6 }];
+        const pages = async (extra) => (await PDFDocument.load(await buildExportPdf({ ...base, ...extra }))).getPageCount();
+        const plain = await pages({ commercial: { consignee: fwd, items: goods, parcels }, packing: { consignee: fwd, parcels, items: goods } });
+        const withBuyer = await pages({ commercial: { consignee: fwd, buyer, items: goods, parcels }, packing: { consignee: fwd, buyer, parcels, items: goods } });
+        expect(withBuyer).toBe(plain);
+    });
 });

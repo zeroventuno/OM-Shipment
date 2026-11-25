@@ -60,6 +60,10 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, r
     const [commercial, setCommercial] = useState(true);
     const [statement, setStatement] = useState(!!statementKind);
     const [consignee, setConsignee] = useState(emptyConsignee);
+    // Despachante: a mercadoria vai para ele (consignee) e ele entrega ao
+    // cliente em outro país; o cliente da fatura vira o comprador (Sold to).
+    const [viaForwarder, setViaForwarder] = useState(false);
+    const [forwarder, setForwarder] = useState(emptyConsignee);
     const [items, setItems] = useState([emptyItem()]);
     const [freight, setFreight] = useState('');
     const [terms, setTerms] = useState('DAP');
@@ -190,7 +194,11 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, r
     const freightValue = num(freight) || 0;
     const ciTotal = itemsTotal(goods) + freightValue;
     const mismatch = commercial && amount > 0 && goods.length > 0 && Math.abs(ciTotal - amount) > 0.01;
-    const ciReady = !commercial || (consignee.name.trim() && goods.length > 0);
+    const ciReady = !commercial || (consignee.name.trim() && (!viaForwarder || forwarder.name.trim()) && goods.length > 0);
+    const trimmed = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, String(v).trim()]));
+    // no PDF: consignee = quem recebe a mercadoria; buyer = cliente da fatura, se for outro
+    const shipTo = trimmed(viaForwarder ? forwarder : consignee);
+    const buyer = viaForwarder ? trimmed(consignee) : null;
     // produto sugerido pelo nome e ainda não confirmado: não gera
     const unconfirmed = commercial && items.some((it) => it.unconfirmed && it.description.trim());
     const boxes = (parcels || []).filter((p) => Number(p.weight) > 0);
@@ -207,7 +215,8 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, r
                 invoiceBytes: invoice.bytes, logoBytes: logo, signatureBytes: useSign ? signature : null, invoiceNumber: number.trim(), invoiceDate: date,
                 includeEur1: eur1, origin, producer,
                 commercial: commercial ? {
-                    consignee: Object.fromEntries(Object.entries(consignee).map(([k, v]) => [k, String(v).trim()])),
+                    consignee: shipTo,
+                    buyer,
                     items: goods,
                     freight: freightValue,
                     terms: terms.trim(),
@@ -215,7 +224,8 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, r
                     statement: statement ? statementKind || 'uk' : null,
                 } : null,
                 packing: boxes.length ? {
-                    consignee: Object.fromEntries(Object.entries(consignee).map(([k, v]) => [k, String(v).trim()])),
+                    consignee: shipTo,
+                    buyer,
                     parcels: boxes,
                     items: commercial ? goods : [],
                     ddt: ddtInfo,
@@ -248,9 +258,30 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, r
         </div>
     );
     const eyebrow = 'mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground';
-    const field = (label, key) => (
-        <Input label={label} value={consignee[key]} onChange={(e) => setConsignee({ ...consignee, [key]: e.target.value })} />
-    );
+    const partyFields = (data, set) => {
+        const field = (label, key) => (
+            <Input label={label} value={data[key]} onChange={(e) => set({ ...data, [key]: e.target.value })} />
+        );
+        return (
+            <>
+                {field(t('imp.name'), 'name')}
+                {field(t('imp.address'), 'address')}
+                <div className="grid grid-cols-2 gap-3">
+                    {field(t('imp.postal'), 'postal_code')}
+                    {field(t('imp.city'), 'city')}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                    {field(t('imp.country'), 'country')}
+                    {field(t('imp.tax'), 'tax_id')}
+                </div>
+                {field(t('imp.contact'), 'contact')}
+                <div className="grid grid-cols-2 gap-3">
+                    {field(t('imp.phone'), 'phone')}
+                    {field('E-mail', 'email')}
+                </div>
+            </>
+        );
+    };
 
     return (
         <Card>
@@ -329,22 +360,19 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, r
                 {commercial && (
                     <div className="space-y-4 rounded-md border border-border p-3">
                         <div className="space-y-3">
-                            <span className={eyebrow}>{t('exp.ci.consignee')}</span>
-                            {field(t('imp.name'), 'name')}
-                            {field(t('imp.address'), 'address')}
-                            <div className="grid grid-cols-2 gap-3">
-                                {field(t('imp.postal'), 'postal_code')}
-                                {field(t('imp.city'), 'city')}
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                {field(t('imp.country'), 'country')}
-                                {field(t('imp.tax'), 'tax_id')}
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                {field(t('imp.phone'), 'phone')}
-                                {field('E-mail', 'email')}
-                            </div>
+                            <span className={eyebrow}>{viaForwarder ? t('exp.ci.buyer') : t('exp.ci.consignee')}</span>
+                            {partyFields(consignee, setConsignee)}
                         </div>
+                        <label className="flex items-start gap-2 text-sm cursor-pointer">
+                            <input type="checkbox" className="mt-1 accent-primary" checked={viaForwarder} onChange={(e) => setViaForwarder(e.target.checked)} />
+                            <span><strong>{t('exp.ci.forwarder')}</strong> — {t('exp.ci.forwarderHint')}</span>
+                        </label>
+                        {viaForwarder && (
+                            <div className="space-y-3 rounded-md border border-dashed border-border p-3">
+                                <span className={eyebrow}>{t('exp.ci.shipTo')}</span>
+                                {partyFields(forwarder, setForwarder)}
+                            </div>
+                        )}
 
                         <ItemsEditor items={items} setItems={setItems} catalog={catalog} extraTotal={freightValue} withCode />
 

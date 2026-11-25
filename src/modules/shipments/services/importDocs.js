@@ -276,6 +276,19 @@ export function parties(ctx, page, y, leftBox, rightBox) {
     return y - h - 12;
 }
 
+/**
+ * Envio por despachante (forwarder): a mercadoria vai para o consignee (o
+ * despachante) e o comprador fica num segundo bloco, com o destino final.
+ * Devolve y sem mudar nada quando não há comprador à parte.
+ */
+export function buyerParties(ctx, page, y, buyer, consignee) {
+    if (!buyer?.name) return y;
+    const final = buyer.country ? countryLabel(buyer.country, 'en').toUpperCase() : '—';
+    return parties(ctx, page, y,
+        { label: 'BUYER / SOLD TO (FINAL CONSIGNEE)', lines: [buyer.name, ...shipperLines(buyer)] },
+        { label: 'FINAL DESTINATION', lines: [final, `Goods consigned to ${consignee?.name || 'the consignee'}`, 'for onward delivery to the buyer.'] });
+}
+
 export function infoStrip(ctx, page, y, cells, widths) {
     const { fonts, color } = ctx;
     const h = 34;

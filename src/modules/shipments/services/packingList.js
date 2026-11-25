@@ -1,12 +1,12 @@
 import { COMPANY, itDate, todayRome } from './exportDocs';
-import { A4, header, parties, infoStrip, packingTable, signatureBlock, footer, shipperLines } from './importDocs';
+import { A4, header, parties, buyerParties, infoStrip, packingTable, signatureBlock, footer, shipperLines } from './importDocs';
 
 /**
  * Packing list de um envio da Officine Mattio (remetente = OM, destinatário =
  * cliente), em inglês. Cita o DDT (bolla di scarico) e a fatura quando
  * existem, para o packing list bater com os outros documentos do envio.
  *
- * pl: { date, consignee, parcels, items, ddt: { number, date } | null,
+ * pl: { date, consignee, buyer, parcels, items, ddt: { number, date } | null,
  *       invoice: { number, date } | null, reference }
  */
 
@@ -35,12 +35,13 @@ export function renderPackingList(ctx, pl) {
     const date = pl.date || pl.ddt?.date || pl.invoice?.date || todayRome();
     let y = header(ctx, page, 'PACKING LIST', code, date, {
         numberLine: code ? `${code}   ·   Date ${itDate(date)}` : `Date ${itDate(date)}`,
-        sub: 'Shipper: Officine Mattio · Consignee: customer',
+        sub: pl.buyer?.name ? 'Shipper: Officine Mattio · Consignee: forwarder on behalf of the buyer' : 'Shipper: Officine Mattio · Consignee: customer',
     });
     const consignee = pl.consignee || {};
     y = parties(ctx, page, y,
         { label: 'SHIPPER', lines: [COMPANY.name, ...COMPANY.lines, 'VAT IT03860450042'] },
-        { label: 'CONSIGNEE', lines: [consignee.name || '—', ...shipperLines(consignee)] });
+        { label: pl.buyer?.name ? 'CONSIGNEE / SHIP TO' : 'CONSIGNEE', lines: [consignee.name || '—', ...shipperLines(consignee)] });
+    y = buyerParties(ctx, page, y, pl.buyer, consignee);
     y = infoStrip(ctx, page, y, packingRefs(pl), [0.36, 0.32, 0.32]);
     y = packingTable(ctx, page, y, pl.parcels || [], pl.items || []);
     signatureBlock(ctx, page, Math.min(y - 20, 190), date);

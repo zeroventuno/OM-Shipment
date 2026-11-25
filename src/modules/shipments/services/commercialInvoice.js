@@ -1,7 +1,7 @@
 import { COMPANY, EU_CODES, itDate, wrap } from './exportDocs';
 import { countryCode, countryLabel } from '../data/countries';
 import {
-    A4, M, W, INK, MUTED, FILL, text, header, parties, infoStrip, table, signatureBlock, footer,
+    A4, M, W, INK, MUTED, FILL, text, header, parties, buyerParties, infoStrip, table, signatureBlock, footer,
     pdfSafe, shipperLines, itemTotal, itemsTotal, parcelsWeight, money, kg,
 } from './importDocs';
 
@@ -58,8 +58,10 @@ export function originStatementText(rex = REX_NUMBER) {
 }
 
 /**
- * inv: { invoiceNumber, invoiceDate, consignee, items, parcels, terms, statement, rex }
+ * inv: { invoiceNumber, invoiceDate, consignee, buyer, items, parcels, terms, statement, rex }
  *   consignee: { name, address, postal_code, city, country, tax_id, contact, phone, email }
+ *   buyer: mesmo formato, só quando a mercadoria vai a um despachante (consignee)
+ *          que entrega ao comprador em outro país. null = o consignee é o comprador.
  *   items: [{ qty, description, hs_code, origin, unit_value }]
  *   statement: 'uk' | null
  * ctx: { pdf, fonts, logo, signature, color } — o mesmo das outras páginas.
@@ -77,7 +79,8 @@ export function renderCommercialInvoice(ctx, inv) {
     const exporter = [COMPANY.name, ...COMPANY.lines, 'VAT IT03860450042', rex && `REX ${rex}`].filter(Boolean);
     y = parties(ctx, page, y,
         { label: 'SHIPPER / EXPORTER', lines: exporter },
-        { label: 'CONSIGNEE', lines: [inv.consignee.name, ...shipperLines(inv.consignee)] });
+        { label: inv.buyer?.name ? 'CONSIGNEE / SHIP TO' : 'CONSIGNEE', lines: [inv.consignee.name, ...shipperLines(inv.consignee)] });
+    y = buyerParties(ctx, page, y, inv.buyer, inv.consignee);
 
     const items = inv.items || [];
     const parcels = inv.parcels || [];
