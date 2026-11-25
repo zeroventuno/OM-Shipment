@@ -9,6 +9,7 @@ import { ticketAge, ticketsQuery } from "@/modules/assistance/api";
 import { warrantiesQuery, warrantyAge } from "@/modules/warranties/api";
 import { REQUESTS_QUERY_KEY, listRequests } from "@/modules/requests/api";
 import { PICKUP_REQUESTS_QUERY_KEY, listPickupRequests } from "@/modules/pickups/api";
+import { SERVICE_REQUESTS_QUERY_KEY, listServiceRequests } from "@/modules/service/api";
 import { FERIE_KEY, listEmployees, listLeaves } from "@/modules/ferie/api";
 import { myAccessQuery } from "@/modules/access/api";
 import { isAreaOn } from "@/modules/access/areas";
@@ -26,7 +27,7 @@ import { AUTO_ORDER, TODOS_KEY, addTodo, autoItems, deleteTodo, listTodos, setTo
 
 const WIDE = "(min-width: 1280px)";
 const LIST_PAGE: Record<AutoKind, string> = {
-  request: "/shipments/requests", pickup: "/shipments/pickups", leave: "/ferie", ticket: "/assistance", warranty: "/warranties",
+  request: "/shipments/requests", pickup: "/shipments/pickups", service: "/service-requests", leave: "/ferie", ticket: "/assistance", warranty: "/warranties",
 };
 const OPEN_KEY = "om-todo-open";
 const SIDE_KEY = "om-todo-side";
@@ -57,6 +58,7 @@ export function TodoDock({ onDocked }: { onDocked?: (docked: boolean) => void })
   const todos = useQuery({ queryKey: TODOS_KEY, queryFn: listTodos, enabled });
   const requests = useQuery({ queryKey: REQUESTS_QUERY_KEY, queryFn: listRequests, enabled, refetchInterval: 120_000 });
   const pickups = useQuery({ queryKey: PICKUP_REQUESTS_QUERY_KEY, queryFn: listPickupRequests, enabled, refetchInterval: 120_000 });
+  const services = useQuery({ queryKey: SERVICE_REQUESTS_QUERY_KEY, queryFn: listServiceRequests, enabled, refetchInterval: 120_000 });
   const tickets = useQuery({ ...ticketsQuery, enabled });
   const warranties = useQuery({ ...warrantiesQuery, enabled });
   const leaves = useQuery({ queryKey: [...FERIE_KEY, "leaves"], queryFn: listLeaves, enabled, refetchInterval: 120_000 });
@@ -66,16 +68,17 @@ export function TodoDock({ onDocked }: { onDocked?: (docked: boolean) => void })
   const auto = useMemo(() => {
     const now = new Date();
     const items = autoItems({
-      requests: requests.data, pickups: pickups.data, leaves: leaves.data, employees: employees.data,
+      requests: requests.data, pickups: pickups.data, services: services.data, leaves: leaves.data, employees: employees.data,
       tickets: (tickets.data ?? []).map((item) => ({ item, age: ticketAge(item, now) })).filter((x) => x.age.stale).map((x) => ({ item: x.item, days: x.age.days })),
       warranties: (warranties.data ?? []).map((item) => ({ item, age: warrantyAge(item, now) })).filter((x) => x.age.stale).map((x) => ({ item: x.item, days: x.age.days })),
     });
     // só o que este login pode abrir (painel Accessi)
     return items.filter((a) => (a.kind === "request" || a.kind === "pickup") ? isAreaOn(access, "spedizioni")
+      : a.kind === "service" ? isAreaOn(access, "richieste")
       : a.kind === "ticket" ? isAreaOn(access, "assistenza")
         : a.kind === "warranty" ? isAreaOn(access, "garanzie")
           : !!access && access.ferie !== "none");
-  }, [requests.data, pickups.data, tickets.data, warranties.data, leaves.data, employees.data, access]);
+  }, [requests.data, pickups.data, services.data, tickets.data, warranties.data, leaves.data, employees.data, access]);
 
   const refresh = () => qc.invalidateQueries({ queryKey: TODOS_KEY });
   const add = useMutation({ mutationFn: () => addTodo(title, due || null), onSuccess: () => { setTitle(""); setDue(""); refresh(); } });

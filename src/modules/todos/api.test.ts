@@ -13,8 +13,10 @@ describe("itens automáticos do To Do", () => {
         { item: { id: "t2", code: "OMA-26-002", clientName: "Bianchi", component: "Telaio", phase: "Inviato" }, days: 90 }] as never,
       leaves: [{ id: "l", employee_id: "e", status: "pending", start_date: "2026-12-01", end_date: "2026-12-03" }, { id: "m", employee_id: "e", status: "approved", start_date: "2026-12-05", end_date: "2026-12-05" }] as never,
       employees: [{ id: "e", name: "Marco" }] as never,
+      services: [{ id: "s1", status: "new", customer_name: "Luca", code: "OMS-26-001", product: "Ruota" }, { id: "s2", status: "converted", customer_name: "x" }] as never,
     });
-    expect(items.map((i) => i.key)).toEqual(["r1", "pp", "tt2", "tt1", "ll"]);
+    expect(items.map((i) => i.key)).toEqual(["r1", "pp", "ss1", "tt2", "tt1", "ll"]);
+    expect(items.find((i) => i.kind === "service")).toMatchObject({ title: "Luca", sub: "OMS-26-001 · Ruota", to: "/service-requests" });
     expect(items.find((i) => i.kind === "pickup")?.sub).toBe("OMP-26-001 · Utrecht");
     expect(items.find((i) => i.kind === "leave")?.title).toBe("Marco");
     expect(items.find((i) => i.key === "tt2")?.to).toBe("/assistance/t2");

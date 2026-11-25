@@ -2,6 +2,7 @@ import { requireSupabase } from "@/lib/supabase";
 import type { Ticket, Warranty } from "@/modules/schema";
 import type { ShipmentRequest } from "@/modules/requests/api";
 import type { PickupRequest } from "@/modules/pickups/api";
+import type { ServiceRequest } from "@/modules/service/api";
 import type { StaffEmployee, StaffLeave } from "@/modules/ferie/api";
 
 /*
@@ -48,7 +49,7 @@ export async function deleteTodo(id: string) {
 
 // --- Itens automáticos ------------------------------------------------------
 
-export type AutoKind = "request" | "pickup" | "ticket" | "warranty" | "leave";
+export type AutoKind = "request" | "pickup" | "service" | "ticket" | "warranty" | "leave";
 
 export interface AutoItem {
   key: string;
@@ -63,6 +64,8 @@ export interface AutoItem {
 export function autoItems(src: {
   requests?: ShipmentRequest[];
   pickups?: PickupRequest[];
+  /** pedidos de garantia/assistência dos clientes (formulário público) */
+  services?: ServiceRequest[];
   /** só as paradas, com os dias */
   tickets?: { item: Ticket; days: number }[];
   warranties?: { item: Warranty; days: number }[];
@@ -78,6 +81,10 @@ export function autoItems(src: {
     if (p.status !== "new") continue;
     out.push({ key: `p${p.id}`, kind: "pickup", title: p.shop_name, sub: [p.code, p.city].filter(Boolean).join(" · "), to: "/shipments/pickups" });
   }
+  for (const r of src.services ?? []) {
+    if (r.status !== "new") continue;
+    out.push({ key: `s${r.id}`, kind: "service", title: r.customer_name, sub: [r.code, r.product].filter(Boolean).join(" · "), to: "/service-requests" });
+  }
   for (const { item: t, days } of [...(src.tickets ?? [])].sort((a, b) => b.days - a.days)) {
     out.push({ key: `t${t.id}`, kind: "ticket", title: [t.code, t.clientName].filter(Boolean).join(" · "), sub: [t.component, t.phase].filter(Boolean).join(" · "), to: `/assistance/${t.id}`, days });
   }
@@ -92,4 +99,4 @@ export function autoItems(src: {
   return out;
 }
 
-export const AUTO_ORDER: AutoKind[] = ["request", "pickup", "leave", "ticket", "warranty"];
+export const AUTO_ORDER: AutoKind[] = ["request", "pickup", "service", "leave", "ticket", "warranty"];
