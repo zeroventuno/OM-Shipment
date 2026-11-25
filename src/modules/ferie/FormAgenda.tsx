@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Field } from "@/modules/customers/fields";
 import { ferieFormEvent, ferieFormEventCancel, type FormVan } from "./api";
-import { Section } from "./parts";
-import { daysBetween, overlaps, todayRome, type AgendaEvent } from "./logic";
+import { Section, useSectorName } from "./parts";
+import { PeopleChecklist } from "./PeopleChecklist";
+import { daysBetween, overlaps, todayRome, type AgendaEvent, type Employee } from "./logic";
 
 /*
  * Pelo link pessoal: viagem de trabalho, reunião externa ou reserva de
@@ -19,7 +20,7 @@ import { daysBetween, overlaps, todayRome, type AgendaEvent } from "./logic";
 
 export type AgendaMode = "travel" | "external" | "van";
 
-const empty = (van = "") => ({ title: "", start_date: "", end_date: "", start_time: "", end_time: "", van_id: van, notes: "" });
+const empty = (van = "", people: string[] = []) => ({ title: "", start_date: "", end_date: "", start_time: "", end_time: "", van_id: van, notes: "", employee_ids: people });
 
 /** Reservas do mesmo furgão que batem com o rascunho (mesma regra do banco). */
 export function vanTaken(events: AgendaEvent[], d: ReturnType<typeof empty>) {
@@ -29,14 +30,15 @@ export function vanTaken(events: AgendaEvent[], d: ReturnType<typeof empty>) {
       && (d.end_time <= ev.start_time.slice(0, 5) || d.start_time >= ev.end_time.slice(0, 5))));
 }
 
-export function AgendaForm({ token, mode, vans, events, onDone }: {
-  token: string; mode: AgendaMode; vans: FormVan[]; events: AgendaEvent[]; onDone: () => void;
+export function AgendaForm({ token, mode, vans, events, employees, meId, onDone }: {
+  token: string; mode: AgendaMode; vans: FormVan[]; events: AgendaEvent[]; employees: Employee[]; meId: string; onDone: () => void;
 }) {
+  const sn = useSectorName();
   const { t, i18n } = useTranslation();
   const today = todayRome();
   // na trasferta o furgão é opcional e começa sem nenhum
   const firstVan = mode === "van" ? vans[0]?.id : "";
-  const [d, setD] = useState(() => empty(firstVan));
+  const [d, setD] = useState(() => empty(firstVan, [meId]));
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
   const fmt = (x: string) => new Date(`${x}T12:00:00`).toLocaleDateString(i18n.language, { day: "2-digit", month: "short" });
@@ -45,7 +47,7 @@ export function AgendaForm({ token, mode, vans, events, onDone }: {
 
   const submit = useMutation({
     mutationFn: () => ferieFormEvent(token, { ...d, kind: mode, van_id: withVan ? d.van_id : "" }),
-    onSuccess: () => { setD(empty(firstVan)); setSent(true); onDone(); },
+    onSuccess: () => { setD(empty(firstVan, [meId])); setSent(true); onDone(); },
     onError: (e: { code?: string; hint?: string }) => setError(t(e.hint === "van_taken" ? "fe.err.vanTaken" : e.code === "53400" ? "fe.err.busy" : "fe.err.send")),
   });
 
@@ -98,6 +100,10 @@ export function AgendaForm({ token, mode, vans, events, onDone }: {
         <Field label={t("fe.startTime")}><Input type="time" value={d.start_time} onChange={(e) => setD({ ...d, start_time: e.target.value })} /></Field>
         <Field label={t("fe.endTime")}><Input type="time" value={d.end_time} onChange={(e) => setD({ ...d, end_time: e.target.value })} /></Field>
       </div>
+      {mode !== "van" && (
+        <PeopleChecklist employees={employees} value={d.employee_ids} locked={meId} sectorName={sn}
+          onChange={(employee_ids) => setD({ ...d, employee_ids })} />
+      )}
       <Field label={`${t("fe.notes")} (${t("fe.optional")})`}>
         <Textarea rows={2} maxLength={1000} value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} />
       </Field>
@@ -112,11 +118,16 @@ export function AgendaForm({ token, mode, vans, events, onDone }: {
 }
 
 /** Os registros da própria pessoa (agenda e furgões), com cancelar. */
-export function MyAgenda({ token, events, vans, onDone }: { token: string; events: (AgendaEvent & { mine?: boolean })[]; vans: FormVan[]; onDone: () => void }) {
+export function MyAgenda({ token, events, vans, meId, employees, onDone }: {
+  token: string; events: (AgendaEvent & { mine?: boolean })[]; vans: FormVan[]; meId: string; employees: Employee[]; onDone: () => void;
+}) {
   const { t, i18n } = useTranslation();
   const today = todayRome();
   const cancel = useMutation({ mutationFn: (id: string) => ferieFormEventCancel(token, id), onSuccess: onDone });
-  const mine = events.filter((e) => e.mine && !e.parent_id && e.end_date >= today).sort((a, b) => a.start_date.localeCompare(b.start_date));
+  // os que criei e os em que um colega me marcou (esses só ele ou o escritório cancelam)
+  const mine = events.filter((e) => (e.mine || (e.kind !== "block" && e.employee_ids.includes(meId))) && !e.parent_id && e.end_date >= today)
+    .sort((a, b) => a.start_date.localeCompare(b.start_date));
+  const others = (ev: AgendaEvent) => ev.employee_ids.filter((id) => id !== meId).map((id) => employees.find((e) => e.id === id)?.name).filter(Boolean);
   const linkedVan = (id: string) => vans.find((v) => v.id === events.find((e) => e.parent_id === id)?.van_id)?.name;
   const fmt = (x: string) => new Date(`${x}T12:00:00`).toLocaleDateString(i18n.language, { weekday: "short", day: "2-digit", month: "short" });
   if (!mine.length) return null;
@@ -130,12 +141,15 @@ export function MyAgenda({ token, events, vans, onDone }: { token: string; event
               <span className="block text-muted-foreground">
                 {t(`fe.kind.${ev.kind}`)}{ev.kind === "van" && ` · ${vans.find((v) => v.id === ev.van_id)?.name ?? ""}`}
                 {linkedVan(ev.id) && ` · ${t("fe.form.withVan", { name: linkedVan(ev.id) })}`}
+                {others(ev).length > 0 && ` · ${t("fe.form.withPeople", { names: others(ev).join(", ") })}`}
                 {" · "}{ev.start_date === ev.end_date ? fmt(ev.start_date) : `${fmt(ev.start_date)} → ${fmt(ev.end_date)}`}
                 {ev.start_time && ` · ${ev.start_time.slice(0, 5)}${ev.end_time ? `–${ev.end_time.slice(0, 5)}` : ""}`}
               </span>
             </span>
-            <Button size="sm" variant="ghost" disabled={cancel.isPending}
-              onClick={() => { if (window.confirm(t("fe.form.confirmCancelEvent"))) cancel.mutate(ev.id); }}>{t("fe.form.cancel")}</Button>
+            {ev.mine ? (
+              <Button size="sm" variant="ghost" disabled={cancel.isPending}
+                onClick={() => { if (window.confirm(t("fe.form.confirmCancelEvent"))) cancel.mutate(ev.id); }}>{t("fe.form.cancel")}</Button>
+            ) : <span className="text-xs text-muted-foreground">{t("fe.form.addedBy", { name: employees.find((e) => e.id === ev.booked_by)?.name ?? t("fe.form.office") })}</span>}
           </li>
         ))}
       </ul>

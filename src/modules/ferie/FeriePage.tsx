@@ -12,6 +12,7 @@ import { Field } from "@/modules/customers/fields";
 import { PageHeader } from "../common/PageHeader";
 import { myAccessQuery } from "../access/api";
 import { LeaveMap } from "./LeaveMap";
+import { PeopleChecklist } from "./PeopleChecklist";
 import { waMessage, waNumber, waUrl } from "./whatsapp";
 import { CanEditProvider, MonthNav, PartPicker, SectorsProvider, useCanEdit, StatusChip, useDuration, useMonthWindow, useSectorName, useSectors } from "./parts";
 import {
@@ -421,7 +422,6 @@ function EventDialog({ value, employees, vans, onClose }: { value: Partial<Staff
   const withPeople = f.kind === "meeting" || f.kind === "travel" || f.kind === "external";
   const ok = f.title.trim() && f.start_date && f.end_date >= f.start_date && (f.kind !== "van" || f.van_id)
     && (f.kind !== "travel" && f.kind !== "external" || f.employee_ids.length > 0);
-  const togglePerson = (id: string) => setF({ ...f, employee_ids: f.employee_ids.includes(id) ? f.employee_ids.filter((x) => x !== id) : [...f.employee_ids, id] });
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -458,17 +458,9 @@ function EventDialog({ value, employees, vans, onClose }: { value: Partial<Staff
             </Field></div>
           )}
           {withPeople && (
-            <fieldset className="sm:col-span-2 flex flex-col gap-1.5">
-              <legend className="eyebrow mb-1.5">{t("fe.people")}</legend>
-              <div className="flex flex-wrap gap-2">
-                {employees.map((e) => (
-                  <button key={e.id} type="button" aria-pressed={f.employee_ids.includes(e.id)} onClick={() => togglePerson(e.id)}
-                    className={cn("h-8 rounded-full border px-3 text-sm", f.employee_ids.includes(e.id) ? "border-foreground bg-foreground text-background" : "border-border bg-card")}>
-                    {e.name}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
+            <div className="sm:col-span-2">
+              <PeopleChecklist employees={employees} value={f.employee_ids} onChange={(employee_ids) => setF({ ...f, employee_ids })} sectorName={sn} />
+            </div>
           )}
           <div className="sm:col-span-2"><Field label={t("fe.notes")}><Textarea rows={2} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></Field></div>
         </div>

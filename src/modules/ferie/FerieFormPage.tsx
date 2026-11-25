@@ -129,7 +129,7 @@ export default function FerieFormPage() {
 
         {mode !== "leave" ? (
           <Section title={t(`fe.form.mode.${mode}`)}>
-            <AgendaForm key={mode} token={token} mode={mode} vans={d.vans ?? []} events={d.events} onDone={refresh} />
+            <AgendaForm key={mode} token={token} mode={mode} vans={d.vans ?? []} events={d.events} employees={d.employees} meId={d.me.id} onDone={refresh} />
           </Section>
         ) : (
         <form onSubmit={onSubmit} noValidate>
@@ -176,7 +176,7 @@ export default function FerieFormPage() {
         </form>
         )}
 
-        <MyAgenda token={token} events={d.events} vans={d.vans ?? []} onDone={refresh} />
+        <MyAgenda token={token} events={d.events} vans={d.vans ?? []} meId={d.me.id} employees={d.employees} onDone={refresh} />
 
         <Section title={t("fe.form.mine")}>
           {d.requests.length === 0 ? <p className="text-sm text-muted-foreground">{t("fe.form.none")}</p> : (

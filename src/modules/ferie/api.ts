@@ -173,7 +173,7 @@ export const ferieFormCancel = (token: string, id: string) => rpc("ferie_form_ca
 export const ferieFormAnswer = (token: string, id: string, accept: boolean) =>
   rpc("ferie_form_answer", { token, request_id: id, accept });
 
-export const ferieFormEvent = (token: string, r: { kind: string; title: string; start_date: string; end_date: string; start_time: string; end_time: string; van_id: string; notes: string }) =>
+export const ferieFormEvent = (token: string, r: { kind: string; title: string; start_date: string; end_date: string; start_time: string; end_time: string; van_id: string; notes: string; employee_ids?: string[] }) =>
   rpc<{ id: string }>("ferie_form_event", { token, request: r });
 export const ferieFormEventCancel = (token: string, id: string) => rpc("ferie_form_event_cancel", { token, event_id: id });
 
