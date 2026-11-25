@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, Copy, Link2, Loader2, Plus } from "lucide-react";
@@ -14,7 +14,7 @@ import { LeaveMap } from "./LeaveMap";
 import { MonthNav, PartPicker, StatusChip, useMonthWindow } from "./parts";
 import {
   FERIE_KEY, addLeave, decideLeave, deleteEvent, ferieLink, listEmployees, listEvents, listLeaves, listVans,
-  saveEmployee, saveEvent, saveVan, setEmployeeToken,
+  deleteEmployee, saveEmployee, saveEvent, saveVan, setEmployeeToken,
   type StaffEmployee, type StaffEvent, type StaffLeave, type Van,
 } from "./api";
 import {
@@ -96,8 +96,14 @@ function useSave<A>(fn: (a: A) => Promise<unknown>, onDone?: () => void) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const refresh = useRefresh();
+  // com a internet lenta, um segundo toque antes da resposta não grava de novo
+  const busy = useRef(false);
   return useMutation({
-    mutationFn: fn,
+    mutationFn: async (a: A) => {
+      if (busy.current) return;
+      busy.current = true;
+      try { await fn(a); } finally { busy.current = false; }
+    },
     onSuccess: () => { refresh(); onDone?.(); toast({ title: t("Saved") }); },
     onError: (e: Error) => toast({ title: t("Error"), description: e.message, variant: "destructive" }),
   });
@@ -461,24 +467,28 @@ function PeopleTab({ employees, leaves }: { employees: StaffEmployee[]; leaves: 
           ))}
         </ul>
       )}
-      {editing && <PersonDialog value={editing} onClose={() => setEditing(null)} />}
+      {editing && <PersonDialog value={editing} others={employees} onClose={() => setEditing(null)} />}
     </div>
   );
 }
 
-function PersonDialog({ value, onClose }: { value: Partial<StaffEmployee>; onClose: () => void }) {
+function PersonDialog({ value, others, onClose }: { value: Partial<StaffEmployee>; others: StaffEmployee[]; onClose: () => void }) {
   const { t } = useTranslation();
   const [f, setF] = useState({
     id: value.id, name: value.name ?? "", email: value.email ?? "", primary_sector: (value.primary_sector ?? "officina") as Sector,
     secondary_sector: (value.secondary_sector ?? "") as Sector | "", active: value.active ?? true,
   });
   const save = useSave(saveEmployee, onClose);
+  const remove = useSave(deleteEmployee, onClose);
+  // mesmo nome já cadastrado (ex.: salvou duas vezes com a internet lenta)
+  const twin = !f.id && others.some((o) => o.name.trim().toLowerCase() === f.name.trim().toLowerCase());
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle className="text-2xl font-bold tracking-tight">{f.id ? f.name : t("fe.newPerson")}</DialogTitle></DialogHeader>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="sm:col-span-2"><Field label={t("fe.name")}><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field></div>
+          <div className="sm:col-span-2"><Field label={t("fe.name")}><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
+            {twin && <p className="mt-1 text-xs font-medium text-destructive">{t("fe.duplicateName")}</p>}</div>
           <div className="sm:col-span-2"><Field label="E-mail" hint={t("fe.emailHint")}><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field></div>
           <Field label={t("fe.primarySector")}>
             <select className={select} value={f.primary_sector} onChange={(e) => {
@@ -496,13 +506,21 @@ function PersonDialog({ value, onClose }: { value: Partial<StaffEmployee>; onClo
           </Field>
           {f.id && <label className="sm:col-span-2 flex items-center gap-2 text-sm"><input type="checkbox" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} />{t("fe.activeHint")}</label>}
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>{t("Cancel")}</Button>
-          <Button disabled={!f.name.trim() || save.isPending} onClick={() => save.mutate({
-            ...f, secondary_sector: f.secondary_sector || null,
-            // desativar também desliga o link
-            ...(f.id && !f.active ? { link_token: null } : {}),
-          })}>{t("Save")}</Button>
+        <DialogFooter className="gap-2 sm:justify-between">
+          {f.id ? (
+            <Button variant="ghost" className="text-destructive" disabled={remove.isPending}
+              onClick={() => { if (window.confirm(t("fe.confirmDeletePerson", { name: f.name }))) remove.mutate(f.id!); }}>
+              {t("Delete")}
+            </Button>
+          ) : <span />}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>{t("Cancel")}</Button>
+            <Button disabled={!f.name.trim() || save.isPending} onClick={() => save.mutate({
+              ...f, secondary_sector: f.secondary_sector || null,
+              // desativar também desliga o link
+              ...(f.id && !f.active ? { link_token: null } : {}),
+            })}>{t("Save")}</Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

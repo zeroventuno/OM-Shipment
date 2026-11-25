@@ -59,6 +59,15 @@ export async function saveEmployee(e: Partial<StaffEmployee> & { name: string; p
   check(await q);
 }
 
+/** Apaga a pessoa e os pedidos de férias dela; some também dos eventos da agenda. */
+export async function deleteEmployee(id: string) {
+  check(await db().from("employees").delete().eq("id", id));
+  const { data } = await db().from("agenda_events").select("id, employee_ids").contains("employee_ids", [id]);
+  for (const ev of (data ?? []) as { id: string; employee_ids: string[] }[]) {
+    check(await db().from("agenda_events").update({ employee_ids: ev.employee_ids.filter((x) => x !== id) }).eq("id", ev.id));
+  }
+}
+
 export const setEmployeeToken = async (id: string, link_token: string | null) =>
   check(await db().from("employees").update({ link_token }).eq("id", id));
 
