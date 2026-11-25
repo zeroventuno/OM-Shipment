@@ -167,3 +167,23 @@ describe('artigo genérico de peças', () => {
         expect(matchCatalogInfo('B2B Catena red', catalog, 'L8PARTS').row.id).toBe('c');
     });
 });
+
+describe('bloco CUSTOMER', () => {
+    it('lê endereço, CAP, país, e-mail e telefone', async () => {
+        const { parseCustomerBlock } = await import('./invoiceParser');
+        const lines = [
+            'OFFICINE MATTIO SRL', 'Email : info@officinemattio.com', 'CUSTOMER', 'GUN 2 BIKE SHOP',
+            'Jl.Mayjend Sungkono No.108,Kutoanyar', '66215 Jawa Timur', 'Nazione: ID',
+            'NUMBER DATE order@gun2bikeshop.com', 'INVOICE +6282320105427', '1/1411 25/11/2026 DESTINATION',
+            'VAT NUMBER CUSTOMER CODE', '99999999999 501.00492', 'TRANSPORT REASON ZONE AGENT CODE PAGE',
+        ];
+        expect(parseCustomerBlock(lines)).toEqual({
+            name: 'GUN 2 BIKE SHOP', address: 'Jl.Mayjend Sungkono No.108,Kutoanyar', postal_code: '66215', city: 'Jawa Timur',
+            country: 'ID', tax_id: '', phone: '+6282320105427', email: 'order@gun2bikeshop.com',
+        });
+        const it = parseCustomerBlock(['CUSTOMER', 'ROSSI SRL', 'VIA ROMA 1', '12100 CUNEO CN', 'Nazione: IT', '1/1500 01/12/2026', 'VAT NUMBER', 'IT01234567890 501.1']);
+        expect(it).toMatchObject({ address: 'VIA ROMA 1', postal_code: '12100', city: 'CUNEO CN', country: 'IT', tax_id: 'IT01234567890' });
+        expect(parseCustomerBlock(['sem bloco'])).toBeNull();
+    });
+});
+

@@ -20,9 +20,10 @@ const HS_RE = /\b(?:HTS|HS)\s*(?:CODE)?\s*[:.]?\s*(\d[\d.\s]{4,13}\d)/i;
 const FREIGHT_RE = /SPEDIZ|TRASPORT|SHIPPING|FREIGHT|CARRIAGE/i;
 
 export function parseInvoiceText(lines) {
-    const out = { number: '', date: '', items: [], freight: 0, orderRef: '', customer: '', country: '' };
+    const out = { number: '', date: '', items: [], freight: 0, orderRef: '', customer: '', country: '', customerInfo: null };
     let last = null;
     let nextIsCustomer = false;
+    out.customerInfo = parseCustomerBlock(lines);
     for (const raw of lines) {
         const line = String(raw).replace(/\s+/g, ' ').trim();
         if (!line) continue;
@@ -231,4 +232,61 @@ export function orderTypeFromHs(hsCodes) {
         return 'Other';
     }));
     return kinds.size === 1 ? [...kinds][0] : null;
+}
+
+const LABELS = /\b(?:NUMBER|DATE|INVOICE|DESTINATION|CUSTOMER CODE|PAGE)\b/gi;
+const EMAIL_RE = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/;
+const PHONE_RE = /(?:^|\s)(\+?\d[\d\s/.-]{6,}\d)(?=\s|$)/;
+
+/**
+ * Bloco CUSTOMER da fatura: nome, endereço, CAP e cidade, país, e-mail,
+ * telefone e P.IVA, para criar o cliente quando ele ainda não existe.
+ *
+ *   CUSTOMER
+ *   GUN 2 BIKE SHOP
+ *   Jl.Mayjend Sungkono No.108,Kutoanyar
+ *   66215 Jawa Timur
+ *   Nazione: ID
+ *   NUMBER DATE order@gun2bikeshop.com
+ *   INVOICE +6282320105427
+ *   1/1411 25/11/2026 DESTINATION
+ *   VAT NUMBER CUSTOMER CODE
+ *   99999999999 501.00492          (só noves = sem P.IVA)
+ */
+export function parseCustomerBlock(lines) {
+    const clean = lines.map((l) => String(l).replace(/\s+/g, ' ').trim()).filter(Boolean);
+    const start = clean.findIndex((l) => /^CUSTOMER$/i.test(l));
+    if (start < 0 || !clean[start + 1]) return null;
+    const info = { name: clean[start + 1], address: '', postal_code: '', city: '', country: '', tax_id: '', phone: '', email: '' };
+    const plain = [];
+    for (let i = start + 2; i < Math.min(clean.length, start + 12); i++) {
+        const line = clean[i];
+        if (/^VAT NUMBER/i.test(line)) {
+            const vat = (clean[i + 1] || '').split(' ')[0];
+            if (vat && !/^9+$/.test(vat) && /\d{5,}/.test(vat)) info.tax_id = vat;
+            break;
+        }
+        const nat = /\bNazione\s*:\s*([A-Z]{2})\b/i.exec(line);
+        if (nat) { info.country = nat[1].toUpperCase(); continue; }
+        let rest = line;
+        const em = EMAIL_RE.exec(rest);
+        if (em) { if (!info.email) info.email = em[0]; rest = rest.replace(em[0], ' '); }
+        // linha do número e data da fatura: não é endereço nem telefone
+        if (/\b\d{1,3}\/\d{1,6}\s+\d{2}\/\d{2}\/\d{4}\b/.test(rest)) continue;
+        const hadLabel = LABELS.test(rest);
+        LABELS.lastIndex = 0;
+        rest = rest.replace(LABELS, ' ').replace(/\s+/g, ' ').trim();
+        if (!rest) continue;
+        const ph = PHONE_RE.exec(rest);
+        if (ph && (hadLabel || em || /^\+/.test(ph[1]) || ph[1].replace(/\D/g, '').length >= 9) && ph[1].trim() === rest) {
+            if (!info.phone) info.phone = ph[1].trim();
+            continue;
+        }
+        if (!hadLabel && !em) plain.push(rest);
+    }
+    // primeira linha: rua; a seguinte, se começar com o CAP: "66215 Jawa Timur", "12100 CUNEO CN"
+    if (plain[0]) info.address = plain[0];
+    const pc = plain[1] && /^(\d{3,6}(?:-\d{3,4})?)\s+(.+)$/.exec(plain[1]);
+    if (pc) { info.postal_code = pc[1]; info.city = pc[2]; } else if (plain[1]) info.city = plain[1];
+    return info;
 }

@@ -7,6 +7,7 @@ import { Button } from '../ui/Button';
 import { supabase } from '@/lib/supabase';
 import { ExportCatalog } from './ExportCatalog';
 import { ItemsEditor } from './ItemsEditor';
+import { InvoiceCustomerCheck } from './InvoiceCustomerCheck';
 import { emptyItem, cleanItems } from '../../services/docItems';
 import { buildExportPdf, downloadBytes, EUR1_THRESHOLD } from '../../services/exportDocs';
 import { itemsTotal, money } from '../../services/importDocs';
@@ -60,6 +61,9 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, r
     const [commercial, setCommercial] = useState(true);
     const [statement, setStatement] = useState(!!statementKind);
     const [consignee, setConsignee] = useState(emptyConsignee);
+    const [invoiceCustomer, setInvoiceCustomer] = useState(null); // bloco CUSTOMER lido da fatura
+    const invoiceCustomerRef = useRef(null);
+    invoiceCustomerRef.current = invoiceCustomer;
     // Despachante: a mercadoria vai para ele (consignee) e ele entrega ao
     // cliente em outro país; o cliente da fatura vira o comprador (Sold to).
     const [viaForwarder, setViaForwarder] = useState(false);
@@ -88,6 +92,15 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, r
         let alive = true;
         findCustomerByName(customerName).then((c) => {
             if (!alive) return;
+            // sem ficha: fica o que a fatura diz (se já foi lida)
+            const ci = invoiceCustomerRef.current;
+            if (!c?.address_line1 && ci?.address) {
+                return setConsignee((cur) => ({
+                    ...cur, name: c?.name || customerName || ci.name, address: ci.address, postal_code: ci.postal_code, city: ci.city,
+                    country: ci.country || c?.country || country || '', tax_id: c?.tax_id || ci.tax_id, contact: c?.contact_name || '',
+                    phone: c?.phone || ci.phone, email: c?.email || ci.email,
+                }));
+            }
             setConsignee({
                 name: c?.name || customerName || '',
                 address: [c?.address_line1, c?.address_line2].filter(Boolean).join(', '),
@@ -153,8 +166,19 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, r
     const [readInfo, setReadInfo] = useState(null); // { items, matched } | 'fail'
     const readInvoice = async (bytes) => {
         setReadInfo(null);
+        setInvoiceCustomer(null);
         try {
             const r = parseInvoiceText(await pdfLines(bytes));
+            setInvoiceCustomer(r.customerInfo);
+            invoiceCustomerRef.current = r.customerInfo;
+            // destinatário vazio (cliente sem ficha): preenche com o que a fatura diz
+            if (r.customerInfo) {
+                const ci = r.customerInfo;
+                setConsignee((c) => (c.address.trim() ? c : {
+                    ...c, name: c.name || ci.name, address: ci.address, postal_code: ci.postal_code, city: ci.city,
+                    country: ci.country || c.country, tax_id: c.tax_id || ci.tax_id, phone: c.phone || ci.phone, email: c.email || ci.email,
+                }));
+            }
             if (r.number) setNumber(r.number);
             if (r.date) setDate(r.date);
             if (!r.items.length) return setReadInfo('fail');
@@ -311,6 +335,7 @@ export function ExportDocsCard({ customerName, invoiceValue, country, parcels, r
                             {readInfo === 'fail' ? t('exp.ci.readFail') : t('exp.ci.read', { n: readInfo.items, m: readInfo.matched, s: readInfo.suggested })}
                         </p>
                     )}
+                    {invoiceCustomer && <div className="mt-2"><InvoiceCustomerCheck info={invoiceCustomer} /></div>}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                     <Input label={t('exp.number')} value={number} onChange={(e) => setNumber(e.target.value)} placeholder="1255" />
