@@ -17,7 +17,7 @@
             "destination": "/ferie.html"
         },
         {
-            "source": "/((?!assets/|og-|favicon|logo|apple-touch-icon).*)",
+            "source": "/((?!api/|assets/|og-|favicon|logo|apple-touch-icon).*)",
             "destination": "/"
         }
     ],

@@ -1,11 +1,14 @@
 import { Navigate } from "react-router-dom";
+import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader2, ShieldCheck, UserPlus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "../common/PageHeader";
-import { ACCESS_LIST_KEY, FERIE_LEVELS, MY_ACCESS_KEY, listAccess, myAccessQuery, setAccess, type FerieLevel } from "./api";
+import { ACCESS_LIST_KEY, FERIE_LEVELS, MY_ACCESS_KEY, createLogin, listAccess, myAccessQuery, setAccess, type FerieLevel } from "./api";
 
 /** Painel de acessos: quem vê e quem aprova em Ferie. Só para o administrador. */
 export default function AccessPage() {
@@ -69,7 +72,49 @@ function AccessPanel() {
             ))}
           </ul>
         )}
+      <NewLogin />
       <p className="max-w-3xl text-xs text-muted-foreground">{t("acc.nfc")}</p>
     </div>
+  );
+}
+
+/** Convite de um login novo: a pessoa recebe o e-mail e cria a própria senha. */
+function NewLogin() {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const [email, setEmail] = useState("");
+  const [ferie, setFerie] = useState<FerieLevel>("none");
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const invite = useMutation({
+    mutationFn: () => createLogin(email, ferie),
+    onSuccess: () => {
+      setMsg({ ok: true, text: t("acc.invited", { email: email.trim() }) });
+      setEmail(""); setFerie("none");
+      qc.invalidateQueries({ queryKey: ACCESS_LIST_KEY });
+    },
+    onError: (e: { code?: string }) => setMsg({ ok: false, text: t(`acc.err.${e.code ?? "unexpected"}`, { defaultValue: t("acc.err.unexpected") }) }),
+  });
+  const onSubmit = (e: FormEvent) => { e.preventDefault(); setMsg(null); if (email.trim()) invite.mutate(); };
+  return (
+    <form onSubmit={onSubmit} className="max-w-3xl flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
+      <h2 className="text-xs font-bold uppercase tracking-[0.12em]">{t("acc.new")}</h2>
+      <p className="text-sm text-muted-foreground">{t("acc.newHint")}</p>
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex min-w-[16rem] flex-1 flex-col gap-1.5">
+          <span className="eyebrow">E-mail</span>
+          <Input type="email" autoComplete="off" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@officinemattio.it" />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="eyebrow">{t("nav.ferie")}</span>
+          <select value={ferie} onChange={(e) => setFerie(e.target.value as FerieLevel)} className="h-11 rounded-md border border-input bg-card px-3 text-sm">
+            {FERIE_LEVELS.map((l) => <option key={l} value={l}>{t(`acc.level.${l}`)}</option>)}
+          </select>
+        </label>
+        <Button type="submit" disabled={!email.trim() || invite.isPending}>
+          {invite.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}{t("acc.invite")}
+        </Button>
+      </div>
+      {msg && <p role={msg.ok ? "status" : "alert"} className={cn("text-sm font-medium", !msg.ok && "text-destructive")}>{msg.text}</p>}
+    </form>
   );
 }

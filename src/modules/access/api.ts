@@ -22,4 +22,17 @@ export const myAccessQuery = { queryKey: MY_ACCESS_KEY, queryFn: () => rpc<MyAcc
 
 export const ACCESS_LIST_KEY = ["access_list"];
 export const listAccess = () => rpc<UserAccess[]>("access_admin_list");
+/** Convida um login novo (função no servidor; confere se quem chama é administrador). */
+export async function createLogin(email: string, ferie: FerieLevel): Promise<{ ok: boolean; user_id: string | null }> {
+  const { data } = await requireSupabase().auth.getSession();
+  const r = await fetch("/api/create-login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.session?.access_token ?? ""}` },
+    body: JSON.stringify({ email, ferie }),
+  });
+  const body = await r.json().catch(() => ({ error: "unexpected" }));
+  if (!r.ok) throw Object.assign(new Error(body.error ?? "unexpected"), { code: body.error });
+  return body;
+}
+
 export const setAccess = (target: string, level: FerieLevel) => rpc("access_admin_set", { target, area: "ferie", level });
