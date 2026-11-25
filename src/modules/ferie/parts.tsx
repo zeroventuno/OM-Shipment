@@ -13,6 +13,11 @@ export const SectorsProvider = SectorsContext.Provider;
 export const useSectors = () => useContext(SectorsContext);
 export const useSectorName = () => sectorNamer(useContext(SectorsContext));
 
+/** Quem só vê (nível "view" no painel Accessi) não aprova nem muda nada. */
+const CanEditContext = createContext(false);
+export const CanEditProvider = CanEditContext.Provider;
+export const useCanEdit = () => useContext(CanEditContext);
+
 /** Janela do mapa: começa uma semana antes de hoje; as setas andam 4 semanas. */
 export function useMonthWindow(months = 2) {
   const today = todayRome();

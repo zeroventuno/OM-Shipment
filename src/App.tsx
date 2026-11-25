@@ -36,6 +36,8 @@ const PickupRequestsPage = lazy(() => import('@/modules/pickups/PickupRequestsPa
 // Férias e agenda: página do escritório e link pessoal do funcionário (sem login).
 const FeriePage = lazy(() => import('@/modules/ferie/FeriePage'))
 const FerieFormPage = lazy(() => import('@/modules/ferie/FerieFormPage'))
+// Painel de acessos por login (só administrador).
+const AccessPage = lazy(() => import('@/modules/access/AccessPage'))
 
 function PageFallback() {
     return (
@@ -93,6 +95,7 @@ export default function App() {
                 <Route path="customers/:id" element={page(<CustomerDetailPage />)} />
                 <Route path="contacts" element={page(<ContactsPage />)} />
                 <Route path="ferie" element={page(<FeriePage />)} />
+                <Route path="access" element={page(<AccessPage />)} />
 
                 {/* Endereços antigos do OM-Shipment, para favoritos continuarem funcionando */}
                 <Route path="dashboard" element={<Navigate to="/shipments" replace />} />

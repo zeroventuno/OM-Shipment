@@ -10,8 +10,9 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Field } from "@/modules/customers/fields";
 import { PageHeader } from "../common/PageHeader";
+import { myAccessQuery } from "../access/api";
 import { LeaveMap } from "./LeaveMap";
-import { MonthNav, PartPicker, SectorsProvider, StatusChip, useDuration, useMonthWindow, useSectorName, useSectors } from "./parts";
+import { CanEditProvider, MonthNav, PartPicker, SectorsProvider, useCanEdit, StatusChip, useDuration, useMonthWindow, useSectorName, useSectors } from "./parts";
 import {
   FERIE_KEY, addLeave, decideLeave, deleteEvent, ferieLink, listEmployees, listEvents, listLeaves, listVans,
   deleteEmployee, saveEmployee, saveEvent, saveSector, getNameOrder, setNameOrder, saveVan, setEmployeeToken, deleteSector, listSectors,
@@ -27,6 +28,14 @@ const select = "h-11 w-full rounded-md border border-input bg-card px-3 text-sm"
 
 /** Ferie e agenda: mapa da equipe, pedidos, agenda, pessoas e furgões. */
 export default function FeriePage() {
+  const { t } = useTranslation();
+  const access = useQuery(myAccessQuery);
+  if (access.isLoading) return <p className="py-16 text-center text-muted-foreground">…</p>;
+  if (!access.data || access.data.ferie === "none") return <p className="py-16 text-center text-muted-foreground">{t("fe.noAccess")}</p>;
+  return <FerieInner canEdit={access.data.ferie === "approve"} />;
+}
+
+function FerieInner({ canEdit }: { canEdit: boolean }) {
   const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("map");
   const employees = useQuery({ queryKey: [...FERIE_KEY, "employees"], queryFn: listEmployees });
@@ -55,13 +64,16 @@ export default function FeriePage() {
 
   return (
     <SectorsProvider value={sectors.data ?? []}>
+    <CanEditProvider value={canEdit}>
     <div className="flex flex-col gap-6">
-      <PageHeader eyebrow={t("fe.eyebrow")} title={t("fe.title")} actions={
+      <PageHeader eyebrow={t("fe.eyebrow")} title={t("fe.title")} actions={canEdit && (
         <>
           <Button variant="outline" onClick={() => setAddingLeave(true)} disabled={!active.length}><Plus className="h-4 w-4" />{t("fe.addLeave")}</Button>
           <Button onClick={() => setEditingEvent({ kind: "meeting", start_date: todayRome(), end_date: todayRome(), employee_ids: [] })}><Plus className="h-4 w-4" />{t("fe.newEvent")}</Button>
         </>
-      } />
+      )} />
+
+      {!canEdit && <p className="rounded-md border border-border bg-secondary/50 px-4 py-2.5 text-sm">{t("fe.readOnly")}</p>}
 
       <div className="flex flex-wrap gap-2" role="tablist">
         {tabs.map(([key, label]) => (
@@ -77,8 +89,8 @@ export default function FeriePage() {
         : error ? <p className="py-16 text-center text-destructive">{(error as Error).message}</p>
           : tab === "map" ? (
             <MapTab employees={active} leaves={leaves.data!} events={events.data!} vans={vans.data!.filter((v) => v.active)}
-              onLeave={(l) => setDeciding(leaves.data!.find((x) => x.id === l.id) ?? null)}
-              onEvent={(ev) => setEditingEvent(events.data!.find((x) => x.id === ev.id) ?? null)} />
+              onLeave={canEdit ? (l) => setDeciding(leaves.data!.find((x) => x.id === l.id) ?? null) : undefined}
+              onEvent={canEdit ? (ev) => setEditingEvent(events.data!.find((x) => x.id === ev.id) ?? null) : undefined} />
           ) : tab === "requests" ? (
             <RequestsTab employees={people} leaves={leaves.data!} events={events.data!} onDecide={setDeciding} />
           ) : tab === "agenda" ? (
@@ -93,6 +105,7 @@ export default function FeriePage() {
       {editingEvent && <EventDialog value={editingEvent} employees={active} vans={(vans.data ?? []).filter((v) => v.active)} onClose={() => setEditingEvent(null)} />}
       {addingLeave && <AddLeaveDialog employees={active} onClose={() => setAddingLeave(false)} />}
     </div>
+    </CanEditProvider>
     </SectorsProvider>
   );
 }
@@ -123,7 +136,7 @@ function useSave<A>(fn: (a: A) => Promise<unknown>, onDone?: () => void) {
 
 function MapTab({ employees, leaves, events, vans, onLeave, onEvent }: {
   employees: StaffEmployee[]; leaves: StaffLeave[]; events: StaffEvent[]; vans: Van[];
-  onLeave: (l: { id: string }) => void; onEvent: (e: { id: string }) => void;
+  onLeave?: (l: { id: string }) => void; onEvent?: (e: { id: string }) => void;
 }) {
   const { t } = useTranslation();
   const win = useMonthWindow(2);
@@ -175,6 +188,7 @@ function RequestsTab({ employees, leaves, events, onDecide }: {
   employees: StaffEmployee[]; leaves: StaffLeave[]; events: StaffEvent[]; onDecide: (l: StaffLeave) => void;
 }) {
   const { t } = useTranslation();
+  const canEdit = useCanEdit();
   const sn = useSectorName();
   const sectorList = useSectors();
   const span = useDates();
@@ -212,7 +226,7 @@ function RequestsTab({ employees, leaves, events, onDecide }: {
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusChip status={l.status} />
-                    <Button size="sm" variant={l.status === "pending" ? "default" : "outline"} onClick={() => onDecide(l)}>{l.status === "pending" ? t("fe.decide") : t("Edit")}</Button>
+                    {canEdit && <Button size="sm" variant={l.status === "pending" ? "default" : "outline"} onClick={() => onDecide(l)}>{l.status === "pending" ? t("fe.decide") : t("Edit")}</Button>}
                   </div>
                 </div>
                 {isActive(l) && <Conflicts leave={l} employees={employees} leaves={leaves} events={events} />}
@@ -316,6 +330,7 @@ function AddLeaveDialog({ employees, onClose }: { employees: StaffEmployee[]; on
 
 function AgendaTab({ events, employees, vans, onEdit }: { events: StaffEvent[]; employees: StaffEmployee[]; vans: Van[]; onEdit: (e: StaffEvent) => void }) {
   const { t } = useTranslation();
+  const canEdit = useCanEdit();
   const sn = useSectorName();
   const sectorList = useSectors();
   const span = useDates();
@@ -334,7 +349,7 @@ function AgendaTab({ events, employees, vans, onEdit }: { events: StaffEvent[]; 
         <ul className="flex flex-col divide-y divide-border rounded-lg border border-border bg-card">
           {list.map((ev) => (
             <li key={ev.id}>
-              <button type="button" onClick={() => onEdit(ev)} className="flex w-full flex-wrap items-center justify-between gap-2 px-4 py-3 text-left hover:bg-secondary/50">
+              <button type="button" disabled={!canEdit} onClick={() => onEdit(ev)} className="flex w-full flex-wrap items-center justify-between gap-2 px-4 py-3 text-left hover:bg-secondary/50">
                 <span className="min-w-0">
                   <span className="block font-semibold">{ev.title}</span>
                   <span className="block text-sm text-muted-foreground">{span(ev.start_date, ev.end_date)}{ev.start_time && ` · ${ev.start_time.slice(0, 5)}${ev.end_time ? `–${ev.end_time.slice(0, 5)}` : ""}`} · {who(ev)}{bookedBy(ev)}</span>
@@ -442,6 +457,7 @@ function EventDialog({ value, employees, vans, onClose }: { value: Partial<Staff
 
 function PeopleTab({ employees, leaves, order }: { employees: StaffEmployee[]; leaves: StaffLeave[]; order: NameOrder }) {
   const { t } = useTranslation();
+  const canEdit = useCanEdit();
   const sn = useSectorName();
   const sectorList = useSectors();
   const { toast } = useToast();
@@ -468,12 +484,12 @@ function PeopleTab({ employees, leaves, order }: { employees: StaffEmployee[]; l
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground max-w-2xl">{t("fe.peopleHint")}</p>
-        <Button onClick={() => setEditing({ active: true })}><Plus className="h-4 w-4" />{t("fe.newPerson")}</Button>
+        {canEdit && <Button onClick={() => setEditing({ active: true })}><Plus className="h-4 w-4" />{t("fe.newPerson")}</Button>}
       </div>
       <div className="flex flex-wrap items-center gap-2 text-sm" role="radiogroup" aria-label={t("fe.nameOrder")}>
         <span className="eyebrow mr-1">{t("fe.nameOrder")}</span>
         {(["first_last", "last_first"] as const).map((o) => (
-          <button key={o} type="button" role="radio" aria-checked={order === o} disabled={setOrder.isPending} onClick={() => order !== o && setOrder.mutate(o)}
+          <button key={o} type="button" role="radio" aria-checked={order === o} disabled={!canEdit || setOrder.isPending} onClick={() => order !== o && setOrder.mutate(o)}
             className={cn("h-8 rounded-full border px-3", order === o ? "border-foreground bg-secondary font-semibold" : "border-border bg-card")}>
             {t(`fe.order.${o}`)}
           </button>
@@ -483,7 +499,7 @@ function PeopleTab({ employees, leaves, order }: { employees: StaffEmployee[]; l
         <ul className="flex flex-col divide-y divide-border rounded-lg border border-border bg-card">
           {sorted.map((e) => (
             <li key={e.id} className={cn("flex flex-wrap items-center justify-between gap-3 px-4 py-3", !e.active && "opacity-50")}>
-              <button type="button" className="min-w-0 text-left" onClick={() => setEditing(e)}>
+              <button type="button" className="min-w-0 text-left" disabled={!canEdit} onClick={() => setEditing(e)}>
                 <span className="block font-semibold hover:underline">{e.name}</span>
                 <span className="block text-sm text-muted-foreground">
                   {sn(e.primary_sector)}{e.secondary_sector && ` + ${sn(e.secondary_sector)}`}
@@ -495,11 +511,11 @@ function PeopleTab({ employees, leaves, order }: { employees: StaffEmployee[]; l
                   {e.link_token ? (
                     <>
                       <Button size="sm" variant="outline" onClick={() => copy(e.link_token!)}><Copy className="h-3.5 w-3.5" />{t("fe.copyLink")}</Button>
-                      <Button size="sm" variant="ghost" onClick={() => { if (window.confirm(t("fe.confirmNewLink", { name: e.name }))) link.mutate({ id: e.id, token: newLinkToken() }); }}>{t("fe.newLink")}</Button>
+                      {canEdit && <Button size="sm" variant="ghost" onClick={() => { if (window.confirm(t("fe.confirmNewLink", { name: e.name }))) link.mutate({ id: e.id, token: newLinkToken() }); }}>{t("fe.newLink")}</Button>}
                     </>
-                  ) : (
+                  ) : canEdit ? (
                     <Button size="sm" onClick={() => link.mutate({ id: e.id, token: newLinkToken() })}><Link2 className="h-3.5 w-3.5" />{t("fe.createLink")}</Button>
-                  )}
+                  ) : null}
                 </div>
               )}
             </li>
@@ -580,6 +596,7 @@ function PersonDialog({ value, others, onClose }: { value: Partial<StaffEmployee
 
 function SectorsTab({ sectors, employees }: { sectors: SectorInfo[]; employees: StaffEmployee[] }) {
   const { t } = useTranslation();
+  const canEdit = useCanEdit();
   const [editing, setEditing] = useState<(SectorInfo & { isNew?: boolean }) | null>(null);
   const save = useSave(({ s, isNew }: { s: SectorInfo; isNew: boolean }) => saveSector(s, isNew), () => setEditing(null));
   const remove = useSave(deleteSector, () => setEditing(null));
@@ -590,12 +607,12 @@ function SectorsTab({ sectors, employees }: { sectors: SectorInfo[]; employees: 
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground max-w-2xl">{t("fe.sectorsHint")}</p>
-        <Button onClick={() => setEditing({ id: "", name: "", sort_order: next, active: true, isNew: true })}><Plus className="h-4 w-4" />{t("fe.newSector")}</Button>
+        {canEdit && <Button onClick={() => setEditing({ id: "", name: "", sort_order: next, active: true, isNew: true })}><Plus className="h-4 w-4" />{t("fe.newSector")}</Button>}
       </div>
       <ul className="flex flex-col divide-y divide-border rounded-lg border border-border bg-card">
         {sorted.map((s) => (
           <li key={s.id}>
-            <button type="button" onClick={() => setEditing(s)} className={cn("flex w-full items-center justify-between px-4 py-3 text-left hover:bg-secondary/50", !s.active && "opacity-50")}>
+            <button type="button" disabled={!canEdit} onClick={() => setEditing(s)} className={cn("flex w-full items-center justify-between px-4 py-3 text-left hover:bg-secondary/50", !s.active && "opacity-50")}>
               <span className="font-semibold">{s.name}</span>
               <span className="text-sm text-muted-foreground">{t("fe.sectorPeople", { count: count(s.id) })}</span>
             </button>
@@ -636,16 +653,17 @@ function SectorsTab({ sectors, employees }: { sectors: SectorInfo[]; employees: 
 
 function VansTab({ vans }: { vans: Van[] }) {
   const { t } = useTranslation();
+  const canEdit = useCanEdit();
   const [editing, setEditing] = useState<Partial<Van> | null>(null);
   const save = useSave(saveVan, () => setEditing(null));
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end"><Button onClick={() => setEditing({ name: "", active: true, sort_order: vans.length })}><Plus className="h-4 w-4" />{t("fe.newVan")}</Button></div>
+      {canEdit && <div className="flex justify-end"><Button onClick={() => setEditing({ name: "", active: true, sort_order: vans.length })}><Plus className="h-4 w-4" />{t("fe.newVan")}</Button></div>}
       {vans.length === 0 ? <p className="py-12 text-center text-muted-foreground">{t("fe.noVans")}</p> : (
         <ul className="flex flex-col divide-y divide-border rounded-lg border border-border bg-card">
           {vans.map((v) => (
             <li key={v.id}>
-              <button type="button" onClick={() => setEditing(v)} className={cn("flex w-full items-center justify-between px-4 py-3 text-left hover:bg-secondary/50", !v.active && "opacity-50")}>
+              <button type="button" disabled={!canEdit} onClick={() => setEditing(v)} className={cn("flex w-full items-center justify-between px-4 py-3 text-left hover:bg-secondary/50", !v.active && "opacity-50")}>
                 <span className="font-semibold">{v.name}</span>
                 <span className="text-sm text-muted-foreground">{v.plate}</span>
               </button>

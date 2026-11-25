@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { LogOut, X, Truck, Wrench, ShieldCheck, Inbox, Users, Contact, FileBarChart, Nfc, Link2, Palmtree, type LucideIcon } from 'lucide-react';
+import { LogOut, X, Truck, Wrench, ShieldCheck, Inbox, Users, Contact, FileBarChart, Nfc, Link2, Palmtree, KeyRound, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +11,7 @@ import { listServiceRequests, SERVICE_REQUESTS_QUERY_KEY } from '@/modules/servi
 import { listPickupRequests, PICKUP_REQUESTS_QUERY_KEY } from '@/modules/pickups/api';
 import { nfcCanAdminQuery } from '@/modules/nfc/api';
 import { FERIE_KEY, listLeaves } from '@/modules/ferie/api';
+import { myAccessQuery } from '@/modules/access/api';
 import { useState } from 'react';
 import { LinksDialog } from './LinksDialog';
 
@@ -23,6 +24,10 @@ export interface Area {
     menuOnly?: boolean;
     /** Só para quem administra os chips NFC (produto à parte do Gestionale). */
     nfcAdminOnly?: boolean;
+    /** Só para quem tem acesso a Ferie (painel Accessi). */
+    ferieOnly?: boolean;
+    /** Só para o administrador do Gestionale. */
+    adminOnly?: boolean;
 }
 
 // As áreas do sistema. Envios tem subpáginas.
@@ -45,7 +50,8 @@ export const AREAS: Area[] = [
     { icon: Inbox, label: 'nav.serviceRequests', to: '/service-requests' },
     { icon: Users, label: 'nav.customers', to: '/customers' },
     { icon: Contact, label: 'nav.contacts', to: '/contacts' },
-    { icon: Palmtree, label: 'nav.ferie', to: '/ferie', menuOnly: true },
+    { icon: Palmtree, label: 'nav.ferie', to: '/ferie', menuOnly: true, ferieOnly: true },
+    { icon: KeyRound, label: 'nav.access', to: '/access', menuOnly: true, adminOnly: true },
     { icon: Nfc, label: 'nav.nfc', to: '/nfc', menuOnly: true, nfcAdminOnly: true },
 ];
 
@@ -86,6 +92,7 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
     const stale = useStaleCounts();
     const [linksOpen, setLinksOpen] = useState(false);
     const nfcAdmin = useQuery({ ...nfcCanAdminQuery, enabled: !!user }).data === true;
+    const access = useQuery({ ...myAccessQuery, enabled: !!user }).data;
 
     const handleSignOut = async () => {
         if (window.confirm(t('Sign out of the system?'))) {
@@ -122,7 +129,7 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
                 </div>
 
                 <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto" aria-label={t('Main menu')}>
-                    {AREAS.filter((area) => !area.nfcAdminOnly || nfcAdmin).map((area) => {
+                    {AREAS.filter((area) => (!area.nfcAdminOnly || nfcAdmin) && (!area.ferieOnly || (access && access.ferie !== 'none')) && (!area.adminOnly || access?.admin)).map((area) => {
                         const inArea = pathname.startsWith(area.to);
                         const count = stale[area.to] ?? 0;
                         return (
