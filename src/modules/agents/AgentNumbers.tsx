@@ -15,7 +15,7 @@ export function Tile({ label, value, hint, tone }: { label: string; value: strin
   return (
     <div className="flex min-w-0 flex-col gap-1 rounded-lg border border-border bg-card p-4">
       <span className="eyebrow">{label}</span>
-      <span className={cn("text-2xl font-bold tabular-nums tracking-tight", tone === "bad" && "text-destructive", tone === "good" && "text-[#1F7A3A]")}>{value}</span>
+      <span className={cn("break-words text-xl font-bold tabular-nums tracking-tight sm:text-2xl", tone === "bad" && "text-destructive", tone === "good" && "text-[#1F7A3A]")}>{value}</span>
       {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
     </div>
   );
@@ -47,10 +47,10 @@ export function AgentNumbers({ me, om }: { me: AgentStats; om: OmCounts }) {
               <thead className="text-left text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
                 <tr className="border-b border-border">
                   <th className="px-4 py-2 font-semibold">{t("ag.type")}</th>
-                  <th className="px-3 py-2 text-right font-semibold">{t("ag.mine")}</th>
-                  <th className="px-3 py-2 text-right font-semibold">{t("ag.om")}</th>
+                  <th className="px-2 py-2 text-right font-semibold sm:px-3">{t("ag.mine")}</th>
+                  <th className="px-4 py-2 text-right font-semibold sm:px-3">{t("ag.om")}</th>
                   <th className="hidden px-3 py-2 font-semibold sm:table-cell">{t("ag.share")}</th>
-                  <th className="px-4 py-2 text-right font-semibold">{t("ag.balance")}</th>
+                  <th className="hidden px-4 py-2 text-right font-semibold sm:table-cell">{t("ag.balance")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -59,16 +59,19 @@ export function AgentNumbers({ me, om }: { me: AgentStats; om: OmCounts }) {
                   const share = total ? r.n / total : 0;
                   return (
                     <tr key={r.type} className="border-b border-border last:border-0">
-                      <td className="px-4 py-2.5 font-medium">{typeLabel(r.type)}</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums font-semibold">{r.n}</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{total}</td>
+                      <td className="px-4 py-2.5 font-medium">
+                        {typeLabel(r.type)}
+                        <span className={cn("block text-xs font-normal tabular-nums sm:hidden", (r.profit ?? 0) < 0 ? "text-destructive" : "text-muted-foreground")}>{formatMoney(r.profit ?? 0, lang)}</span>
+                      </td>
+                      <td className="px-2 py-2.5 text-right tabular-nums font-semibold sm:px-3">{r.n}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground sm:px-3">{total}</td>
                       <td className="hidden px-3 py-2.5 sm:table-cell">
                         <span className="flex items-center gap-2">
                           <span className="h-1.5 w-24 overflow-hidden rounded-full bg-muted"><span className="block h-full bg-primary" style={{ width: `${Math.max(share * 100, 2)}%` }} /></span>
                           <span className="text-xs tabular-nums text-muted-foreground">{pctText(r.n, total, lang)}</span>
                         </span>
                       </td>
-                      <td className={cn("px-4 py-2.5 text-right tabular-nums", (r.profit ?? 0) < 0 && "text-destructive")}>{formatMoney(r.profit ?? 0, lang)}</td>
+                      <td className={cn("hidden px-4 py-2.5 text-right tabular-nums sm:table-cell", (r.profit ?? 0) < 0 && "text-destructive")}>{formatMoney(r.profit ?? 0, lang)}</td>
                     </tr>
                   );
                 })}
