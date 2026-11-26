@@ -47,6 +47,8 @@ const it = {
   "ag.page.denied": "Questa pagina è per chi ha l'accesso al Report.",
   "ag.page.openNow": "aperte adesso, in tutta la OM",
   "ag.page.legend": "Garanzie e assistenze: aperte / totali. Il saldo è quello delle spedizioni dell'anno scelto.",
+  "ag.page.others": "Altri",
+  "ag.page.legendTitle": "Agenti",
   "ag.menu": "Agenti",
 };
 
@@ -97,6 +99,8 @@ const pt: typeof it = {
   "ag.page.denied": "Esta página é para quem tem acesso ao Report.",
   "ag.page.openNow": "abertas agora, em toda a OM",
   "ag.page.legend": "Garantias e assistências: abertas / totais. O saldo é o dos envios do ano escolhido.",
+  "ag.page.others": "Outros",
+  "ag.page.legendTitle": "Agentes",
   "ag.menu": "Agentes",
 };
 

@@ -16,7 +16,9 @@ import { ferieFormAnswer, ferieFormCancel, ferieFormData, ferieFormSubmit, type 
 import { absences, blockingEvent, conflictsFor, displayName, parseHours, sectorNamer, todayRome, validateLeave, type DayPart } from "./logic";
 import { LIVE } from "@/lib/live";
 import { HubAgenda } from "./HubAgenda";
-import { HUB_SECTIONS, HubLogistics, HubMyRequests, HubNav, HubService, type HubSection } from "./Hub";
+import { AgentsBoard } from "@/modules/agents/AgentsPage";
+import { hubAgentsDashboard, hubCanSeeAgents } from "@/modules/agents/api";
+import { HUB_SECTIONS, OWNER_SECTIONS, HubLogistics, HubMyRequests, HubNav, HubService, type HubSection } from "./Hub";
 
 /*
  * Link pessoal do funcionário (/ferie/<token>): o ponto de entrada da pessoa no
@@ -46,7 +48,9 @@ export default function FerieFormPage() {
   const [sent, setSent] = useState(false);
   const [mode, setMode] = useState<"leave" | AgendaMode>("leave");
   const [params, setParams] = useSearchParams();
-  const section: HubSection = HUB_SECTIONS.includes(params.get("s") as HubSection) ? (params.get("s") as HubSection) : "agenda";
+  const owner = useQuery({ queryKey: ["hub-owner", token], queryFn: () => hubCanSeeAgents(token), retry: false, staleTime: 10 * 60_000 }).data === true;
+  const asked = params.get("s") as HubSection;
+  const section: HubSection = HUB_SECTIONS.includes(asked) || (owner && OWNER_SECTIONS.includes(asked)) ? asked : "agenda";
   const goTo = (s: HubSection) => setParams(s === "agenda" ? {} : { s }, { replace: true });
   const win = useMonthWindow(2);
   const duration = useDuration();
@@ -126,8 +130,9 @@ export default function FerieFormPage() {
       <main className="max-w-5xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-6">
         <InstallHint storageKey="om-pwa-ferie-hidden" />
 
-        <HubNav value={section} onChange={goTo} />
+        <HubNav value={section} onChange={goTo} owner={owner} />
 
+        {section === "agenti" && <AgentsBoard load={(y) => hubAgentsDashboard(token, y)} queryKey={["hub-agents", token]} />}
         {section === "agenda" && <HubAgenda token={token} d={d} onOpenFerie={() => goTo("ferie")} />}
         {section === "logistica" && <HubLogistics token={token} agent={d.me.agent} />}
         {section === "assistenza" && <HubService token={token} agent={d.me.agent} />}

@@ -7,7 +7,8 @@ import { LIVE } from "@/lib/live";
 import { formatMoney } from "@/modules/requests/api";
 import { PageHeader } from "@/modules/common/PageHeader";
 import { AgentNumbers, Tile } from "./AgentNumbers";
-import { agentsDashboard, yearChoices, type DashboardAgent } from "./api";
+import { agentsDashboard, yearChoices, type Dashboard, type DashboardAgent } from "./api";
+import { AgentsByType } from "./AgentsByType";
 import { pctText } from "./format";
 
 /*
@@ -22,12 +23,19 @@ const value = (a: DashboardAgent, k: SortKey) =>
   k === "n" ? a.stats.shipments.n : k === "profit" ? a.stats.shipments.profit : a.stats.warranties.total;
 
 export default function AgentsPage() {
+  return <AgentsBoard load={agentsDashboard} queryKey={["agents-dashboard"]} pageHeader />;
+}
+
+/** O painel em si: no Gestionale (com login) e no link pessoal do dono. */
+export function AgentsBoard({ load, queryKey, pageHeader = false }: {
+  load: (year: number) => Promise<Dashboard>; queryKey: unknown[]; pageHeader?: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language || "it";
   const years = yearChoices();
   const [year, setYear] = useState(years[0]);
   const [sort, setSort] = useState<SortKey>("n");
-  const q = useQuery({ queryKey: ["agents-dashboard", year], queryFn: () => agentsDashboard(year), ...LIVE });
+  const q = useQuery({ queryKey: [...queryKey, year], queryFn: () => load(year), ...LIVE });
 
   const ranked = useMemo(() => {
     const list = [...(q.data?.agents ?? [])];
@@ -37,22 +45,28 @@ export default function AgentsPage() {
 
   const om = q.data?.om;
   const select = "h-10 rounded-full border border-border bg-card px-4 text-sm font-semibold";
+  const yearPicker = (
+    <label className="flex items-center gap-2 text-sm">
+      <span className="eyebrow">{t("ag.year")}</span>
+      <select value={year} onChange={(e) => setYear(Number(e.target.value))} className={cn(select, "tabular-nums")}>
+        {years.map((y) => <option key={y} value={y}>{y}</option>)}
+      </select>
+    </label>
+  );
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        eyebrow={t("ag.page.eyebrow")}
-        title={t("ag.page.title")}
-        actions={
-          <label className="flex items-center gap-2 text-sm">
-            <span className="eyebrow">{t("ag.year")}</span>
-            <select value={year} onChange={(e) => setYear(Number(e.target.value))} className={cn(select, "tabular-nums")}>
-              {years.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
-          </label>
-        }
-      />
-      <p className="-mt-3 text-sm text-muted-foreground">{t("ag.page.intro")}</p>
+      {pageHeader ? (
+        <>
+          <PageHeader eyebrow={t("ag.page.eyebrow")} title={t("ag.page.title")} actions={yearPicker} />
+          <p className="-mt-3 text-sm text-muted-foreground">{t("ag.page.intro")}</p>
+        </>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">{t("ag.page.intro")}</p>
+          {yearPicker}
+        </div>
+      )}
 
       {q.isLoading ? (
         <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" /></div>
@@ -113,6 +127,8 @@ export default function AgentsPage() {
             </div>
             <p className="text-xs text-muted-foreground">{t("ag.page.legend")}</p>
           </section>
+
+          <AgentsByType agents={q.data!.agents} omByType={om.by_type} />
 
           <section className="flex flex-col gap-6">
             <h2 className="text-xs font-bold uppercase tracking-[0.12em]">{t("ag.page.detail")}</h2>
