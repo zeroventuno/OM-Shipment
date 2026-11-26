@@ -33,9 +33,6 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
 
 export const hubAgentStats = (token: string, year: number) => rpc<HubStats>("hub_agent_stats", { token, p_year: year });
 export const agentsDashboard = (year: number) => rpc<Dashboard>("agents_dashboard", { p_year: year });
-/** O mesmo painel pelo link pessoal, só para quem está em hub_dashboard_viewers (o dono). */
-export const hubAgentsDashboard = (token: string, year: number) => rpc<Dashboard>("hub_agents_dashboard", { token, p_year: year });
-export const hubCanSeeAgents = (token: string) => rpc<boolean>("hub_can_see_agents", { token });
 
 /** Anos que dá para escolher: o atual e os dois anteriores. */
 export const yearChoices = (now = new Date()) => {
