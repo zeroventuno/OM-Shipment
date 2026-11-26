@@ -33,6 +33,9 @@ const PORTALS = ['MBE', 'My Parcel', 'My DHL', 'BRT', 'Pallet / Truck', 'Spot / 
 const ALL_CARRIERS = ['TNT', 'Fedex', 'DHL', 'BRT', 'SDA', 'UPS'];
 const ORDER_TYPES = ['Bicycle', 'Frame Kit', 'Components', 'Warranty', 'Clothing/Accessories', 'Gift', 'Rental', 'Other'];
 
+/** B2C quando o número de ordem é do e-commerce (EC… ou 600xx…); senão B2B. Mesma regra do banco. */
+const channelGuess = (orderId) => (/^\s*EC/i.test(orderId || '') || /^\s*#?600\d{2,}/.test(orderId || '') ? 'B2C' : 'B2B');
+
 export default function NewShipment() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
@@ -49,6 +52,7 @@ export default function NewShipment() {
     const [formData, setFormData] = useState({
         orderId: '',
         orderType: '',
+        channel: '',
         customerName: '',
         quantity: 1,
         destinationCountry: '',
@@ -117,6 +121,7 @@ export default function NewShipment() {
                         setFormData({
                             orderId: shipment.orderId,
                             orderType: shipment.orderType || '',
+                            channel: shipment.channel || '',
                             customerName: shipment.customerName || '',
                             quantity: shipment.quantity || 1,
                             destinationCountry: shipment.destinationCountry || '',
@@ -643,6 +648,22 @@ export default function NewShipment() {
                                     value={formData.orderId}
                                     onChange={(e) => setFormData({ ...formData, orderId: e.target.value })}
                                 />
+                                <div>
+                                    <span className="block text-sm font-medium text-gray-700 mb-1">{t('Channel')}</span>
+                                    <div role="radiogroup" aria-label={t('Channel')} className="grid grid-cols-2 gap-2">
+                                        {['B2B', 'B2C'].map((c) => {
+                                            const on = (formData.channel || channelGuess(formData.orderId)) === c;
+                                            return (
+                                                <button key={c} type="button" role="radio" aria-checked={on}
+                                                    onClick={() => setFormData((f) => ({ ...f, channel: c }))}
+                                                    className={`h-10 rounded-md border text-sm font-semibold ${on ? 'border-primary bg-primary text-primary-foreground' : 'border-gray-300 bg-white hover:border-gray-500'}`}>
+                                                    {c}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    {!formData.channel && <p className="mt-1 text-xs text-muted-foreground">{t('Channel from order number')}</p>}
+                                </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('Order Type')}</label>
                                     <select

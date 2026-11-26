@@ -23,6 +23,8 @@ const mapToDb = (s) => ({
     updated_at: s.updatedAt,
     order_id: s.orderId,
     order_type: s.orderType,
+    // B2B/B2C; vazio = o banco decide pelo número de ordem (EC… ou 600xx… = B2C)
+    channel: s.channel || null,
     customer_name: s.customerName,
     quantity: s.quantity || 1,
     destination_country: s.destinationCountry,
@@ -55,6 +57,7 @@ const mapFromDb = (s) => ({
     updatedAt: s.updated_at,
     orderId: s.order_id,
     orderType: s.order_type,
+    channel: s.channel || '',
     customerName: s.customer_name,
     quantity: s.quantity || 1,
     destinationCountry: s.destination_country,
