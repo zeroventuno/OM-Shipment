@@ -37,6 +37,7 @@ const PickupRequestsPage = lazy(() => import('@/modules/pickups/PickupRequestsPa
 const FeriePage = lazy(() => import('@/modules/ferie/FeriePage'))
 const EntriesPage = lazy(() => import('@/modules/entries/EntriesPage'))
 const AgentsPage = lazy(() => import('@/modules/agents/AgentsPage'))
+const RatesPage = lazy(() => import('@/modules/rates/RatesPage'))
 const EntryCheckPage = lazy(() => import('@/modules/entries/EntryCheckPage'))
 const EntryPrintPage = lazy(() => import('@/modules/entries/EntryPrintPage'))
 const FerieFormPage = lazy(() => import('@/modules/ferie/FerieFormPage'))
@@ -87,6 +88,7 @@ export default function App() {
                 <Route path="shipments" element={page(<ShipmentsDashboard />)} />
                 <Route path="shipments/new" element={page(<NewShipment />)} />
                 <Route path="shipments/reports" element={page(<Reports />)} />
+                <Route path="shipments/rates" element={page(<RatesPage />)} />
                 <Route path="shipments/requests" element={page(<RequestsPage />)} />
                 <Route path="shipments/import-docs" element={page(<ImportDocs />)} />
                 <Route path="shipments/pickups" element={page(<PickupRequestsPage />)} />

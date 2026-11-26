@@ -13,6 +13,7 @@ import { ferieResources } from '@/modules/ferie/i18n';
 import { todoResources } from '@/modules/todos/i18n';
 import { entriesResources } from '@/modules/entries/i18n';
 import { agentsResources } from '@/modules/agents/i18n';
+import { ratesResources } from '@/modules/rates/i18n';
 import { quickResources } from '@/modules/quick/i18n';
 import { accessResources } from '@/modules/access/i18n';
 import { notifyResources } from '@/modules/notify/i18n';
@@ -35,8 +36,8 @@ i18n
     .use(initReactI18next)
     .init({
         resources: {
-            pt: { translation: { ...shipmentResources.pt.translation, ...appResources.pt, ...reportResources.pt, ...contactsResources.pt, ...duplicatesResources.pt, ...serviceResources.pt, ...nfcResources.pt, ...pickupResources.pt, ...linksResources.pt, ...ferieResources.pt, ...todoResources.pt, ...entriesResources.pt, ...agentsResources.pt, ...quickResources.pt, ...accessResources.pt, ...notifyResources.pt, ...pwaResources.pt } },
-            it: { translation: { ...shipmentResources.it.translation, ...appResources.it, ...reportResources.it, ...contactsResources.it, ...duplicatesResources.it, ...serviceResources.it, ...nfcResources.it, ...pickupResources.it, ...linksResources.it, ...ferieResources.it, ...todoResources.it, ...entriesResources.it, ...agentsResources.it, ...quickResources.it, ...accessResources.it, ...notifyResources.it, ...pwaResources.it } },
+            pt: { translation: { ...shipmentResources.pt.translation, ...appResources.pt, ...reportResources.pt, ...contactsResources.pt, ...duplicatesResources.pt, ...serviceResources.pt, ...nfcResources.pt, ...pickupResources.pt, ...linksResources.pt, ...ferieResources.pt, ...todoResources.pt, ...entriesResources.pt, ...agentsResources.pt, ...ratesResources.pt, ...quickResources.pt, ...accessResources.pt, ...notifyResources.pt, ...pwaResources.pt } },
+            it: { translation: { ...shipmentResources.it.translation, ...appResources.it, ...reportResources.it, ...contactsResources.it, ...duplicatesResources.it, ...serviceResources.it, ...nfcResources.it, ...pickupResources.it, ...linksResources.it, ...ferieResources.it, ...todoResources.it, ...entriesResources.it, ...agentsResources.it, ...ratesResources.it, ...quickResources.it, ...accessResources.it, ...notifyResources.it, ...pwaResources.it } },
         },
         lng: savedLanguage(),
         fallbackLng: 'it',
