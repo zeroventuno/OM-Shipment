@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import type { DashboardAgent, TypeRow } from "./api";
+import { B2C_ID, type DashboardAgent, type TypeRow } from "./api";
 import { pctText, useTypeLabel } from "./format";
 
 /*
@@ -19,7 +19,9 @@ export function AgentsByType({ agents, omByType }: { agents: DashboardAgent[]; o
   const typeLabel = useTypeLabel();
 
   // só quem tem envios no ano; cor pela ordem do nome
-  const withShips = agents.filter((a) => a.stats.shipments.n > 0).sort((a, b) => a.name.localeCompare(b.name));
+  // cor pela ordem do nome; o B2C fica sempre por último
+  const withShips = agents.filter((a) => a.stats.shipments.n > 0)
+    .sort((a, b) => Number(a.id === B2C_ID) - Number(b.id === B2C_ID) || a.name.localeCompare(b.name));
   const series = withShips.slice(0, SERIES.length).map((a, i) => ({ key: a.id, name: a.name, color: SERIES[i], agents: [a] }));
   if (withShips.length > SERIES.length) series.push({ key: "other", name: t("ag.page.others"), color: OTHER, agents: withShips.slice(SERIES.length) });
 

@@ -7,7 +7,7 @@ import { LIVE } from "@/lib/live";
 import { formatMoney } from "@/modules/requests/api";
 import { PageHeader } from "@/modules/common/PageHeader";
 import { AgentNumbers, Tile } from "./AgentNumbers";
-import { agentsDashboard, yearChoices, type Dashboard, type DashboardAgent } from "./api";
+import { B2C_ID, agentsDashboard, yearChoices, type Dashboard, type DashboardAgent } from "./api";
 import { AgentsByType } from "./AgentsByType";
 import { pctText } from "./format";
 
@@ -40,7 +40,10 @@ export function AgentsBoard({ load, queryKey, pageHeader = false }: {
   const ranked = useMemo(() => {
     const list = [...(q.data?.agents ?? [])];
     // saldo: o menor prejuízo primeiro; os outros: o maior primeiro
-    return list.sort((a, b) => value(b, sort) - value(a, sort) || a.name.localeCompare(b.name));
+    list.sort((a, b) => value(b, sort) - value(a, sort) || a.name.localeCompare(b.name));
+    // o B2C (e-commerce) não entra na classificação: fica sempre no fim
+    if (q.data?.b2c) list.push({ id: B2C_ID, name: "B2C", sector: "", active: true, stats: q.data.b2c });
+    return list;
   }, [q.data, sort]);
 
   const om = q.data?.om;
@@ -112,7 +115,7 @@ export function AgentsBoard({ load, queryKey, pageHeader = false }: {
                     const s = a.stats;
                     return (
                       <tr key={a.id} className="border-b border-border last:border-0">
-                        <td className="px-4 py-3 tabular-nums text-muted-foreground">{i + 1}</td>
+                        <td className="px-4 py-3 tabular-nums text-muted-foreground">{a.id === B2C_ID ? "" : i + 1}</td>
                         <td className="px-3 py-3 font-semibold"><a href={`#agent-${a.id}`} className="hover:underline">{a.name}</a></td>
                         <td className="px-3 py-3 text-right tabular-nums font-semibold">{s.shipments.n}</td>
                         <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{pctText(s.shipments.n, om.n, lang)}</td>
@@ -128,7 +131,7 @@ export function AgentsBoard({ load, queryKey, pageHeader = false }: {
             <p className="text-xs text-muted-foreground">{t("ag.page.legend")}</p>
           </section>
 
-          <AgentsByType agents={q.data!.agents} omByType={om.by_type} />
+          <AgentsByType agents={ranked} omByType={om.by_type} />
 
           <section className="flex flex-col gap-6">
             <h2 className="text-xs font-bold uppercase tracking-[0.12em]">{t("ag.page.detail")}</h2>

@@ -20,7 +20,10 @@ export interface OmStats extends OmCounts { with_agent: number; profit: number; 
 
 export interface HubStats { year: number; show: boolean; me: AgentStats; om: OmCounts }
 export interface DashboardAgent { id: string; name: string; sector: string; active: boolean; stats: AgentStats }
-export interface Dashboard { year: number; om: OmStats; agents: DashboardAgent[] }
+/** b2c: os envios do e-commerce (canal B2C), no formato de um agente; vai sempre no fim. */
+export interface Dashboard { year: number; om: OmStats; agents: DashboardAgent[]; b2c?: AgentStats }
+
+export const B2C_ID = "b2c";
 
 async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
   const { data, error } = await requireSupabase().rpc(fn, args);
