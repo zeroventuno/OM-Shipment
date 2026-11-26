@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { Copy, Loader2, Pencil, Plus, Star, Trash2 } from "lucide-react";
+import { Copy, Loader2, Pencil, Plus, Receipt, Star, Trash2, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -19,6 +19,7 @@ import {
   CUSTOMERS_KEY, customerKey, type CustomerEdit, type CustomerRow,
 } from "./api";
 import { sourceLabel } from "./CustomersPage";
+import { sameAddress } from "@/modules/quick/address";
 
 const emptyCustomer: CustomerEdit = { name: "", address_line1: "", city: "", country: "" };
 const emptyAddress: AddressInput = { address_line1: "", city: "", country: "" };
@@ -83,6 +84,15 @@ export default function CustomerDetailPage() {
       return saveAddress(id, fields, !!makeDefault || (addresses.data?.length ?? 0) === 0);
     },
     onSuccess: () => { setAddressDraft(null); refresh(); },
+    onError: (e: Error) => toast({ title: t("Error"), description: e.message, variant: "destructive" }),
+  });
+  // endereço de envio → endereço de faturamento (o do cadastro)
+  const useAsBilling = useMutation({
+    mutationFn: (a: CustomerAddress) => updateCustomer(id, {
+      address_line1: a.address_line1, address_line2: a.address_line2 ?? "", address_line3: a.address_line3 ?? "",
+      postal_code: a.postal_code ?? "", city: a.city, region: a.region ?? "", country: a.country,
+    }),
+    onSuccess: () => { refresh(); toast({ title: t("qk.billingSet") }); },
     onError: (e: Error) => toast({ title: t("Error"), description: e.message, variant: "destructive" }),
   });
   const addressDelete = useMutation({
@@ -172,7 +182,24 @@ export default function CustomerDetailPage() {
                 [t("Phone"), c.phone && <a href={`tel:${c.phone}`} className="underline underline-offset-2">{c.phone}</a>],
                 [t("Email"), c.email && <a href={`mailto:${c.email}`} className="underline underline-offset-2 break-all">{c.email}</a>],
                 [t("Tax ID"), c.tax_id],
-                [t("Main address (billing)"), formatAddress(c)],
+                [t("Main address (billing)"), c.address_line1 ? (
+                  <span className="flex flex-col items-end gap-1">
+                    <span>{formatAddress(c)}</span>
+                    {addresses.data && !addresses.data.some((a) => sameAddress(a, c)) && c.city && c.country && (
+                      <span className="flex flex-col items-end gap-1">
+                        <span className="text-xs font-normal text-muted-foreground">{t("qk.billingOnly")}</span>
+                        <button type="button" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                          onClick={() => addressSave.mutate({
+                            address_line1: c.address_line1 ?? "", address_line2: c.address_line2 ?? "", address_line3: c.address_line3 ?? "",
+                            postal_code: c.postal_code ?? "", city: c.city ?? "", region: c.region ?? "", country: c.country ?? "",
+                            contact_name: c.contact_name ?? "", phone: c.phone ?? "",
+                          })}>
+                          <Truck className="h-3.5 w-3.5" />{t("qk.shipHere")}
+                        </button>
+                      </span>
+                    )}
+                  </span>
+                ) : null],
                 [t("Internal notes"), c.notes && <span className="whitespace-pre-line">{c.notes}</span>],
                 [t("Registered on"), dateOf(c.created_at)],
               ] as const).map(([label, value]) => (
@@ -198,9 +225,9 @@ export default function CustomerDetailPage() {
               return (
                 <div key={a.id} className={cn("flex items-start gap-2 p-3 rounded-md border text-sm", a.is_default ? "border-foreground" : "border-border")}>
                   <div className="flex-1 min-w-0">
-                    {(a.label || a.is_default) && (
+                    {(a.label || a.is_default || (c && sameAddress(a, c))) && (
                       <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-                        {[a.label, a.is_default ? t("Default") : null].filter(Boolean).join(" · ")}
+                        {[a.label, a.is_default ? t("Default") : null, c && sameAddress(a, c) ? t("qk.billingBadge") : null].filter(Boolean).join(" · ")}
                       </p>
                     )}
                     <p className="break-words">{text}</p>
@@ -208,6 +235,9 @@ export default function CustomerDetailPage() {
                   </div>
                   <div className="flex shrink-0">
                     <IconBtn label={t("Copy address")} onClick={() => copy(text)}><Copy /></IconBtn>
+                    {c && !sameAddress(a, c) && (
+                      <IconBtn label={t("qk.useAsBilling")} onClick={() => window.confirm(`${t("qk.useAsBilling")}?`) && useAsBilling.mutate(a)}><Receipt /></IconBtn>
+                    )}
                     {!a.is_default && (
                       <IconBtn label={t("Make default")} onClick={() => addressSave.mutate({ ...stripAddress(a), makeDefault: true })}><Star /></IconBtn>
                     )}

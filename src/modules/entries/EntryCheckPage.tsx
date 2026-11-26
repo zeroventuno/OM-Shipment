@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Printer, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Printer, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,9 @@ import { warrantiesQuery } from "@/modules/warranties/api";
 import { todayRome } from "@/modules/ferie/logic";
 import { CustomerSearch } from "@/modules/shipments/components/shipments/CustomerSearch";
 import { PageHeader } from "../common/PageHeader";
+import type { Ticket, Warranty } from "@/modules/schema";
+import { QuickTicketDialog, QuickWarrantyDialog } from "@/modules/quick/QuickCaseDialogs";
+import { QuickCustomerDialog } from "@/modules/quick/QuickCustomerDialog";
 import { BikeMarks } from "./BikeMarks";
 import {
   COMPONENT_KEYS, CONTENT_KEYS, ENTRIES_KEY, deleteEntry, emptyEntry, getEntry, itDay, listPickupShipments, saveEntry,
@@ -43,6 +46,7 @@ export default function EntryCheckPage() {
 
   const [draft, setDraft] = useState<EntryDraft>(() => emptyEntry(todayRome()));
   const [loaded, setLoaded] = useState(isNew);
+  const [quick, setQuick] = useState<null | "ticket" | "warranty" | "customer">(null);
 
   useEffect(() => {
     if (existing.data && !loaded) {
@@ -63,8 +67,8 @@ export default function EntryCheckPage() {
     return out;
   };
 
-  const linkWarranty = (wid: string | null) => {
-    const w = warranties.data?.find((x) => x.id === wid);
+  const linkWarranty = (wid: string | null, given?: Warranty) => {
+    const w = given ?? warranties.data?.find((x) => x.id === wid);
     setDraft((d) => {
       const next = { ...d, warranty_id: wid };
       if (!w) return next;
@@ -73,8 +77,8 @@ export default function EntryCheckPage() {
       return filled;
     });
   };
-  const linkTicket = (tid: string | null) => {
-    const tk = tickets.data?.find((x) => x.id === tid);
+  const linkTicket = (tid: string | null, given?: Ticket) => {
+    const tk = given ?? tickets.data?.find((x) => x.id === tid);
     setDraft((d) => {
       const next = { ...d, ticket_id: tid };
       return tk ? fill(next, { customer_name: tk.clientName, serial_number: tk.serialNumber ?? "", bike_model: [tk.brand, tk.component].filter(Boolean).join(" "), reason: tk.problem ?? "" }) : next;
@@ -135,16 +139,23 @@ export default function EntryCheckPage() {
     set("contents", contents);
   };
 
-  const linkSelect = (label: string, value: string | null, options: { id: string; label: string }[], onPick: (v: string | null) => void, to: (v: string) => string) => (
-    <Field label={label}>
-      <div className="flex gap-2">
-        <select className={selectCls} value={value ?? ""} onChange={(e) => onPick(e.target.value || null)}>
-          <option value="">{t("ec.none")}</option>
-          {options.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-        </select>
-        {value && <Link to={to(value)} className="self-center whitespace-nowrap text-xs text-primary underline">{t("ec.open")}</Link>}
-      </div>
-    </Field>
+  const linkSelect = (label: string, value: string | null, options: { id: string; label: string }[], onPick: (v: string | null) => void, to: (v: string) => string, onNew?: () => void, newLabel?: string) => (
+    <div className="flex flex-col gap-1.5">
+      <Field label={label}>
+        <div className="flex gap-2">
+          <select className={selectCls} value={value ?? ""} onChange={(e) => onPick(e.target.value || null)}>
+            <option value="">{t("ec.none")}</option>
+            {options.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
+          {value && <Link to={to(value)} className="self-center whitespace-nowrap text-xs text-primary underline">{t("ec.open")}</Link>}
+        </div>
+      </Field>
+      {onNew && !value && (
+        <button type="button" onClick={onNew} className="inline-flex items-center gap-1 self-start text-xs font-semibold text-primary hover:underline">
+          <Plus className="h-3.5 w-3.5" />{newLabel}
+        </button>
+      )}
+    </div>
   );
 
   return (
@@ -161,8 +172,8 @@ export default function EntryCheckPage() {
 
       <section className="grid gap-4 rounded-2xl border border-border bg-card p-5 md:grid-cols-3">
         <span className="eyebrow md:col-span-3">{t("ec.link")}</span>
-        {linkSelect(t("ec.ticket"), draft.ticket_id, ticketOptions, linkTicket, (v) => `/assistance/${v}`)}
-        {linkSelect(t("ec.warranty"), draft.warranty_id, warrantyOptions, linkWarranty, (v) => `/warranties/${v}`)}
+        {linkSelect(t("ec.ticket"), draft.ticket_id, ticketOptions, (v) => linkTicket(v), (v) => `/assistance/${v}`, () => setQuick("ticket"), t("qk.newTicket"))}
+        {linkSelect(t("ec.warranty"), draft.warranty_id, warrantyOptions, (v) => linkWarranty(v), (v) => `/warranties/${v}`, () => setQuick("warranty"), t("qk.newWarranty"))}
         {linkSelect(t("ec.pickup"), draft.shipment_id, pickupOptions, linkPickup, (v) => `/shipments/${v}`)}
         <p className="text-xs text-muted-foreground md:col-span-3">{t("ec.linkHint")}</p>
       </section>
@@ -174,6 +185,11 @@ export default function EntryCheckPage() {
             onChange={(v: string) => setDraft((d) => ({ ...d, customer_name: v, customer_id: null }))}
             onSelect={(c: { id: string; name: string }) => setDraft((d) => ({ ...d, customer_name: c.name, customer_id: c.id }))}
           />
+          {!draft.customer_id && (
+            <button type="button" onClick={() => setQuick("customer")} className="-mt-2 inline-flex items-center gap-1 self-start text-xs font-semibold text-primary hover:underline">
+              <Plus className="h-3.5 w-3.5" />{t("qk.newCustomer")}
+            </button>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <Field label={t("ec.arrival")}><Input type="date" value={draft.arrival_date} onChange={(e) => set("arrival_date", e.target.value)} /></Field>
             <Field label={t("ec.agent")}><Input value={draft.agent ?? ""} onChange={(e) => set("agent", e.target.value)} /></Field>
@@ -250,6 +266,21 @@ export default function EntryCheckPage() {
           <Button disabled={!canSave} onClick={() => save.mutate({})}>{save.isPending ? "…" : t("ec.save")}</Button>
         </div>
       </div>
+      <QuickTicketDialog
+        open={quick === "ticket"} onClose={() => setQuick(null)}
+        prefill={{ clientName: draft.customer_name, serialNumber: draft.serial_number ?? "", problem: draft.reason ?? "" }}
+        onCreated={(tk) => { linkTicket(tk.id, tk); toast({ title: t("qk.created", { code: tk.code ?? "OMA" }) }); }}
+      />
+      <QuickWarrantyDialog
+        open={quick === "warranty"} onClose={() => setQuick(null)}
+        prefill={{ customerName: draft.customer_name, agent: draft.agent ?? "", bikeModel: draft.bike_model ?? "", size: draft.size ?? "", serialNumber: draft.serial_number ?? "", problem: draft.reason ?? "" }}
+        onCreated={(w) => { linkWarranty(w.id, w); toast({ title: t("qk.created", { code: w.protocolNumber ?? "OMW" }) }); }}
+      />
+      <QuickCustomerDialog
+        open={quick === "customer"} onClose={() => setQuick(null)}
+        initial={{ name: draft.customer_name }}
+        onSaved={(c) => setDraft((d) => ({ ...d, customer_name: c.name, customer_id: c.id }))}
+      />
     </div>
   );
 }

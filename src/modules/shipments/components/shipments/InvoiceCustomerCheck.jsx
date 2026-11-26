@@ -2,17 +2,17 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { UserPlus, RefreshCw, Check } from 'lucide-react';
-import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { COUNTRIES, countryCode } from '../../data/countries';
 import { findCustomerForShipment } from '../../services/importDocsApi';
-import { createCustomer, updateCustomer } from '@/modules/customers/api';
+import { QuickCustomerDialog } from '@/modules/quick/QuickCustomerDialog';
 
 /**
  * Depois de ler a fatura: o cliente do bloco CUSTOMER existe na anagrafica?
- *   - não existe → botão "Crea cliente", com os dados da fatura para conferir;
+ *   - não existe → "Crea cliente": modal com os dados da fatura;
  *   - existe com endereço diferente (ou sem endereço) → "Aggiorna scheda".
- * Nada é gravado sem o clique.
+ * O endereço da fatura é o de FATURAMENTO; o modal pergunta se a mercadoria
+ * vai para lá ou para outro endereço de envio. Nada é gravado sem o clique.
  */
 
 const FIELDS = ['address', 'postal_code', 'city', 'country', 'tax_id', 'phone', 'email'];
@@ -31,7 +31,10 @@ function customerDiff(customer, info) {
         const fromInvoice = info[k];
         if (!fromInvoice) return false;
         const current = customer[COL[k]];
-        if (k === 'country') return countryCode(current) !== (fromInvoice === 'GB' ? 'UK' : fromInvoice) && countryCode(current) !== fromInvoice;
+        if (k === 'country') {
+            const code = countryCode(current);
+            return code !== (fromInvoice === 'GB' ? 'UK' : fromInvoice) && code !== fromInvoice;
+        }
         return norm(current) !== norm(fromInvoice);
     });
 }
@@ -40,15 +43,12 @@ export function InvoiceCustomerCheck({ info, onSaved }) {
     const { t } = useTranslation();
     const [state, setState] = useState(null); // { customer, diff } | 'missing' | 'saved'
     const [open, setOpen] = useState(false);
-    const [form, setForm] = useState(null);
-    const [busy, setBusy] = useState(false);
-    const [error, setError] = useState('');
 
     useEffect(() => {
         let alive = true;
-        setState(null); setOpen(false); setError('');
+        setState(null);
+        setOpen(false);
         if (!info?.name) return undefined;
-        setForm({ ...info, country: storedCountry(info.country) });
         findCustomerForShipment(info.name).then((c) => {
             if (!alive) return;
             if (!c) return setState('missing');
@@ -58,34 +58,27 @@ export function InvoiceCustomerCheck({ info, onSaved }) {
         return () => { alive = false; };
     }, [info]);
 
-    if (!state || !form) return null;
+    if (!state) return null;
     if (state === 'saved') {
         return <p role="status" className="flex items-center gap-1.5 text-xs text-muted-foreground"><Check className="h-3.5 w-3.5" />{t('exp.cust.saved')}</p>;
     }
 
     const missing = state === 'missing';
-    const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
-    const save = async () => {
-        setBusy(true); setError('');
-        const fields = {
-            address_line1: form.address, postal_code: form.postal_code, city: form.city, country: form.country,
-            tax_id: form.tax_id, phone: form.phone, email: form.email,
-        };
-        try {
-            if (missing) {
-                await createCustomer({ name: form.name, ...fields });
-            } else {
-                // só o que a fatura traz: o resto da ficha fica como está
-                const changed = Object.fromEntries(state.diff.map((k) => [COL[k], fields[COL[k]]]).filter(([, v]) => String(v || '').trim()));
-                await updateCustomer(state.customer.id, changed);
-            }
-            setState('saved');
-            onSaved?.();
-        } catch (err) {
-            setError(err.message === 'DUPLICATE' ? t('exp.cust.duplicate') : t('exp.cust.error'));
-        } finally {
-            setBusy(false);
-        }
+    const c = missing ? null : state.customer;
+    // dados da fatura por cima do cadastro (o que a fatura não traz fica como está)
+    const initial = {
+        name: c?.name || info.name,
+        address_line1: info.address || c?.address_line1 || '',
+        address_line2: info.address ? '' : c?.address_line2 || '',
+        address_line3: info.address ? '' : c?.address_line3 || '',
+        postal_code: info.postal_code || c?.postal_code || '',
+        city: info.city || c?.city || '',
+        region: info.address ? '' : c?.region || '',
+        country: info.country ? storedCountry(info.country) : c?.country || '',
+        contact_name: c?.contact_name || '',
+        phone: info.phone || c?.phone || '',
+        email: info.email || c?.email || '',
+        tax_id: info.tax_id || c?.tax_id || '',
     };
 
     return (
@@ -93,42 +86,22 @@ export function InvoiceCustomerCheck({ info, onSaved }) {
             <p>
                 {missing
                     ? t('exp.cust.missing', { name: info.name })
-                    : t('exp.cust.differs', { name: state.customer.name, fields: state.diff.map((k) => t(`exp.cust.f.${k}`)).join(', ') })}
+                    : t('exp.cust.differs', { name: c.name, fields: state.diff.map((k) => t(`exp.cust.f.${k}`)).join(', ') })}
                 {!missing && (
-                    <> <Link to={`/customers/${state.customer.id}`} className="text-primary underline" target="_blank" rel="noreferrer">{t('exp.cust.open')}</Link></>
+                    <> <Link to={`/customers/${c.id}`} className="text-primary underline" target="_blank" rel="noreferrer">{t('exp.cust.open')}</Link></>
                 )}
             </p>
-            {!open ? (
-                <Button type="button" variant="outlined" size="sm" onClick={() => setOpen(true)}>
-                    {missing ? <UserPlus className="mr-2 h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                    {missing ? t('exp.cust.create') : t('exp.cust.update')}
-                </Button>
-            ) : (
-                <div className="space-y-3">
-                    {missing && <Input label={t('imp.name')} value={form.name} onChange={set('name')} />}
-                    <Input label={t('imp.address')} value={form.address} onChange={set('address')} />
-                    <div className="grid grid-cols-2 gap-3">
-                        <Input label={t('imp.postal')} value={form.postal_code} onChange={set('postal_code')} />
-                        <Input label={t('imp.city')} value={form.city} onChange={set('city')} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <Input label={t('imp.country')} value={form.country} onChange={set('country')} />
-                        <Input label={t('imp.tax')} value={form.tax_id} onChange={set('tax_id')} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <Input label={t('imp.phone')} value={form.phone} onChange={set('phone')} />
-                        <Input label="E-mail" value={form.email} onChange={set('email')} />
-                    </div>
-                    {!missing && <p className="text-xs text-muted-foreground">{t('exp.cust.onlyChanged')}</p>}
-                    {error && <p className="text-xs text-error">{error}</p>}
-                    <div className="flex gap-2">
-                        <Button type="button" size="sm" disabled={busy || !form.name.trim()} onClick={save}>
-                            {missing ? t('exp.cust.saveNew') : t('exp.cust.saveUpdate')}
-                        </Button>
-                        <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>{t('Cancel')}</Button>
-                    </div>
-                </div>
-            )}
+            <Button type="button" variant="outlined" size="sm" onClick={() => setOpen(true)}>
+                {missing ? <UserPlus className="mr-2 h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                {missing ? t('exp.cust.create') : t('exp.cust.update')}
+            </Button>
+            <QuickCustomerDialog
+                open={open}
+                onClose={() => setOpen(false)}
+                initial={initial}
+                customerId={c?.id ?? null}
+                onSaved={(saved) => { setState('saved'); onSaved?.(saved); }}
+            />
         </div>
     );
 }

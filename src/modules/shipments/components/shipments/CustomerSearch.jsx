@@ -10,7 +10,10 @@ import { countryLabel } from '../../data/countries';
  * nome e devolve o cadastro para quem chamou (ex.: preencher o país). Texto
  * livre continua valendo para quem ainda não está cadastrado.
  */
-export function CustomerSearch({ value, onChange, onSelect }) {
+/**
+ * @param {{ value: string, onChange: (v: string) => void, onSelect?: (c: any) => void, footer?: import('react').ReactNode }} props
+ */
+export function CustomerSearch({ value, onChange, onSelect, footer }) {
     const { t, i18n } = useTranslation();
     const listId = useId();
     const [open, setOpen] = useState(false);
@@ -91,6 +94,7 @@ export function CustomerSearch({ value, onChange, onSelect }) {
                     onKeyDown={onKeyDown}
                 />
             </div>
+            {footer}
             {showList && (
                 <ul id={`${listId}-list`} role="listbox" className="absolute z-30 mt-1 w-full min-w-[18rem] max-h-72 overflow-auto rounded-md border border-border bg-card shadow-lg py-1 text-sm">
                     {loading && results.length === 0 && <li className="px-3 py-2 text-muted-foreground">…</li>}

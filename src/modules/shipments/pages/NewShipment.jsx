@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Plus, Trash2, Save, TrendingDown, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Save, TrendingDown, AlertCircle, FileUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -21,6 +21,11 @@ import { listTickets } from '@/modules/assistance/api';
 import { listWarranties } from '@/modules/warranties/api';
 import { getRequest, boxSummary, totalWeight, formatAddress, formatMoney } from '@/modules/requests/api';
 import { getPickupRequest, pickupAddress } from '@/modules/pickups/api';
+import { QuickTicketDialog, QuickWarrantyDialog } from '@/modules/quick/QuickCaseDialogs';
+import { QuickCustomerDialog } from '@/modules/quick/QuickCustomerDialog';
+import { InvoiceCustomerCheck } from '../components/shipments/InvoiceCustomerCheck';
+import { parseInvoiceText, orderTypeFromHs } from '../services/invoiceParser';
+import { pdfLines } from '../services/pdfText';
 
 // Pallet/caminhão e tarifas spot são cotados por e-mail: entram como "portal"
 // para poderem ser comparados com os outros.
@@ -69,6 +74,11 @@ export default function NewShipment() {
     });
 
     const [processes, setProcesses] = useState({ tickets: [], warranties: [] });
+    // criação rápida (modal) de assistência, garantia ou cliente
+    const [quick, setQuick] = useState(null);
+    // fatura carregada no topo: cliente lido para sugerir o cadastro
+    const [invoiceCustomer, setInvoiceCustomer] = useState(null);
+    const [invoiceRead, setInvoiceRead] = useState(null); // 'fail' | null
     const [agents, setAgents] = useState([]);
     const [boxPresets, setBoxPresets] = useState([]);
     useEffect(() => { loadBoxPresets().then(setBoxPresets).catch(() => {}); }, []);
@@ -306,6 +316,37 @@ export default function NewShipment() {
         }));
     };
 
+    // PDF da fatura carregado no topo do envio
+    const onInvoicePdf = async (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+        setInvoiceRead(null);
+        setInvoiceCustomer(null);
+        try {
+            const r = parseInvoiceText(await pdfLines(new Uint8Array(await file.arrayBuffer())));
+            await fillFromInvoice({ ...r, orderType: orderTypeFromHs(r.items.map((x) => x.hs_code)) });
+            setInvoiceCustomer(r.customerInfo);
+            if (!r.customer && !r.number) setInvoiceRead('fail');
+        } catch (err) {
+            console.error('Invoice read error:', err);
+            setInvoiceRead('fail');
+        }
+    };
+
+    // assistência/garantia criada no modal: entra na lista e fica ligada ao envio
+    const onCaseCreated = (kind, item) => {
+        setProcesses((p) => (kind === 'ticket' ? { ...p, tickets: [item, ...p.tickets] } : { ...p, warranties: [item, ...p.warranties] }));
+        setFormData((f) => ({
+            ...f,
+            ticketId: kind === 'ticket' ? item.id : null,
+            warrantyId: kind === 'warranty' ? item.id : null,
+            orderId: kind === 'ticket' ? (item.code || f.orderId) : (item.protocolNumber || f.orderId),
+            customerName: f.customerName || (kind === 'ticket' ? item.clientName : item.customerName),
+            orderType: f.orderType || (kind === 'warranty' ? 'Warranty' : 'Components'),
+        }));
+    };
+
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
 
@@ -518,6 +559,20 @@ export default function NewShipment() {
                             )}
                         </CardHeader>
                         <CardContent className="space-y-4">
+                            <div className="space-y-2 pb-4 border-b border-border">
+                                <label className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-border bg-card px-4 text-[11px] font-semibold uppercase tracking-[0.1em] hover:border-foreground">
+                                    <FileUp className="h-4 w-4" />{t('qk.uploadInvoice')}
+                                    <input type="file" accept="application/pdf,.pdf" className="hidden" onChange={onInvoicePdf} />
+                                </label>
+                                <p className="text-xs text-muted-foreground">{t('qk.uploadHint')}</p>
+                                {invoiceRead === 'fail' && <p className="text-xs text-error">{t('qk.readFail')}</p>}
+                                {invoiceCustomer && (
+                                    <InvoiceCustomerCheck
+                                        info={invoiceCustomer}
+                                        onSaved={(c) => setFormData((f) => ({ ...f, customerName: c.name, destinationCountry: f.destinationCountry || c.country || '' }))}
+                                    />
+                                )}
+                            </div>
                             <div className="space-y-3 pb-4 border-b border-border">
                                 <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t('This shipment is for')}</span>
                                 <div role="radiogroup" aria-label={t('This shipment is for')} className="flex flex-wrap gap-2">
@@ -570,6 +625,11 @@ export default function NewShipment() {
                                                 </p>
                                             ) : null;
                                         })()}
+                                        {!(formData.linkType === 'ticket' ? formData.ticketId : formData.warrantyId) && (
+                                            <button type="button" onClick={() => setQuick(formData.linkType)} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                                                <Plus className="h-3.5 w-3.5" />{formData.linkType === 'ticket' ? t('qk.newTicket') : t('qk.newWarranty')}
+                                            </button>
+                                        )}
                                         <p className="mt-2 text-xs text-muted-foreground">
                                             {t('When saved, the date, carrier, tracking and cost are recorded in the linked process.')}
                                         </p>
@@ -601,6 +661,11 @@ export default function NewShipment() {
                                     onChange={(name) => setFormData((f) => ({ ...f, customerName: name }))}
                                     // país do cadastro, se ainda não foi escolhido
                                     onSelect={(c) => setFormData((f) => ({ ...f, destinationCountry: f.destinationCountry || c.country || '' }))}
+                                    footer={(
+                                        <button type="button" onClick={() => setQuick('customer')} className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                                            <Plus className="h-3.5 w-3.5" />{t('qk.newCustomer')}
+                                        </button>
+                                    )}
                                 />
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('Quantity (Bicycles/Frames)')}</label>
@@ -879,6 +944,24 @@ export default function NewShipment() {
                     )}
                 </div>
             </div>
+            <QuickTicketDialog
+                open={quick === 'ticket'}
+                onClose={() => setQuick(null)}
+                prefill={{ clientName: formData.customerName }}
+                onCreated={(tk) => onCaseCreated('ticket', tk)}
+            />
+            <QuickWarrantyDialog
+                open={quick === 'warranty'}
+                onClose={() => setQuick(null)}
+                prefill={{ customerName: formData.customerName, agent: formData.agent }}
+                onCreated={(w) => onCaseCreated('warranty', w)}
+            />
+            <QuickCustomerDialog
+                open={quick === 'customer'}
+                onClose={() => setQuick(null)}
+                initial={{ name: formData.customerName }}
+                onSaved={(c) => setFormData((f) => ({ ...f, customerName: c.name, destinationCountry: f.destinationCountry || c.country || '' }))}
+            />
         </div>
     );
 }
