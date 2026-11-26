@@ -86,14 +86,16 @@ export function useNotifySwitch() {
   return { on, denied, toggle, supported: supported() };
 }
 
-export function NotifyButton({ className }: { className?: string }) {
+export function NotifyButton({ className, light = false }: { className?: string; light?: boolean }) {
   const { t } = useTranslation();
   const { on, denied, toggle, supported: ok } = useNotifySwitch();
   if (!ok) return null;
   return (
     <button type="button" onClick={toggle} aria-pressed={on} title={denied ? t("nt.deniedHint") : undefined}
       className={cn("w-full flex items-center justify-center gap-2 h-10 rounded-full border text-[11px] font-semibold uppercase tracking-[0.12em]",
-        on ? "border-white bg-white text-primary" : "border-white/25 text-white/80 hover:text-white hover:border-white", className)}>
+        light
+          ? (on ? "border-primary bg-primary text-primary-foreground" : "border-border text-foreground hover:border-foreground")
+          : (on ? "border-white bg-white text-primary" : "border-white/25 text-white/80 hover:text-white hover:border-white"), className)}>
       {on ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
       {t(on ? "nt.on" : denied ? "nt.denied" : "nt.off")}
     </button>

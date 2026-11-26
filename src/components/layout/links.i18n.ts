@@ -2,6 +2,8 @@
 export const linksResources = {
     it: {
         'links.menu': 'Link',
+        'tools.menu': 'Strumenti',
+        'tools.title': 'Strumenti e impostazioni',
         'links.title': 'Link dei moduli',
         'links.intro': 'Copia il link giusto e mandalo. Quello interno è solo per la squadra: mostra l’elenco dei clienti.',
         'links.request': 'Richiesta di spedizione',
@@ -34,6 +36,8 @@ export const linksResources = {
     },
     pt: {
         'links.menu': 'Links',
+        'tools.menu': 'Ferramentas',
+        'tools.title': 'Ferramentas e configurações',
         'links.title': 'Links dos formulários',
         'links.intro': 'Copie o link certo e mande. O interno é só para a equipe: ele mostra a lista de clientes.',
         'links.request': 'Pedido de envio',

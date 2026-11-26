@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { LogOut, X, Truck, Wrench, ShieldCheck, Inbox, Users, Contact, FileBarChart, Nfc, Link2, BookOpen, Palmtree, KeyRound, PackageCheck, type LucideIcon } from 'lucide-react';
+import { LogOut, X, LayoutGrid, Truck, Wrench, ShieldCheck, Inbox, Users, Contact, FileBarChart, Nfc, Link2, BookOpen, Palmtree, KeyRound, PackageCheck, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,6 +17,9 @@ import { useState } from 'react';
 import { LinksDialog } from './LinksDialog';
 import { LegendDialog } from './LegendDialog';
 import { NotifyButton } from '@/modules/notify/Notifier';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+const toolBtn = 'w-full flex items-center justify-center gap-2 h-10 rounded-full border border-border text-[11px] font-semibold uppercase tracking-[0.12em] hover:border-foreground';
 
 export interface Area {
     icon: LucideIcon;
@@ -99,6 +102,7 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
     const stale = useStaleCounts();
     const [linksOpen, setLinksOpen] = useState(false);
     const [legendOpen, setLegendOpen] = useState(false);
+    const [toolsOpen, setToolsOpen] = useState(false);
     const nfcAdmin = useQuery({ ...nfcCanAdminQuery, enabled: !!user }).data === true;
     const access = useQuery({ ...myAccessQuery, enabled: !!user }).data;
 
@@ -199,50 +203,15 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
                 </nav>
 
                 <div className="p-4 space-y-4">
-                    {/* Notificações do navegador para pedidos novos */}
-                    <NotifyButton />
-                    {/* Links dos formulários para copiar e mandar */}
+                    {/* Notificações, links, legenda, relatório e idioma: num modal, para o menu não precisar de rolagem */}
                     <button
                         type="button"
-                        onClick={() => setLinksOpen(true)}
+                        onClick={() => setToolsOpen(true)}
                         className="w-full flex items-center justify-center gap-2 h-10 rounded-full border border-white/25 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/80 hover:text-white hover:border-white"
                     >
-                        <Link2 className="h-4 w-4" />
-                        {t('links.menu')}
+                        <LayoutGrid className="h-4 w-4" />
+                        {t('tools.menu')}
                     </button>
-                    {/* O que quer dizer cada código (OMW, OMA, OMR, OMP, IMP) */}
-                    <button
-                        type="button"
-                        onClick={() => setLegendOpen(true)}
-                        className="w-full flex items-center justify-center gap-2 h-10 rounded-full border border-white/25 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/80 hover:text-white hover:border-white"
-                    >
-                        <BookOpen className="h-4 w-4" />
-                        {t('legend.menu')}
-                    </button>
-                    {isAreaOn(access, 'report') && <NavLink
-                        to="/report"
-                        onClick={onClose}
-                        className="flex items-center justify-center gap-2 h-10 rounded-full border border-white/25 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/80 hover:text-white hover:border-white"
-                    >
-                        <FileBarChart className="h-4 w-4" />
-                        {t('rep.menu')}
-                    </NavLink>}
-                    <div className="flex gap-1.5" role="group" aria-label={t('Language')}>
-                        {(['pt', 'it'] as const).map((lng) => (
-                            <button
-                                key={lng}
-                                type="button"
-                                onClick={() => i18n.changeLanguage(lng)}
-                                aria-pressed={i18n.language === lng}
-                                className={cn(
-                                    'flex-1 h-9 rounded-full border text-[11px] font-semibold tracking-[0.12em] uppercase transition-colors',
-                                    i18n.language === lng ? 'bg-white text-primary border-white' : 'border-white/25 text-white/70 hover:text-white'
-                                )}
-                            >
-                                {lng}
-                            </button>
-                        ))}
-                    </div>
 
                     <div className="flex items-center gap-3 pt-4 border-t border-white/10">
                         <div className="h-8 w-8 shrink-0 rounded-full bg-white/15 flex items-center justify-center text-sm font-bold">
@@ -264,6 +233,44 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
             </aside>
             <LinksDialog open={linksOpen} onClose={() => setLinksOpen(false)} />
             <LegendDialog open={legendOpen} onClose={() => setLegendOpen(false)} />
+            <Dialog open={toolsOpen} onOpenChange={setToolsOpen}>
+                <DialogContent className="max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle>{t('tools.title')}</DialogTitle>
+                        <DialogDescription className="sr-only">{t('tools.title')}</DialogDescription>
+                    </DialogHeader>
+                    <div className="flex flex-col gap-3">
+                        <NotifyButton light />
+                        <button type="button" className={toolBtn} onClick={() => { setToolsOpen(false); setLinksOpen(true); }}>
+                            <Link2 className="h-4 w-4" />{t('links.menu')}
+                        </button>
+                        <button type="button" className={toolBtn} onClick={() => { setToolsOpen(false); setLegendOpen(true); }}>
+                            <BookOpen className="h-4 w-4" />{t('legend.menu')}
+                        </button>
+                        {isAreaOn(access, 'report') && (
+                            <NavLink to="/report" className={toolBtn} onClick={() => { setToolsOpen(false); onClose(); }}>
+                                <FileBarChart className="h-4 w-4" />{t('rep.menu')}
+                            </NavLink>
+                        )}
+                        <div className="flex gap-1.5 pt-2" role="group" aria-label={t('Language')}>
+                            {(['pt', 'it'] as const).map((lng) => (
+                                <button
+                                    key={lng}
+                                    type="button"
+                                    onClick={() => i18n.changeLanguage(lng)}
+                                    aria-pressed={i18n.language === lng}
+                                    className={cn(
+                                        'flex-1 h-10 rounded-full border text-[11px] font-semibold tracking-[0.12em] uppercase transition-colors',
+                                        i18n.language === lng ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:border-foreground'
+                                    )}
+                                >
+                                    {lng}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
