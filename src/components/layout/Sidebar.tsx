@@ -122,7 +122,7 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
             >
                 <div className="px-6 pt-7 pb-6 flex items-start justify-between">
                     <div className="flex flex-col gap-3">
-                        <img src="/logo.png" alt="Officine Mattio" className="h-7 w-auto invert" />
+                        <img src="/logo.png" alt="Officine Mattio" className="h-7 w-auto invert self-start" />
                         <div className="flex items-center gap-3">
                             <span className="tricolor h-0.5 w-12" aria-hidden="true" />
                             <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/60">{t('app.title')}</span>
