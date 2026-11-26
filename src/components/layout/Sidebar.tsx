@@ -121,8 +121,13 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
                 )}
             >
                 <div className="px-6 pt-7 pb-6 flex items-start justify-between">
-                    <div className="flex flex-col gap-3">
-                        <img src="/logo.png" alt="Officine Mattio" className="h-7 w-auto invert self-start" />
+                    {/* w-fit: a coluna tem a largura da linha de baixo (tricolor + nome do sistema).
+                        O logo ocupa essa largura sem empurrá-la (width 0 + min-width) e segue a proporção.
+                        O logo.png tem margem transparente (desenho em 976 × 160 de 1024 × 231, a partir de 26, 36):
+                        as margens negativas, em % da largura, fazem o desenho bater ponta a ponta. */}
+                    <div className="flex flex-col gap-3 w-fit">
+                        <img src="/logo.png" alt="Officine Mattio" className="invert h-auto max-w-none"
+                            style={{ width: 0, minWidth: '104.918%', margin: '-3.689% 0 -3.586% -2.664%' }} />
                         <div className="flex items-center gap-3">
                             <span className="tricolor h-0.5 w-12" aria-hidden="true" />
                             <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/60">{t('app.title')}</span>
