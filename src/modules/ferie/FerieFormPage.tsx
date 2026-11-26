@@ -133,7 +133,7 @@ export default function FerieFormPage() {
         <HubNav value={section} onChange={goTo} owner={owner} />
 
         {section === "agenti" && <AgentsBoard load={(y) => hubAgentsDashboard(token, y)} queryKey={["hub-agents", token]} />}
-        {section === "agenda" && <HubAgenda token={token} d={d} onOpenFerie={() => goTo("ferie")} />}
+        {section === "agenda" && <HubAgenda token={token} d={d} onOpenFerie={() => goTo("ferie")} onOpenAgents={owner ? () => goTo("agenti") : undefined} />}
         {section === "logistica" && <HubLogistics token={token} agent={d.me.agent} />}
         {section === "assistenza" && <HubService token={token} agent={d.me.agent} />}
         {section === "richieste" && <HubMyRequests token={token} agent={d.me.agent} />}
