@@ -34,8 +34,12 @@ const emptyCustomer: CustomerInput = { name: "", address_line1: "", city: "", co
 const emptyAddress: AddressInput = { address_line1: "", city: "", country: "" };
 const addressComplete = (a: AddressInput) => !!(a.address_line1.trim() && a.city.trim() && a.country);
 
-export default function RequestFormPage() {
-  const { token = "" } = useParams();
+/** Dentro do link pessoal (/ferie/<token>): sem cabeçalho próprio, e quem pede já é conhecido. */
+export interface EmbedProps { token?: string; embedded?: boolean; agent?: string }
+
+export default function RequestFormPage({ token: tokenProp, embedded = false, agent }: EmbedProps = {}) {
+  const { token: routeToken = "" } = useParams();
+  const token = tokenProp ?? routeToken;
   const { t, i18n } = useTranslation();
   const locale = useDateLocale();
   const queryClient = useQueryClient();
@@ -48,6 +52,7 @@ export default function RequestFormPage() {
 
   // --- formulário
   const [requestedBy, setRequestedBy] = useState(() => {
+    if (agent) return agent;
     try { return localStorage.getItem(NAME_KEY) ?? ""; } catch { return ""; }
   });
   const [search, setSearch] = useState("");
@@ -76,8 +81,9 @@ export default function RequestFormPage() {
   const [customerDone, setCustomerDone] = useState<{ name: string; existed: boolean } | null>(null);
 
   useEffect(() => {
+    if (agent) return; // pelo link pessoal o nome vem do cadastro
     try { localStorage.setItem(NAME_KEY, requestedBy); } catch { /* sem localStorage */ }
-  }, [requestedBy]);
+  }, [requestedBy, agent]);
 
   const addresses = useQuery({
     queryKey: ["request-form", token, "addresses", selected?.id],
@@ -188,11 +194,11 @@ export default function RequestFormPage() {
 
   // --- telas de estado
   if (info.isLoading) {
-    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    return <div className={`${embedded ? "py-16" : "min-h-screen bg-background"} flex items-center justify-center`}><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
   if (info.isError) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-6 text-center">
+      <div className={`${embedded ? "py-16" : "min-h-screen bg-background"} flex flex-col items-center justify-center gap-4 px-6 text-center`}>
         <img src="/logo.png" alt="Officine Mattio" className="h-7" />
         <p className="text-lg font-semibold">{t("This link is invalid or has been disabled.")}</p>
         <p className="text-sm text-muted-foreground">{t("Ask for a new link.")}</p>
@@ -203,7 +209,8 @@ export default function RequestFormPage() {
   const statusLabel = { pending: t("Waiting"), shipped: t("Shipped"), cancelled: t("Cancelled") };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={embedded ? "" : "min-h-screen bg-background"}>
+      {!embedded && (
       <header className="bg-primary text-primary-foreground">
         <div className="max-w-3xl mx-auto px-4 md:px-8 py-5 flex items-center justify-between gap-4">
           <div className="flex flex-col gap-2">
@@ -226,8 +233,9 @@ export default function RequestFormPage() {
           </div>
         </div>
       </header>
+      )}
 
-      <main className="max-w-3xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-6">
+      <main className={embedded ? "flex flex-col gap-6" : "max-w-3xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-6"}>
         <div className="flex flex-col gap-1.5">
           <span className="eyebrow">{info.data?.name}</span>
           <h1 className="page-title">{t("Shipment request")}</h1>
@@ -265,11 +273,13 @@ export default function RequestFormPage() {
 
         {tab === "new" && !sent && (
           <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
+            {!agent && (
             <section className="bg-card border border-border rounded-lg p-5 md:p-6 flex flex-col gap-4">
               <Field label={t("Your name")}>
                 <Input value={requestedBy} onChange={(e) => setRequestedBy(e.target.value)} autoComplete="name" />
               </Field>
             </section>
+            )}
 
             <section className="bg-card border border-border rounded-lg p-5 md:p-6 flex flex-col gap-4">
               <h2 className="text-xs font-bold uppercase tracking-[0.12em]">{t("Customer")}</h2>

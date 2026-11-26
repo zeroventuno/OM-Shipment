@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
@@ -15,10 +15,13 @@ import { MonthNav, PartPicker, Section, SectorsProvider, StatusChip, useDuration
 import { ferieFormAnswer, ferieFormCancel, ferieFormData, ferieFormSubmit, type FormRequest } from "./api";
 import { absences, blockingEvent, conflictsFor, displayName, parseHours, sectorNamer, todayRome, validateLeave, type DayPart } from "./logic";
 import { LIVE } from "@/lib/live";
+import { HUB_SECTIONS, HubLogistics, HubMyRequests, HubNav, HubService, type HubSection } from "./Hub";
 
 /*
- * Link pessoal do funcionário (/ferie/<token>): pedir férias, ver a resposta
- * e o mapa da equipe. Sem login; só fala com as funções ferie_form_*.
+ * Link pessoal do funcionário (/ferie/<token>): o ponto de entrada da pessoa no
+ * sistema. Férias e agenda (funções ferie_form_*), e também envio ou retirada,
+ * assistência/garantia para um cliente e os próprios pedidos (Hub.tsx). Sem login.
+ * A seção aberta fica no endereço (?s=), para o app instalado voltar nela.
  */
 
 const empty = () => ({ start_date: "", end_date: "", part: "full" as DayPart, hours: "", note: "" });
@@ -34,18 +37,21 @@ export default function FerieFormPage() {
     queryFn: async () => {
       const r = await ferieFormData(token);
       const o = r.name_order ?? "first_last";
-      return { ...r, me: { ...r.me, name: displayName(r.me, o) }, employees: r.employees.map((e) => ({ ...e, name: displayName(e, o) })) };
+      return { ...r, me: { ...r.me, name: displayName(r.me, o), agent: displayName(r.me, "first_last") }, employees: r.employees.map((e) => ({ ...e, name: displayName(e, o) })) };
     },
   });
   const [draft, setDraft] = useState(empty);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
   const [mode, setMode] = useState<"leave" | AgendaMode>("leave");
+  const [params, setParams] = useSearchParams();
+  const section: HubSection = HUB_SECTIONS.includes(params.get("s") as HubSection) ? (params.get("s") as HubSection) : "ferie";
+  const goTo = (s: HubSection) => setParams(s === "ferie" ? {} : { s }, { replace: true });
   const win = useMonthWindow(2);
   const duration = useDuration();
   const today = todayRome();
 
-  useEffect(() => { document.title = `Officine Mattio – ${t("fe.form.title")}`; }, [t]);
+  useEffect(() => { document.title = `OM Service – ${t(`hub.s.${section}`)}`; }, [t, section]);
 
   const fmt = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(i18n.language, { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
   const span = (s: string, e: string) => (s === e ? fmt(s) : `${fmt(s)} → ${fmt(e)}`);
@@ -111,13 +117,22 @@ export default function FerieFormPage() {
         <img src="/og-ferie-foto.jpg" alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover object-[70%_center]" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-transparent" />
         <div className="relative max-w-5xl mx-auto h-full px-4 md:px-8 flex flex-col justify-end gap-2 pb-6 text-white">
-          <h1 className="page-title text-white">{t("fe.form.title")}</h1>
-          <p className="max-w-xl text-sm sm:text-base text-white/85">{t("fe.form.intro")}</p>
+          <h1 className="page-title text-white">{t("hub.hello", { name: (d.me.first_name || d.me.name).trim() })}</h1>
+          <p className="max-w-xl text-sm sm:text-base text-white/85">{t("hub.intro")}</p>
         </div>
       </div>
 
       <main className="max-w-5xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-6">
         <InstallHint storageKey="om-pwa-ferie-hidden" />
+
+        <HubNav value={section} onChange={goTo} />
+
+        {section === "logistica" && <HubLogistics token={token} agent={d.me.agent} />}
+        {section === "assistenza" && <HubService token={token} agent={d.me.agent} />}
+        {section === "richieste" && <HubMyRequests token={token} agent={d.me.agent} />}
+
+        {section === "ferie" && (<>
+        <p className="text-sm text-muted-foreground">{t("fe.form.intro")}</p>
 
         {/* O que a pessoa quer registrar: férias/permesso, agenda ou furgão */}
         <div role="tablist" aria-label={t("fe.form.what")} className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -213,6 +228,7 @@ export default function FerieFormPage() {
           <MonthNav win={win} />
           <LeaveMap from={win.first} days={win.days} today={win.today} employees={d.employees} leaves={d.leaves} events={d.events} vans={d.vans ?? []} meId={d.me.id} />
         </Section>
+        </>)}
       </main>
     </div>
     </SectorsProvider>

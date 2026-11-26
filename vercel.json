@@ -21,6 +21,14 @@
             "destination": "/todo.html"
         },
         {
+            "source": "/spedizione/:token",
+            "destination": "/spedizione.html"
+        },
+        {
+            "source": "/pedido/:token",
+            "destination": "/spedizione.html"
+        },
+        {
             "source": "/((?!api/|assets/|og-|app-icon|todo\\.webmanifest|favicon|logo|apple-touch-icon).*)",
             "destination": "/"
         }

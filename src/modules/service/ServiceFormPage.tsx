@@ -31,8 +31,12 @@ const Section = ({ title, children }: { title: string; children: ReactNode }) =>
   </section>
 );
 
-export default function ServiceFormPage() {
-  const { token = "" } = useParams();
+/** Dentro do link pessoal (/ferie/<token>): sem cabeçalho próprio, e quem pede já é conhecido. */
+export interface EmbedProps { token?: string; embedded?: boolean; agent?: string }
+
+export default function ServiceFormPage({ token: tokenProp, embedded = false, agent }: EmbedProps = {}) {
+  const { token: routeToken = "" } = useParams();
+  const token = tokenProp ?? routeToken;
   const [lang, setLang] = useState<PublicLanguage>(initialLanguage);
   const [draft, setDraft] = useState<ServiceDraft>(emptyDraft);
   const [files, setFiles] = useState<IntakeFile[]>([]);
@@ -71,7 +75,7 @@ export default function ServiceFormPage() {
       setDoneCode(r.code);
       setDraft(emptyDraft);
       setFiles([]);
-      window.scrollTo({ top: 0 });
+      if (!embedded) window.scrollTo({ top: 0 });
     },
     onError: (e: { code?: string }) => setError(tx(e.code === "53400" ? "err.busy" : "err.send")),
   });
@@ -104,11 +108,11 @@ export default function ServiceFormPage() {
   );
 
   if (link.isLoading) {
-    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    return <div className={`${embedded ? "py-16" : "min-h-screen bg-background"} flex items-center justify-center`}><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
   if (link.isError) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-6 text-center">
+      <div className={`${embedded ? "py-16" : "min-h-screen bg-background"} flex flex-col items-center justify-center gap-4 px-6 text-center`}>
         <img src="/logo.png" alt="Officine Mattio" className="h-7" />
         <p className="text-lg font-semibold">{tx("invalidLink")}</p>
         <p className="text-sm text-muted-foreground">{tx("invalidHint")}</p>
@@ -123,7 +127,8 @@ export default function ServiceFormPage() {
   const optional = (label: string) => `${label} (${tx("optional")})`;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={embedded ? "" : "min-h-screen bg-background"}>
+      {!embedded && (
       <header className="bg-primary text-primary-foreground">
         <div className="max-w-3xl mx-auto px-4 md:px-8 py-5 flex items-center justify-between gap-4">
           <div className="flex flex-col gap-2 shrink-0">
@@ -141,8 +146,9 @@ export default function ServiceFormPage() {
           </div>
         </div>
       </header>
+      )}
 
-      <main className="max-w-3xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-6">
+      <main className={embedded ? "flex flex-col gap-6" : "max-w-3xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-6"}>
         <div className="flex flex-col gap-2">
           <h1 className="page-title">{tx("title")}</h1>
           {doneCode === undefined && <p className="text-muted-foreground">{tx("intro")}</p>}

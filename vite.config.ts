@@ -30,6 +30,8 @@ export default defineConfig({
       input: {
         main: path.resolve(import.meta.dirname, 'index.html'),
         assistenza: path.resolve(import.meta.dirname, 'assistenza.html'),
+        // spedizione.html: a mesma aplicação, com a prévia do pedido de envio.
+        spedizione: path.resolve(import.meta.dirname, 'spedizione.html'),
         // ritiro.html: a mesma aplicação, com a prévia do pedido de retirada.
         ritiro: path.resolve(import.meta.dirname, 'ritiro.html'),
         // ferie.html: a mesma aplicação, com a prévia do pedido de férias.

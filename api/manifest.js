@@ -8,9 +8,9 @@ export function ferieManifest(token) {
   if (!/^[A-Za-z0-9_-]{20,64}$/.test(String(token || ""))) return null;
   return {
     id: `/ferie/${token}`,
-    name: "Ferie · Officine Mattio",
-    short_name: "Ferie OM",
-    description: "Richieste di ferie, permessi, trasferte e furgoni.",
+    name: "OM Service · Officine Mattio",
+    short_name: "OM Service",
+    description: "Ferie e agenda, spedizioni e ritiri, assistenza e garanzie.",
     start_url: `/ferie/${token}`,
     scope: "/ferie/",
     display: "standalone",
