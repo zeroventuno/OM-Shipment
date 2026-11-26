@@ -18,7 +18,8 @@ export interface AgentStats {
 export interface OmCounts { n: number; by_type: TypeRow[] }
 export interface OmStats extends OmCounts { with_agent: number; profit: number; warranties_open: number; tickets_open: number }
 
-export interface HubStats { year: number; show: boolean; me: AgentStats; om: OmCounts }
+/** owner: também vê os números de todos os agentes (hub_dashboard_viewers). */
+export interface HubStats { year: number; show: boolean; owner?: boolean; me: AgentStats; om: OmCounts }
 export interface DashboardAgent { id: string; name: string; sector: string; active: boolean; stats: AgentStats }
 /** b2c: os envios do e-commerce (canal B2C), no formato de um agente; vai sempre no fim. */
 export interface Dashboard { year: number; om: OmStats; agents: DashboardAgent[]; b2c?: AgentStats }
@@ -33,6 +34,8 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
 
 export const hubAgentStats = (token: string, year: number) => rpc<HubStats>("hub_agent_stats", { token, p_year: year });
 export const agentsDashboard = (year: number) => rpc<Dashboard>("agents_dashboard", { p_year: year });
+/** O painel de todos os agentes pelo link pessoal, só para quem está em hub_dashboard_viewers (o dono). */
+export const hubAgentsDashboard = (token: string, year: number) => rpc<Dashboard>("hub_agents_dashboard", { token, p_year: year });
 
 /** Anos que dá para escolher: o atual e os dois anteriores. */
 export const yearChoices = (now = new Date()) => {

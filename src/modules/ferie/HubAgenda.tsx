@@ -5,7 +5,8 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LIVE } from "@/lib/live";
 import { AgentNumbers, Tile } from "@/modules/agents/AgentNumbers";
-import { hubAgentStats, yearChoices } from "@/modules/agents/api";
+import { hubAgentStats, hubAgentsDashboard, yearChoices } from "@/modules/agents/api";
+import { AgentsBoard } from "@/modules/agents/AgentsPage";
 import type { FormData } from "./api";
 import { Section, StatusChip, useDuration } from "./parts";
 import { addDays, sectorsOf, todayRome, workingDays, type AgendaEvent, type LeaveStatus } from "./logic";
@@ -94,27 +95,46 @@ export function HubAgenda({ token, d, onOpenFerie }: { token: string; d: FormDat
   );
 }
 
-/** Números do agente: só aparece para os comerciais e para quem já tem envios ou casos no nome. */
+/** Números do agente: só aparece para os comerciais e para quem já tem envios ou casos no nome.
+ *  O dono (owner) tem duas abas: os próprios números e os de todos os agentes. */
 function HubNumbers({ token }: { token: string }) {
   const { t } = useTranslation();
   const years = yearChoices();
   const [year, setYear] = useState(years[0]);
+  const [tab, setTab] = useState<"mine" | "agents">("mine");
   const q = useQuery({ queryKey: ["hub-agent-stats", token, year], queryFn: () => hubAgentStats(token, year), ...LIVE });
   if (q.isLoading) return <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin" /></div>;
   if (q.isError) return <p className="text-sm text-muted-foreground">{t("ag.error")}</p>;
   if (!q.data?.show) return null;
+  const owner = q.data.owner === true;
   return (
-    <Section title={t("ag.numbers")}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">{t("ag.numbersHint")}</p>
-        <label className="flex items-center gap-2 text-sm">
-          <span className="eyebrow">{t("ag.year")}</span>
-          <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="h-10 rounded-full border border-border bg-card px-4 text-sm font-semibold tabular-nums">
-            {years.map((y) => <option key={y} value={y}>{y}</option>)}
-          </select>
-        </label>
-      </div>
-      <AgentNumbers me={q.data.me} om={q.data.om} />
+    <Section title={t(owner ? "ag.numbersTitle" : "ag.numbers")}>
+      {owner && (
+        <div role="tablist" aria-label={t("ag.numbersTitle")} className="grid grid-cols-2 gap-2 sm:w-96">
+          {(["mine", "agents"] as const).map((k) => (
+            <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
+              className={cn("min-h-11 rounded-full border px-3 text-sm font-semibold", tab === k ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:border-foreground")}>
+              {t(k === "mine" ? "ag.tab.mine" : "ag.tab.agents")}
+            </button>
+          ))}
+        </div>
+      )}
+      {owner && tab === "agents" ? (
+        <AgentsBoard load={(y) => hubAgentsDashboard(token, y)} queryKey={["hub-agents", token]} />
+      ) : (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">{t("ag.numbersHint")}</p>
+            <label className="flex items-center gap-2 text-sm">
+              <span className="eyebrow">{t("ag.year")}</span>
+              <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="h-10 rounded-full border border-border bg-card px-4 text-sm font-semibold tabular-nums">
+                {years.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </label>
+          </div>
+          <AgentNumbers me={q.data.me} om={q.data.om} />
+        </>
+      )}
     </Section>
   );
 }

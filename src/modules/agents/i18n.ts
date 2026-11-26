@@ -3,6 +3,9 @@
 const it = {
   "ag.year": "Anno",
   "ag.numbers": "I tuoi numeri",
+  "ag.numbersTitle": "Numeri",
+  "ag.tab.mine": "I miei",
+  "ag.tab.agents": "Agenti",
   "ag.numbersHint": "Solo i tuoi dati, confrontati con il totale delle spedizioni OM. Li vedi solo tu e l'ufficio.",
   "ag.shipments": "Spedizioni",
   "ag.shareOf": "{{pct}} delle {{n}} spedizioni OM",
@@ -55,6 +58,9 @@ const it = {
 const pt: typeof it = {
   "ag.year": "Ano",
   "ag.numbers": "Seus números",
+  "ag.numbersTitle": "Números",
+  "ag.tab.mine": "Os meus",
+  "ag.tab.agents": "Agentes",
   "ag.numbersHint": "Só os seus dados, comparados com o total de envios da OM. Só você e o escritório veem.",
   "ag.shipments": "Envios",
   "ag.shareOf": "{{pct}} dos {{n}} envios da OM",
