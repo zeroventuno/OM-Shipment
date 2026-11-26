@@ -13,7 +13,7 @@ import { PageHeader } from "../common/PageHeader";
 import { myAccessQuery } from "../access/api";
 import { LeaveMap } from "./LeaveMap";
 import { PeopleChecklist } from "./PeopleChecklist";
-import { waMessage, waNumber, waUrl } from "./whatsapp";
+import { waInviteMessage, waMessage, waNumber, waShareUrl, waUrl } from "./whatsapp";
 import { CanEditProvider, MonthNav, PartPicker, SectorsProvider, useCanEdit, StatusChip, useDuration, useMonthWindow, useSectorName, useSectors } from "./parts";
 import {
   FERIE_KEY, addLeave, decideLeave, deleteEvent, ferieLink, listEmployees, listEvents, listLeaves, listVans,
@@ -577,6 +577,10 @@ function PeopleTab({ employees, leaves, order }: { employees: StaffEmployee[]; l
                         {e.link_token ? (
                           <>
                             <Button size="sm" variant="outline" onClick={() => copy(e.link_token!)}><Copy className="h-3.5 w-3.5" />{t("fe.copyLink")}</Button>
+                            <Button size="sm" variant="outline" asChild>
+                              <a href={waShareUrl(waNumber(e.phone), waInviteMessage(e.first_name || e.name.split(" ")[0] || "", ferieLink(e.link_token)))} target="_blank" rel="noopener noreferrer"
+                                title={waNumber(e.phone) ? `WhatsApp · ${e.phone}` : t("fe.sendLinkWaNoPhone")}><MessageCircle className="h-3.5 w-3.5" />{t("fe.sendLinkWa")}</a>
+                            </Button>
                             {canEdit && <Button size="sm" variant="ghost" onClick={() => { if (window.confirm(t("fe.confirmNewLink", { name: e.name }))) link.mutate({ id: e.id, token: newLinkToken() }); }}>{t("fe.newLink")}</Button>}
                           </>
                         ) : canEdit ? (

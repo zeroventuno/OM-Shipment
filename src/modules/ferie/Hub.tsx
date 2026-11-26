@@ -94,7 +94,7 @@ export function HubMyRequests({ token, agent }: { token: string; agent: string }
   const items: Item[] = [
     ...(ships.data ?? []).filter((r) => sameAgent(r.requested_by, agent)).map((r): Item => ({
       id: `s-${r.id}`, at: r.created_at, kind: r.is_pickup ? t("hub.kind.pickupShipment") : t("hub.kind.shipment"),
-      title: r.customer, sub: r.country ?? "", status: t(`hub.st.ship.${r.status}`),
+      title: r.customer, sub: "", status: t(`hub.st.ship.${r.status}`),
       done: r.status === "shipped", off: r.status === "cancelled", carrier: r.carrier, tracking: r.tracking_code, shipped: r.status === "shipped",
     })),
     ...(mine.data?.pickups ?? []).map((p): Item => ({

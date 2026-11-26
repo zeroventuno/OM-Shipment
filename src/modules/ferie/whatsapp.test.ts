@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { waMessage, waNumber, waUrl } from "./whatsapp";
+import { waInviteMessage, waMessage, waNumber, waShareUrl, waUrl } from "./whatsapp";
 
 describe("aviso pelo WhatsApp", () => {
   it("normaliza o número", () => {
@@ -30,5 +30,14 @@ describe("aviso pelo WhatsApp", () => {
 
   it("link do wa.me com o texto codificado", () => {
     expect(waUrl("39347", "a b\nc")).toBe("https://wa.me/39347?text=a%20b%0Ac");
+  });
+
+  it("convite com o link pessoal: nome e link da pessoa", () => {
+    const m = waInviteMessage("Marco", "https://om-shipment.vercel.app/ferie/abc");
+    expect(m.startsWith("Ciao Marco,\n\nquesto è il tuo link personale")).toBe(true);
+    expect(m).toContain("\nhttps://om-shipment.vercel.app/ferie/abc\n");
+    expect(m.endsWith("Grazie!\nOfficine Mattio")).toBe(true);
+    expect(waShareUrl(null, "x")).toBe("https://wa.me/?text=x");
+    expect(waShareUrl("39347", "x")).toBe("https://wa.me/39347?text=x");
   });
 });

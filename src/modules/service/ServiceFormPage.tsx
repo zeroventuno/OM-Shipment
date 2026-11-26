@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
+import i18next from "i18next";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CheckCircle2, ChevronDown, Loader2, Paperclip, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,8 @@ export interface EmbedProps { token?: string; embedded?: boolean; agent?: string
 export default function ServiceFormPage({ token: tokenProp, embedded = false, agent }: EmbedProps = {}) {
   const { token: routeToken = "" } = useParams();
   const token = tokenProp ?? routeToken;
-  const [lang, setLang] = useState<PublicLanguage>(initialLanguage);
+  // No link pessoal segue o idioma do Gestionale (it/pt), não o do navegador.
+  const [lang, setLang] = useState<PublicLanguage>(() => (embedded ? detectLanguage(null, [i18next.language || "it"]) : initialLanguage()));
   const [draft, setDraft] = useState<ServiceDraft>(emptyDraft);
   const [files, setFiles] = useState<IntakeFile[]>([]);
   const [error, setError] = useState("");

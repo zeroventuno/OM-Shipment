@@ -51,3 +51,32 @@ export function waMessage(l: WaLeave, firstName: string, link: string | null): s
 }
 
 export const waUrl = (number: string, text: string) => `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
+
+/** Convite com o link pessoal (texto do Cristiano, 26/11/2026), já com o nome e o link da pessoa. */
+export function waInviteMessage(firstName: string, link: string): string {
+  return [
+    `Ciao ${firstName.trim()},`.replace(" ,", ","),
+    "",
+    "questo è il tuo link personale per ferie, permessi e agenda di Officine Mattio:",
+    link,
+    "",
+    "Con questo link puoi:",
+    "",
+    "- chiedere ferie o permessi, anche a ore (mattina o pomeriggio);",
+    "- vedere lo stato delle tue richieste: in attesa, approvate, rifiutate o con un'altra data proposta (che puoi accettare o rifiutare);",
+    "- segnare trasferte e riunioni esterne, anche con i colleghi che vengono con te;",
+    "- prenotare un furgone, anche insieme alla trasferta;",
+    "- vedere la mappa della squadra, per capire chi è fuori e quando.",
+    "",
+    "Non serve nessuna password: il link è solo tuo e ti riconosce. Per questo non inoltrarlo a nessuno. Se pensi che l'abbia visto qualcun altro, dimmelo e te ne creo uno nuovo.",
+    "",
+    "Consiglio: aprilo sul telefono e aggiungilo alla schermata Home. Su iPhone: Condividi → \"Aggiungi alla schermata Home\". Così si apre come un'app.",
+    "",
+    "Grazie!",
+    "Officine Mattio",
+  ].join("\n");
+}
+
+/** Sem número: o WhatsApp abre a lista de contatos com a mensagem pronta. */
+export const waShareUrl = (number: string | null, text: string) =>
+  number ? waUrl(number, text) : `https://wa.me/?text=${encodeURIComponent(text)}`;
