@@ -52,7 +52,7 @@ export function waMessage(l: WaLeave, firstName: string, link: string | null): s
 
 export const waUrl = (number: string, text: string) => `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
 
-/** Convite com o link pessoal (texto do Cristiano, atualizado com o hub em 26/11/2026), já com o nome e o link da pessoa. */
+/** Convite com o link pessoal (texto do Cristiano, atualizado com o hub e a aba Agenda em 26/11/2026), já com o nome e o link da pessoa. */
 export function waInviteMessage(firstName: string, link: string): string {
   return [
     `Ciao ${firstName.trim()},`.replace(" ,", ","),
@@ -61,6 +61,10 @@ export function waInviteMessage(firstName: string, link: string): string {
     link,
     "",
     "Da qui chiedi tutto all'ufficio, in un posto solo:",
+    "",
+    "Agenda",
+    "- il riepilogo dei tuoi prossimi impegni, trasferte, furgoni e ferie;",
+    "- per i commerciali, anche i tuoi numeri: spedizioni, saldo, garanzie e assistenze.",
     "",
     "Ferie e agenda",
     "- chiedere ferie o permessi, anche a ore (mattina o pomeriggio);",

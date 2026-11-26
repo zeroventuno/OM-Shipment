@@ -39,6 +39,7 @@ export default function TicketForm({ onSubmit, onCancel, defaultValues, prefill,
     defaultValues: defaultValues || {
       clientName: "",
       clientEmail: "",
+      agent: "",
       component: "",
       brand: "",
       serialNumber: "",
@@ -94,6 +95,20 @@ export default function TicketForm({ onSubmit, onCancel, defaultValues, prefill,
                 <FormLabel>{t("Customer email")} *</FormLabel>
                 <FormControl>
                   <Input type="email" placeholder="mario@email.com" {...field} data-testid="input-client-email" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="agent"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("Agent")}</FormLabel>
+                <FormControl>
+                  <Input placeholder={t("Agent name")} {...field} value={field.value ?? ""} data-testid="input-agent" />
                 </FormControl>
                 <FormMessage />
               </FormItem>

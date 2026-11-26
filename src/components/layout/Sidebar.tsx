@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { LogOut, X, LayoutGrid, Truck, Wrench, ShieldCheck, Inbox, Users, Contact, FileBarChart, Nfc, Link2, BookOpen, Palmtree, KeyRound, PackageCheck, type LucideIcon } from 'lucide-react';
+import { LogOut, X, LayoutGrid, Truck, Wrench, ShieldCheck, Inbox, Users, Contact, FileBarChart, Nfc, Link2, BookOpen, Palmtree, KeyRound, PackageCheck, Trophy, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -250,6 +250,11 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
                         {isAreaOn(access, 'report') && (
                             <NavLink to="/report" className={toolBtn} onClick={() => { setToolsOpen(false); onClose(); }}>
                                 <FileBarChart className="h-4 w-4" />{t('rep.menu')}
+                            </NavLink>
+                        )}
+                        {isAreaOn(access, 'report') && (
+                            <NavLink to="/agents" className={toolBtn} onClick={() => { setToolsOpen(false); onClose(); }}>
+                                <Trophy className="h-4 w-4" />{t('ag.menu')}
                             </NavLink>
                         )}
                         <div className="flex gap-1.5 pt-2" role="group" aria-label={t('Language')}>

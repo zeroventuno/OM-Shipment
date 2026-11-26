@@ -15,6 +15,7 @@ import { MonthNav, PartPicker, Section, SectorsProvider, StatusChip, useDuration
 import { ferieFormAnswer, ferieFormCancel, ferieFormData, ferieFormSubmit, type FormRequest } from "./api";
 import { absences, blockingEvent, conflictsFor, displayName, parseHours, sectorNamer, todayRome, validateLeave, type DayPart } from "./logic";
 import { LIVE } from "@/lib/live";
+import { HubAgenda } from "./HubAgenda";
 import { HUB_SECTIONS, HubLogistics, HubMyRequests, HubNav, HubService, type HubSection } from "./Hub";
 
 /*
@@ -45,8 +46,8 @@ export default function FerieFormPage() {
   const [sent, setSent] = useState(false);
   const [mode, setMode] = useState<"leave" | AgendaMode>("leave");
   const [params, setParams] = useSearchParams();
-  const section: HubSection = HUB_SECTIONS.includes(params.get("s") as HubSection) ? (params.get("s") as HubSection) : "ferie";
-  const goTo = (s: HubSection) => setParams(s === "ferie" ? {} : { s }, { replace: true });
+  const section: HubSection = HUB_SECTIONS.includes(params.get("s") as HubSection) ? (params.get("s") as HubSection) : "agenda";
+  const goTo = (s: HubSection) => setParams(s === "agenda" ? {} : { s }, { replace: true });
   const win = useMonthWindow(2);
   const duration = useDuration();
   const today = todayRome();
@@ -127,6 +128,7 @@ export default function FerieFormPage() {
 
         <HubNav value={section} onChange={goTo} />
 
+        {section === "agenda" && <HubAgenda token={token} d={d} onOpenFerie={() => goTo("ferie")} />}
         {section === "logistica" && <HubLogistics token={token} agent={d.me.agent} />}
         {section === "assistenza" && <HubService token={token} agent={d.me.agent} />}
         {section === "richieste" && <HubMyRequests token={token} agent={d.me.agent} />}

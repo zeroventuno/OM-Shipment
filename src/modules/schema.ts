@@ -27,6 +27,8 @@ export interface Ticket {
   code: string | null;
   clientName: string;
   clientEmail: string;
+  /** Agente commerciale (testo libero, come nelle garanzie). */
+  agent: string | null;
   component: string;
   brand: string;
   serialNumber: string | null;
@@ -52,6 +54,7 @@ const required = (msg = "Required field") => z.string().trim().min(1, msg);
 const baseTicketSchema = z.object({
   clientName: required(),
   clientEmail: z.string().email("Invalid email"),
+  agent: z.string().optional(),
   component: required(),
   brand: required(),
   serialNumber: z.string().optional(),

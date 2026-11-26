@@ -6,7 +6,7 @@ import { stageAge } from "../progress";
 const TABLE = "tickets";
 const DATE_COLUMNS = ["shippingDate", "completionDate", "createdAt", "updatedAt"] as const;
 const OPTIONAL = [
-    "serialNumber", "problem", "protocolNumber", "approvalStatus",
+    "agent", "serialNumber", "problem", "protocolNumber", "approvalStatus",
     "shippingDate", "trackingNumber", "shippingCompany", "completionDate",
 ] as const;
 

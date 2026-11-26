@@ -111,7 +111,7 @@ export function QuickWarrantyDialog({ open, onClose, prefill, onCreated }: {
   );
 }
 
-export type TicketPrefill = Partial<Pick<InsertTicket, "clientName" | "clientEmail" | "brand" | "component" | "serialNumber" | "problem">>;
+export type TicketPrefill = Partial<Pick<InsertTicket, "clientName" | "clientEmail" | "agent" | "brand" | "component" | "serialNumber" | "problem">>;
 
 export function QuickTicketDialog({ open, onClose, prefill, onCreated }: {
   open: boolean; onClose: () => void; prefill?: TicketPrefill; onCreated?: (tk: Ticket) => void;
@@ -122,11 +122,12 @@ export function QuickTicketDialog({ open, onClose, prefill, onCreated }: {
     <QuickForm
       open={open} onClose={onClose}
       title={t("qk.ticketNew")} hint={t("qk.ticketHint")}
-      initial={{ clientName: "", clientEmail: "", brand: "", component: "", serialNumber: "", problem: "", ...prefill } as Fields}
+      initial={{ clientName: "", clientEmail: "", agent: "", brand: "", component: "", serialNumber: "", problem: "", ...prefill } as Fields}
       required={["clientName", "brand", "component"]}
       fields={[
         { key: "clientName", label: t("Customer") },
-        { key: "clientEmail", label: t("Email"), type: "email" },
+        { key: "clientEmail", label: t("Email"), type: "email", half: true },
+        { key: "agent", label: t("ec.agent"), half: true },
         { key: "brand", label: t("qk.brand"), half: true },
         { key: "component", label: t("qk.component"), half: true },
         { key: "serialNumber", label: t("ec.serial") },
@@ -134,7 +135,7 @@ export function QuickTicketDialog({ open, onClose, prefill, onCreated }: {
       ]}
       onCreate={async (v) => {
         const tk = await createTicket({
-          clientName: v.clientName.trim(), clientEmail: v.clientEmail.trim(), brand: v.brand.trim(), component: v.component.trim(),
+          clientName: v.clientName.trim(), clientEmail: v.clientEmail.trim(), agent: v.agent.trim(), brand: v.brand.trim(), component: v.component.trim(),
           serialNumber: v.serialNumber.trim(), problem: v.problem.trim(), phase: "Ingresso",
         } as InsertTicket);
         await queryClient.invalidateQueries({ queryKey: TICKETS_QUERY_KEY });

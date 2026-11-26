@@ -268,7 +268,7 @@ export default function EntryCheckPage() {
       </div>
       <QuickTicketDialog
         open={quick === "ticket"} onClose={() => setQuick(null)}
-        prefill={{ clientName: draft.customer_name, serialNumber: draft.serial_number ?? "", problem: draft.reason ?? "" }}
+        prefill={{ clientName: draft.customer_name, agent: draft.agent ?? "", serialNumber: draft.serial_number ?? "", problem: draft.reason ?? "" }}
         onCreated={(tk) => { linkTicket(tk.id, tk); toast({ title: t("qk.created", { code: tk.code ?? "OMA" }) }); }}
       />
       <QuickWarrantyDialog

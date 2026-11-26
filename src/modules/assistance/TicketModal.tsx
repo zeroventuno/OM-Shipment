@@ -23,6 +23,7 @@ export default function TicketModal({ open, onClose, ticket, onSubmit, prefill, 
     ? {
         clientName: ticket.clientName,
         clientEmail: ticket.clientEmail,
+        agent: ticket.agent || "",
         component: ticket.component,
         brand: ticket.brand,
         serialNumber: ticket.serialNumber || "",

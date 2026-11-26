@@ -947,7 +947,7 @@ export default function NewShipment() {
             <QuickTicketDialog
                 open={quick === 'ticket'}
                 onClose={() => setQuick(null)}
-                prefill={{ clientName: formData.customerName }}
+                prefill={{ clientName: formData.customerName, agent: formData.agent }}
                 onCreated={(tk) => onCaseCreated('ticket', tk)}
             />
             <QuickWarrantyDialog

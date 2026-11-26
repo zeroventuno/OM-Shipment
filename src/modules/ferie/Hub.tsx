@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { CalendarDays, LifeBuoy, ListChecks, Loader2, Truck } from "lucide-react";
+import { CalendarDays, LayoutDashboard, LifeBuoy, ListChecks, Loader2, Truck } from "lucide-react";
 import { requireSupabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import RequestFormPage from "@/modules/requests/RequestFormPage";
@@ -20,19 +20,19 @@ import { LIVE } from "@/lib/live";
  * (migration 20261126130000_hub_link_pessoal) e marca a pessoa como agente.
  */
 
-export type HubSection = "ferie" | "logistica" | "assistenza" | "richieste";
-export const HUB_SECTIONS: HubSection[] = ["ferie", "logistica", "assistenza", "richieste"];
-const ICONS = { ferie: CalendarDays, logistica: Truck, assistenza: LifeBuoy, richieste: ListChecks };
+export type HubSection = "agenda" | "ferie" | "logistica" | "assistenza" | "richieste";
+export const HUB_SECTIONS: HubSection[] = ["agenda", "ferie", "logistica", "assistenza", "richieste"];
+const ICONS = { agenda: LayoutDashboard, ferie: CalendarDays, logistica: Truck, assistenza: LifeBuoy, richieste: ListChecks };
 
 export function HubNav({ value, onChange }: { value: HubSection; onChange: (s: HubSection) => void }) {
   const { t } = useTranslation();
   return (
-    <nav aria-label={t("hub.nav")} className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-      {HUB_SECTIONS.map((s) => {
+    <nav aria-label={t("hub.nav")} className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+      {HUB_SECTIONS.map((s, i) => {
         const Icon = ICONS[s];
         return (
           <button key={s} type="button" aria-current={value === s ? "page" : undefined} onClick={() => onChange(s)}
-            className={cn("flex min-h-16 items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors",
+            className={cn("flex min-h-16 items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors", i === 0 && "col-span-2 sm:col-span-1",
               value === s ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:border-foreground")}>
             <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
             <span className="text-sm font-semibold leading-tight">{t(`hub.s.${s}`)}</span>

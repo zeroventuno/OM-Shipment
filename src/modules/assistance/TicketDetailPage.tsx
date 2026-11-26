@@ -141,6 +141,7 @@ export default function TicketDetailPage() {
               facts={[
                 { label: t("Customer"), value: ticket.clientName },
                 { label: t("Email"), value: ticket.clientEmail && <a href={`mailto:${ticket.clientEmail}`} className="underline underline-offset-2">{ticket.clientEmail}</a> },
+                { label: t("Agent"), value: ticket.agent },
                 { label: t("Manufacturer protocol"), value: ticket.protocolNumber },
                 { label: t("Approval"), value: ticket.approvalStatus ? t(APPROVAL_LABELS[ticket.approvalStatus] ?? ticket.approvalStatus) : null },
               ]}

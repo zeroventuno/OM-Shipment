@@ -344,7 +344,7 @@ function WaButton({ leave, person, size = "sm" }: { leave: StaffLeave; person?: 
   const { t } = useTranslation();
   const number = waNumber(person?.phone);
   const first = person?.first_name || person?.name.split(" ")[0] || "";
-  const text = waMessage(leave, first, person?.link_token ? ferieLink(person.link_token) : null);
+  const text = waMessage(leave, first, person?.link_token ? `${ferieLink(person.link_token)}?s=ferie` : null);
   if (!text || leave.status === "pending") return null;
   if (!number) return <span className="text-xs text-muted-foreground" title={t("fe.noPhoneHint")}>{t("fe.noPhone")}</span>;
   return (

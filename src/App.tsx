@@ -36,6 +36,7 @@ const PickupRequestsPage = lazy(() => import('@/modules/pickups/PickupRequestsPa
 // Férias e agenda: página do escritório e link pessoal do funcionário (sem login).
 const FeriePage = lazy(() => import('@/modules/ferie/FeriePage'))
 const EntriesPage = lazy(() => import('@/modules/entries/EntriesPage'))
+const AgentsPage = lazy(() => import('@/modules/agents/AgentsPage'))
 const EntryCheckPage = lazy(() => import('@/modules/entries/EntryCheckPage'))
 const EntryPrintPage = lazy(() => import('@/modules/entries/EntryPrintPage'))
 const FerieFormPage = lazy(() => import('@/modules/ferie/FerieFormPage'))
@@ -103,6 +104,7 @@ export default function App() {
                 <Route path="customers/duplicates" element={page(<DuplicatesPage />)} />
                 <Route path="customers/:id" element={page(<CustomerDetailPage />)} />
                 <Route path="contacts" element={page(<ContactsPage />)} />
+                <Route path="agents" element={page(<ReportGate><AgentsPage /></ReportGate>)} />
                 <Route path="entries" element={page(<EntriesPage />)} />
                 <Route path="entries/:id" element={page(<EntryCheckPage />)} />
                 <Route path="ferie" element={page(<FeriePage />)} />
