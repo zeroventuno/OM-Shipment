@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { LogOut, X, Truck, Wrench, ShieldCheck, Inbox, Users, Contact, FileBarChart, Nfc, Link2, Palmtree, KeyRound, type LucideIcon } from 'lucide-react';
+import { LogOut, X, Truck, Wrench, ShieldCheck, Inbox, Users, Contact, FileBarChart, Nfc, Link2, BookOpen, Palmtree, KeyRound, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +15,7 @@ import { myAccessQuery } from '@/modules/access/api';
 import { isAreaOn, type AreaKey } from '@/modules/access/areas';
 import { useState } from 'react';
 import { LinksDialog } from './LinksDialog';
+import { LegendDialog } from './LegendDialog';
 import { NotifyButton } from '@/modules/notify/Notifier';
 
 export interface Area {
@@ -96,6 +97,7 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
     const { pathname } = useLocation();
     const stale = useStaleCounts();
     const [linksOpen, setLinksOpen] = useState(false);
+    const [legendOpen, setLegendOpen] = useState(false);
     const nfcAdmin = useQuery({ ...nfcCanAdminQuery, enabled: !!user }).data === true;
     const access = useQuery({ ...myAccessQuery, enabled: !!user }).data;
 
@@ -207,6 +209,15 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
                         <Link2 className="h-4 w-4" />
                         {t('links.menu')}
                     </button>
+                    {/* O que quer dizer cada código (OMW, OMA, OMR, OMP, IMP) */}
+                    <button
+                        type="button"
+                        onClick={() => setLegendOpen(true)}
+                        className="w-full flex items-center justify-center gap-2 h-10 rounded-full border border-white/25 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/80 hover:text-white hover:border-white"
+                    >
+                        <BookOpen className="h-4 w-4" />
+                        {t('legend.menu')}
+                    </button>
                     {isAreaOn(access, 'report') && <NavLink
                         to="/report"
                         onClick={onClose}
@@ -251,6 +262,7 @@ export function Sidebar({ open = false, onClose = () => { } }: SidebarProps) {
                 </div>
             </aside>
             <LinksDialog open={linksOpen} onClose={() => setLinksOpen(false)} />
+            <LegendDialog open={legendOpen} onClose={() => setLegendOpen(false)} />
         </>
     );
 }
