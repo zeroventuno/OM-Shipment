@@ -29,6 +29,40 @@ const read = (k: string) => { try { return localStorage.getItem(k); } catch { re
 const save = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* sem armazenamento */ } };
 const supported = () => typeof window !== "undefined" && "Notification" in window;
 
+/*
+ * Sino curto tocado pela própria aba quando chega um aviso. O Brave e o Chrome no
+ * Mac mostram as notificações de sites sem som, mesmo com o som ligado no sistema.
+ * O navegador só deixa tocar depois de um clique na página: o contexto de áudio é
+ * criado (e destravado) no primeiro clique, e o som sai a partir daí.
+ */
+let audio: AudioContext | null = null;
+const unlockAudio = () => {
+  try {
+    audio ??= new AudioContext();
+    if (audio.state === "suspended") void audio.resume();
+  } catch { /* sem Web Audio */ }
+};
+export function playChime() {
+  try {
+    unlockAudio();
+    if (!audio || audio.state !== "running") return;
+    const t0 = audio.currentTime;
+    // duas notas (lá e mi), cada uma com ataque rápido e queda suave
+    [[880, 0], [1318.5, 0.14]].forEach(([freq, at]) => {
+      const osc = audio!.createOscillator();
+      const gain = audio!.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, t0 + at);
+      gain.gain.exponentialRampToValueAtTime(0.25, t0 + at + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + at + 0.6);
+      osc.connect(gain).connect(audio!.destination);
+      osc.start(t0 + at);
+      osc.stop(t0 + at + 0.65);
+    });
+  } catch { /* sem Web Audio */ }
+}
+
 /** Liga/desliga, com o pedido de permissão do navegador. */
 export function useNotifySwitch() {
   const { t } = useTranslation();
@@ -46,6 +80,7 @@ export function useNotifySwitch() {
       try { Object.keys(localStorage).filter((k) => k.startsWith("om-notify-seen-")).forEach((k) => localStorage.removeItem(k)); } catch { /* sem armazenamento */ }
       setOn(true); save(ON_KEY, "1"); window.dispatchEvent(new Event(CHANGE));
       new Notification(SAMPLE_TITLE(), { body: SAMPLE_BODY(), icon: "/apple-touch-icon.png" });
+      playChime();
     }
   };
   return { on, denied, toggle, supported: supported() };
@@ -89,6 +124,13 @@ export function Notifier() {
   const employees = useQuery({ queryKey: [...FERIE_KEY, "employees"], queryFn: listEmployees, enabled: fer });
   const ready = useRef(false);
 
+  // destrava o som no primeiro clique da sessão (exigência dos navegadores)
+  useEffect(() => {
+    if (!enabled) return;
+    window.addEventListener("pointerdown", unlockAudio, { once: true });
+    return () => window.removeEventListener("pointerdown", unlockAudio);
+  }, [enabled]);
+
   useEffect(() => {
     if (!enabled || !user || !access) return;
     // espera as listas que vão ser usadas carregarem, para a primeira passada marcar tudo como visto
@@ -111,6 +153,7 @@ export function Notifier() {
     const { notify, seen } = diffNews(items, raw ? JSON.parse(raw) : null);
     save(seenKey(user.id), JSON.stringify(seen));
     ready.current = true;
+    if (notify.length) playChime();
     for (const n of notify.slice(0, 5)) {
       const note = new Notification(n.title, { body: n.body, icon: "/apple-touch-icon.png", tag: n.key });
       note.onclick = () => { window.focus(); navigate(n.to); note.close(); };
