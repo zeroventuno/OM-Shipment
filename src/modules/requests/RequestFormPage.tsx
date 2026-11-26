@@ -2,19 +2,17 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "re
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { format } from "date-fns";
 import { CheckCircle2, Loader2, Plus, Search, Trash2, X } from "lucide-react";
-import { TrackingInfo } from "./TrackingInfo";
+import { RequestCard, ShipmentDetails } from "./RequestCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { useDateLocale } from "@/i18n/dateLocale";
 import { Field, CustomerFields, AddressFields, useCountries } from "@/modules/customers/fields";
 import {
-  parseMoney, formatMoney,
+  parseMoney,
   formInfo, formCustomers, formCreateCustomer, formSubmit, formList, formBoxPresets, formCustomerAddresses, formAddAddress,
-  boxSummary, totalWeight, formatAddress, sameAgent,
+  formatAddress, sameAgent,
   type Box, type CustomerInput, type CustomerOption, type AddressInput,
 } from "./api";
 
@@ -41,7 +39,6 @@ export default function RequestFormPage({ token: tokenProp, embedded = false, ag
   const { token: routeToken = "" } = useParams();
   const token = tokenProp ?? routeToken;
   const { t, i18n } = useTranslation();
-  const locale = useDateLocale();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<"new" | "customer" | "list">("new");
 
@@ -581,41 +578,11 @@ export default function RequestFormPage({ token: tokenProp, embedded = false, ag
             )}
             {visibleRequests?.length === 0 && <p className="text-muted-foreground">{t("No requests in the last 60 days.")}</p>}
             {visibleRequests?.map((r) => (
-              <article key={r.id} className="bg-card border border-border rounded-lg p-4 flex flex-col gap-2">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-[17px] tracking-tight truncate">
-                      {r.is_pickup && <span className="mr-1.5 align-middle rounded-full border border-foreground px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em]">{t("Pickup")}</span>}
-                      {r.customer}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {format(new Date(r.created_at), "dd/MM/yyyy HH:mm", { locale })} · {r.requested_by}
-                      {r.service_level === "express" && ` · ${t("Express")}`}
-                    </p>
-                  </div>
-                  <span className={cn("shrink-0 px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.06em]",
-                    r.status === "shipped" ? "bg-primary text-primary-foreground" : r.status === "cancelled" ? "bg-muted text-muted-foreground line-through" : "border border-foreground")}>
-                    {statusLabel[r.status]}
-                  </span>
-                </div>
-                {(r.order_ref || (r.status === "shipped" && r.shipped_at)) && (
-                  <p className="text-sm">
-                    {r.order_ref && <>{t("Order")} <span className="font-semibold">{r.order_ref}</span></>}
-                    {r.order_ref && r.status === "shipped" && r.shipped_at && " · "}
-                    {r.status === "shipped" && r.shipped_at && <>{t("Shipped on {{date}}", { date: format(new Date(r.shipped_at), "dd/MM/yyyy", { locale }) })}</>}
-                  </p>
-                )}
-                {(r.boxes.length > 0 || r.source !== "manual") && (
-                  <p className="text-sm">{r.boxes.length ? `${r.boxes.map(boxSummary).join(" · ")} — ${t("total")} ${totalWeight(r.boxes)} kg` : t("Packaging to be defined")}</p>
-                )}
-                {r.invoice_value != null && (
-                  <p className="text-sm text-muted-foreground">
-                    {t("Invoiced")} {formatMoney(r.invoice_value, i18n.language)} ·{" "}
-                    {r.insured_value ? `${t("Insured")} ${formatMoney(r.insured_value, i18n.language)}` : t("No insurance")}
-                  </p>
-                )}
-                {r.status === "shipped" && <TrackingInfo carrier={r.carrier} code={r.tracking_code} />}
-              </article>
+              <RequestCard key={r.id} at={r.created_at} by={r.requested_by} tag={r.is_pickup ? t("Pickup") : undefined}
+                title={r.customer} status={statusLabel[r.status]}
+                tone={r.status === "shipped" ? "done" : r.status === "cancelled" ? "off" : "open"}>
+                <ShipmentDetails r={r} />
+              </RequestCard>
             ))}
           </section>
         )}
