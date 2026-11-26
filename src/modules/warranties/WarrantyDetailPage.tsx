@@ -109,6 +109,7 @@ export default function WarrantyDetailPage() {
           </span>
         </div>
         <div className="flex flex-wrap gap-2.5">
+          <Button variant="outline" asChild><Link to={`/entries/new?warranty=${warranty.id}`}>{t("ec.fromCase")}</Link></Button>
           <Button variant="outline" onClick={() => setEditing(true)}>{t("Edit")}</Button>
           {next && (
             <Button onClick={() => updateMutation.mutate({ status: next.to })} disabled={updateMutation.isPending}>

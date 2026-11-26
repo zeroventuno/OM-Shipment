@@ -35,6 +35,9 @@ const PickupFormPage = lazy(() => import('@/modules/pickups/PickupFormPage'))
 const PickupRequestsPage = lazy(() => import('@/modules/pickups/PickupRequestsPage'))
 // Férias e agenda: página do escritório e link pessoal do funcionário (sem login).
 const FeriePage = lazy(() => import('@/modules/ferie/FeriePage'))
+const EntriesPage = lazy(() => import('@/modules/entries/EntriesPage'))
+const EntryCheckPage = lazy(() => import('@/modules/entries/EntryCheckPage'))
+const EntryPrintPage = lazy(() => import('@/modules/entries/EntryPrintPage'))
 const FerieFormPage = lazy(() => import('@/modules/ferie/FerieFormPage'))
 // Painel de acessos por login (só administrador).
 const AccessPage = lazy(() => import('@/modules/access/AccessPage'))
@@ -66,6 +69,7 @@ export default function App() {
             <Route path="/t/:code/registra" element={page(<NfcProfilePage key="claim" />)} />
             <Route path="/nfc/profilo" element={page(<NfcProfilePage key="edit" />)} />
             <Route path="/todo" element={<ProtectedRoute>{page(<TodoPage />)}</ProtectedRoute>} />
+            <Route path="/entries/:id/print" element={<ProtectedRoute>{page(<EntryPrintPage />)}</ProtectedRoute>} />
             <Route path="/report" element={<ProtectedRoute>{page(<ReportGate><ReportPage /></ReportGate>)}</ProtectedRoute>} />
 
             <Route
@@ -99,6 +103,8 @@ export default function App() {
                 <Route path="customers/duplicates" element={page(<DuplicatesPage />)} />
                 <Route path="customers/:id" element={page(<CustomerDetailPage />)} />
                 <Route path="contacts" element={page(<ContactsPage />)} />
+                <Route path="entries" element={page(<EntriesPage />)} />
+                <Route path="entries/:id" element={page(<EntryCheckPage />)} />
                 <Route path="ferie" element={page(<FeriePage />)} />
                 <Route path="access" element={page(<AccessPage />)} />
 

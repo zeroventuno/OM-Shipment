@@ -6,9 +6,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
  * Para acrescentar um código: uma linha em CODES e os textos legend.<code>.* em links.i18n.ts.
  */
 
-const CODES = ['omw', 'oma', 'omr', 'omp', 'imp'] as const;
-const PREFIX: Record<(typeof CODES)[number], string> = { omw: 'OMW', oma: 'OMA', omr: 'OMR', omp: 'OMP', imp: 'IMP' };
-const EXAMPLE: Record<(typeof CODES)[number], string> = { omw: 'OMW-26-014', oma: 'OMA-26-031', omr: 'OMR-26-007', omp: 'OMP-26-001', imp: 'IMP-003' };
+const CODES = ['omw', 'oma', 'omr', 'omp', 'ome', 'imp'] as const;
+const PREFIX: Record<(typeof CODES)[number], string> = { omw: 'OMW', oma: 'OMA', omr: 'OMR', omp: 'OMP', ome: 'OME', imp: 'IMP' };
+const EXAMPLE: Record<(typeof CODES)[number], string> = { omw: 'OMW-26-014', oma: 'OMA-26-031', omr: 'OMR-26-007', omp: 'OMP-26-001', ome: 'OME-26-001', imp: 'IMP-003' };
 
 export function LegendDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
     const { t } = useTranslation();

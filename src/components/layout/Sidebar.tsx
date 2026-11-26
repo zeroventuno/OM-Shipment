@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { LogOut, X, Truck, Wrench, ShieldCheck, Inbox, Users, Contact, FileBarChart, Nfc, Link2, BookOpen, Palmtree, KeyRound, type LucideIcon } from 'lucide-react';
+import { LogOut, X, Truck, Wrench, ShieldCheck, Inbox, Users, Contact, FileBarChart, Nfc, Link2, BookOpen, Palmtree, KeyRound, PackageCheck, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -56,6 +56,7 @@ export const AREAS: Area[] = [
     { icon: Inbox, label: 'nav.serviceRequests', to: '/service-requests', areaKey: 'richieste' },
     { icon: Users, label: 'nav.customers', to: '/customers', areaKey: 'clienti' },
     { icon: Contact, label: 'nav.contacts', to: '/contacts', areaKey: 'referenti' },
+    { icon: PackageCheck, label: 'nav.entries', to: '/entries', menuOnly: true },
     { icon: Palmtree, label: 'nav.ferie', to: '/ferie', menuOnly: true, ferieOnly: true },
     { icon: KeyRound, label: 'nav.access', to: '/access', menuOnly: true, adminOnly: true },
     { icon: Nfc, label: 'nav.nfc', to: '/nfc', menuOnly: true, nfcAdminOnly: true },

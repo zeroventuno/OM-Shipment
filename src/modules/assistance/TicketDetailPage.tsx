@@ -115,6 +115,7 @@ export default function TicketDetailPage() {
           </span>
         </div>
         <div className="flex flex-wrap gap-2.5">
+          <Button variant="outline" asChild><Link to={`/entries/new?ticket=${ticket.id}`}>{t("ec.fromCase")}</Link></Button>
           <Button variant="outline" onClick={() => setEditing(ticket)}>{t("Edit")}</Button>
           {next && (
             <Button onClick={goNext} disabled={updateMutation.isPending}>{t(next.label)}</Button>
