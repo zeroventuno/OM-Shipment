@@ -67,7 +67,7 @@ export default function RequestFormPage({ token: tokenProp, embedded = false, ag
   // Aba "Elenco": só os meus (pelo nome de quem usa o link) ou todos.
   const [listScope, setListScope] = useState<"mine" | "all">(() => (requestedBy.trim() ? "mine" : "all"));
   const visibleRequests = listScope === "mine" && requestedBy.trim()
-    ? requests.data?.filter((r) => sameAgent(r.requested_by, requestedBy))
+    ? requests.data?.filter((r) => r.mine || sameAgent(r.requested_by, requestedBy))
     : requests.data;
   const [service, setService] = useState<"standard" | "express">("standard");
   const [orderRef, setOrderRef] = useState("");
@@ -598,6 +598,13 @@ export default function RequestFormPage({ token: tokenProp, embedded = false, ag
                     {statusLabel[r.status]}
                   </span>
                 </div>
+                {(r.order_ref || (r.status === "shipped" && r.shipped_at)) && (
+                  <p className="text-sm">
+                    {r.order_ref && <>{t("Order")} <span className="font-semibold">{r.order_ref}</span></>}
+                    {r.order_ref && r.status === "shipped" && r.shipped_at && " · "}
+                    {r.status === "shipped" && r.shipped_at && <>{t("Shipped on {{date}}", { date: format(new Date(r.shipped_at), "dd/MM/yyyy", { locale }) })}</>}
+                  </p>
+                )}
                 {(r.boxes.length > 0 || r.source !== "manual") && (
                   <p className="text-sm">{r.boxes.length ? `${r.boxes.map(boxSummary).join(" · ")} — ${t("total")} ${totalWeight(r.boxes)} kg` : t("Packaging to be defined")}</p>
                 )}

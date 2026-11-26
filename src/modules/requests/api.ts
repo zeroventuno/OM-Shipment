@@ -56,6 +56,10 @@ export interface PublicRequest {
   /** "request" = feito pelo formulário; "manual" = envio cadastrado na tela interna com agente. */
   source?: "request" | "manual";
   is_pickup?: boolean;
+  /** Data do envio (quando já foi enviado). */
+  shipped_at?: string | null;
+  /** É da pessoa do link pessoal (pelo agente ligado a Persone). */
+  mine?: boolean;
 }
 
 const normName = (s: string | null | undefined) =>
