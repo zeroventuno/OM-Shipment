@@ -25,6 +25,8 @@ export type ShipmentRow = {
   service_level: string | null;
   agent: string | null;
   request_id: string | null;
+  /** 'B2C' = e-commerce; o resto conta como B2B */
+  channel?: string | null;
 };
 
 export type TicketRow = {
@@ -51,6 +53,7 @@ export type WarrantyRow = {
   shipping_cost: number | string | null;
   history: HistoryEntry[] | null;
   updated_at: string | null;
+  agent?: string | null;
 };
 
 export type RequestRow = {
@@ -212,6 +215,8 @@ export type Totals = {
 
 export type Group = { key: string; n: number; cost: number; priced: number };
 
+export type AgentRow = { key: string; n: number; cost: number; paid: number; balance: number; warranties: number };
+
 export type MonthRow = { shipments: number; cost: number; paid: number; balance: number; priced: number; prevCost: number; prevShipments: number };
 
 export type YearModel = {
@@ -241,6 +246,12 @@ export type YearModel = {
     top10Share: number;
   };
   agents: Group[];
+  /** agenti con nome: spedizioni, costo, pagato, saldo e garanzie dell'anno (grafie unite) */
+  agentsDetail: AgentRow[];
+  /** spedizioni dell'anno con un agente indicato */
+  withAgent: number;
+  /** e-commerce (canale B2C) */
+  ecommerce: { n: number; cost: number; paid: number; balance: number; share: number; first: string | null; months: number[]; byType: Group[] };
   /** saldo trasporti per cliente: quanto ha pagato meno quanto è costato */
   balance: {
     inProfit: number;
@@ -481,6 +492,45 @@ export function buildReport(input: ReportInput, opts: { year: number; today: str
 
   const agents = groupBy(ships, (s) => trim(s.agent), costOf).sort(byCount);
 
+  // agenti con nome: grafie che cambiano solo nelle maiuscole contano come una
+  const agentMap = new Map<string, AgentRow & { labels: Map<string, number> }>();
+  const agentRow = (label: string) => {
+    const k = label.toLowerCase();
+    const a = agentMap.get(k) ?? { key: label, n: 0, cost: 0, paid: 0, balance: 0, warranties: 0, labels: new Map<string, number>() };
+    a.labels.set(label, (a.labels.get(label) ?? 0) + 1);
+    agentMap.set(k, a);
+    return a;
+  };
+  for (const s of ships) {
+    const label = trim(s.agent);
+    if (!label) continue;
+    const a = agentRow(label);
+    a.n += 1;
+    a.cost += costOf(s);
+    a.paid += toNum(s.customer_payment);
+  }
+  for (const w of warranties) {
+    const label = trim(w.agent);
+    if (label) agentRow(label).warranties += 1;
+  }
+  const agentsDetail: AgentRow[] = [...agentMap.values()].map(({ labels, ...a }) => ({
+    ...a, key: [...labels].sort((x, y) => y[1] - x[1])[0][0], balance: a.paid - a.cost,
+  })).sort((a, b) => b.n - a.n || b.warranties - a.warranties || a.key.localeCompare(b.key));
+  const withAgent = ships.filter((s) => trim(s.agent)).length;
+
+  // e-commerce: canale B2C
+  const b2cRows = rows.filter(({ s }) => s.channel === "B2C");
+  const b2c = b2cRows.map((x) => x.s);
+  const b2cMonths = Array.from({ length: 12 }, () => 0);
+  for (const { day } of b2cRows) b2cMonths[Number(day.slice(5, 7)) - 1] += 1;
+  const b2cCost = b2c.reduce((sum, s) => sum + costOf(s), 0);
+  const b2cPaid = b2c.reduce((sum, s) => sum + toNum(s.customer_payment), 0);
+  const ecommerce = {
+    n: b2c.length, cost: b2cCost, paid: b2cPaid, balance: b2cPaid - b2cCost, share: share(b2c.length, ships.length),
+    first: b2cRows.map((x) => x.day).sort()[0] ?? null, months: b2cMonths,
+    byType: groupBy(b2c, (s) => trim(s.order_type) || "Other", costOf).sort(byCount),
+  };
+
   // saldo per cliente: i migliori e i peggiori (sotto 50 centesimi conta come pari)
   const balances = customerBalances(named, (s) => nameOf.get(normName(s.customer_name)) ?? trim(s.customer_name), (s) => normName(s.customer_name));
   const gains = balances.filter((b) => b.balance >= 0.5).sort((a, b) => b.balance - a.balance);
@@ -557,6 +607,9 @@ export function buildReport(input: ReportInput, opts: { year: number; today: str
       top10Share,
     },
     agents,
+    agentsDetail,
+    withAgent,
+    ecommerce,
     balance,
     tickets: {
       count: tickets.length,

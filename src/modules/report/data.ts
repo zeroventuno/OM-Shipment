@@ -10,9 +10,9 @@ import type { NameRow, ReportInput, RequestRow, ShipmentRow, TicketRow, Warranty
 const PAGE = 1000;
 
 const SHIPMENT_COLS =
-  "id, created_at, order_type, customer_name, quantity, destination_country, customer_payment, tracking_code, selected_quote, savings, customer_cost_pickup, ticket_id, warranty_id, service_level, agent, request_id";
+  "id, created_at, order_type, customer_name, quantity, destination_country, customer_payment, tracking_code, selected_quote, savings, customer_cost_pickup, ticket_id, warranty_id, service_level, agent, request_id, channel";
 const TICKET_COLS = "id, created_at, brand, phase, approval_status, completion_date, shipping_cost";
-const WARRANTY_COLS = "id, created_at, start_date, process_type, status, solution, producer, value, shipping_cost, history, updated_at";
+const WARRANTY_COLS = "id, created_at, start_date, process_type, status, solution, producer, value, shipping_cost, history, updated_at, agent";
 const REQUEST_COLS = "id, created_at, status, service_level, invoice_value, insured_value, shipment_id";
 
 type Filter = { col: string; gte?: string; lt?: string; ids?: string[] };

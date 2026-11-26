@@ -10,7 +10,7 @@ import {
   CountRow, Cumulative, GOOD, HBars, INK, Kpi, MonthBars, Page, RED, Reading, SectionTitle, ShareBar, SubTitle, Table, eyebrow, type Delta,
 } from "./ReportParts";
 
-type Sec = "summary" | "shipments" | "carriers" | "geo" | "customers" | "balance" | "assistance" | "warranties" | "requests" | "quality" | "conclusions" | "method";
+type Sec = "summary" | "shipments" | "carriers" | "geo" | "customers" | "balance" | "agents" | "assistance" | "warranties" | "requests" | "quality" | "conclusions" | "method";
 
 const SECTION_OF_INSIGHT: Record<InsightSection, Sec> = {
   ship: "shipments", carr: "carriers", geo: "geo", cli: "customers", bal: "balance", ass: "assistance", war: "warranties", req: "requests", q: "quality",
@@ -175,6 +175,7 @@ function Report({ model: r, insights, lang, tag, today }: {
     ...(hasShip ? [{ id: "geo" as const, title: t("rep.s.geo") }] : []),
     ...(r.customers.active > 0 ? [{ id: "customers" as const, title: t("rep.s.customers") }] : []),
     ...(r.balance.best.length + r.balance.worst.length > 0 ? [{ id: "balance" as const, title: t("rep.s.balance") }] : []),
+    ...(r.agentsDetail.length > 0 || r.ecommerce.n > 0 ? [{ id: "agents" as const, title: t("rep.s.agents") }] : []),
     ...(r.tickets.count > 0 ? [{ id: "assistance" as const, title: t("rep.s.assistance") }] : []),
     ...(r.warranties.count > 0 ? [{ id: "warranties" as const, title: t("rep.s.warranties") }] : []),
     ...(r.requests.count > 0 ? [{ id: "requests" as const, title: t("rep.s.requests") }] : []),
@@ -459,19 +460,6 @@ function Report({ model: r, insights, lang, tag, today }: {
                   />
                 </div>
               </div>
-              {r.agents.length > 0 && (
-                <>
-                  <SubTitle>{t("rep.agents.title")}</SubTitle>
-                  <HBars
-                    rows={r.agents.slice(0, 12).map((a) => ({
-                      label: a.key || t("rep.agents.none"),
-                      value: a.n,
-                      text: n(a.n),
-                      sub: `${shareOf(a.n, tot.shipments)} · ${eur(a.cost)}`,
-                    }))}
-                  />
-                </>
-              )}
               <Reading title={t("rep.reading")} items={readingOf("customers")} />
             </Page>
           )}
@@ -503,6 +491,46 @@ function Report({ model: r, insights, lang, tag, today }: {
               </Page>
             );
           })()}
+
+          {/* ── agenti ed e-commerce (dati registrati da novembre 2026) ── */}
+          {(r.agentsDetail.length > 0 || r.ecommerce.n > 0) && (
+            <Page running={running}>
+              <SectionTitle n={num("agents")} title={titleOf("agents")} intro={t("rep.s.agents.intro")} />
+              <p className="mb-6 border-l-2 pl-3 text-[11.5px] leading-relaxed text-black/70" style={{ borderColor: RED }}>{t("rep.agents.partial")}</p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-4 print:grid-cols-4">
+                <Kpi label={t("rep.kpi.withAgent")} value={n(r.withAgent)} sub={t("rep.kpi.withAgent.sub", { pct: shareOf(r.withAgent, tot.shipments) })} />
+                <Kpi label={t("rep.kpi.agents")} value={n(r.agentsDetail.length)} />
+                <Kpi label={t("rep.kpi.b2c")} value={n(r.ecommerce.n)} sub={r.ecommerce.first ? t("rep.kpi.b2c.sub", { d: fmtDate(r.ecommerce.first), pct: shareOf(r.ecommerce.n, tot.shipments) }) : undefined} />
+                <Kpi label={t("rep.kpi.b2cBalance")} value={r.ecommerce.n ? eur(r.ecommerce.balance) : "—"} sub={r.ecommerce.n ? t("rep.kpi.b2cBalance.sub", { cost: eur(r.ecommerce.cost), paid: eur(r.ecommerce.paid) }) : undefined} />
+              </div>
+              {r.agentsDetail.length > 0 && (
+                <>
+                  <SubTitle>{t("rep.agents.title")}</SubTitle>
+                  <Table
+                    head={[t("rep.col.agent"), t("rep.col.shipments"), t("rep.col.share"), t("rep.col.cost"), t("rep.col.paid"), t("rep.col.balance"), t("rep.col.warranties")]}
+                    rows={r.agentsDetail.slice(0, 15).map((a) => [
+                      a.key, n(a.n), shareOf(a.n, tot.shipments), a.cost ? eur(a.cost) : "—", a.paid ? eur(a.paid) : "—",
+                      a.n ? `${a.balance > 0 ? "+" : ""}${eur(a.balance)}` : "—", a.warranties ? n(a.warranties) : "—",
+                    ])}
+                  />
+                </>
+              )}
+              {r.ecommerce.n > 0 && (
+                <>
+                  <SubTitle>{t("rep.b2c.title")}</SubTitle>
+                  <HBars
+                    rows={r.ecommerce.byType.map((g) => ({
+                      label: orderType(g.key),
+                      value: g.n,
+                      text: n(g.n),
+                      sub: `${shareOf(g.n, r.ecommerce.n)} · ${eur(g.cost)}`,
+                    }))}
+                  />
+                  <p className="mt-2 text-[10px] leading-relaxed text-black/50">{t("rep.b2c.note")}</p>
+                </>
+              )}
+            </Page>
+          )}
 
           {/* ── 6. assistenze ── */}
           {r.tickets.count > 0 && (

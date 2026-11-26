@@ -283,3 +283,23 @@ describe("ranking per cliente", () => {
     expect(r.balance.lossTotal).toBe(-600);
   });
 });
+
+describe("agenti ed e-commerce", () => {
+  it("une le grafie degli agenti, conta saldo e garanzie, e separa il B2C", () => {
+    const r = buildReport(input({
+      shipments: [
+        ship({ at: "2026-11-03T10:00:00Z", agent: "Michele", price: 20, customer_payment: 10 }),
+        ship({ at: "2026-11-04T10:00:00Z", agent: "MICHELE", price: 10, customer_payment: 10 }),
+        ship({ at: "2026-11-05T10:00:00Z", agent: "", price: 15, customer_payment: 5, channel: "B2C", order_type: "Clothing/Accessories" }),
+        ship({ at: "2026-11-06T10:00:00Z", agent: "Samuele", price: 8, customer_payment: 8 }),
+      ],
+      warranties: [warranty({ at: "2026-11-02T10:00:00Z", agent: "michele" })],
+    }), { year: 2026, today: "2026-11-26", country });
+    expect(r.withAgent).toBe(3);
+    expect(r.agentsDetail[0]).toMatchObject({ key: "Michele", n: 2, cost: 30, paid: 20, balance: -10, warranties: 1 });
+    expect(r.agentsDetail.map((a) => a.key)).toEqual(["Michele", "Samuele"]);
+    expect(r.ecommerce).toMatchObject({ n: 1, cost: 15, paid: 5, balance: -10, share: 0.25, first: "2026-11-05" });
+    expect(r.ecommerce.months[10]).toBe(1);
+    expect(r.ecommerce.byType[0].key).toBe("Clothing/Accessories");
+  });
+});
