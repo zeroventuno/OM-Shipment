@@ -52,21 +52,31 @@ export function waMessage(l: WaLeave, firstName: string, link: string | null): s
 
 export const waUrl = (number: string, text: string) => `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
 
-/** Convite com o link pessoal (texto do Cristiano, 26/11/2026), já com o nome e o link da pessoa. */
+/** Convite com o link pessoal (texto do Cristiano, atualizado com o hub em 26/11/2026), já com o nome e o link da pessoa. */
 export function waInviteMessage(firstName: string, link: string): string {
   return [
     `Ciao ${firstName.trim()},`.replace(" ,", ","),
     "",
-    "questo è il tuo link personale per ferie, permessi e agenda di Officine Mattio:",
+    "questo è il tuo link personale per OM Service, il gestionale di Officine Mattio:",
     link,
     "",
-    "Con questo link puoi:",
+    "Da qui chiedi tutto all'ufficio, in un posto solo:",
     "",
+    "Ferie e agenda",
     "- chiedere ferie o permessi, anche a ore (mattina o pomeriggio);",
     "- vedere lo stato delle tue richieste: in attesa, approvate, rifiutate o con un'altra data proposta (che puoi accettare o rifiutare);",
     "- segnare trasferte e riunioni esterne, anche con i colleghi che vengono con te;",
     "- prenotare un furgone, anche insieme alla trasferta;",
     "- vedere la mappa della squadra, per capire chi è fuori e quando.",
+    "",
+    "Spedizione o ritiro",
+    "- chiedere una spedizione a un cliente o un ritiro da un negozio o cliente: sei già indicato come agente, non serve scrivere il nome.",
+    "",
+    "Assistenza o garanzia",
+    "- aprire una richiesta di assistenza o garanzia per un cliente, con foto e scontrino.",
+    "",
+    "Le mie richieste",
+    "- seguire tutto quello che hai chiesto, con lo stato e il tracking delle spedizioni.",
     "",
     "Non serve nessuna password: il link è solo tuo e ti riconosce. Per questo non inoltrarlo a nessuno. Se pensi che l'abbia visto qualcun altro, dimmelo e te ne creo uno nuovo.",
     "",

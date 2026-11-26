@@ -34,7 +34,8 @@ describe("aviso pelo WhatsApp", () => {
 
   it("convite com o link pessoal: nome e link da pessoa", () => {
     const m = waInviteMessage("Marco", "https://om-shipment.vercel.app/ferie/abc");
-    expect(m.startsWith("Ciao Marco,\n\nquesto è il tuo link personale")).toBe(true);
+    expect(m.startsWith("Ciao Marco,\n\nquesto è il tuo link personale per OM Service")).toBe(true);
+    expect(m).toContain("\nSpedizione o ritiro\n");
     expect(m).toContain("\nhttps://om-shipment.vercel.app/ferie/abc\n");
     expect(m.endsWith("Grazie!\nOfficine Mattio")).toBe(true);
     expect(waShareUrl(null, "x")).toBe("https://wa.me/?text=x");
