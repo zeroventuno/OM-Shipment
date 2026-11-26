@@ -59,6 +59,14 @@ export async function setRateStatus(id: string, status: RateStatus) {
   if (error) throw error;
 }
 
+/** Tira um arquivo do listino: apaga do bucket e da lista. */
+export async function removeRateFile(card: RateCard, path: string) {
+  const { error: e1 } = await db().storage.from(BUCKET).remove([path]);
+  if (e1) throw e1;
+  const { error } = await db().from("carrier_rate_cards").update({ files: card.files.filter((f) => f.path !== path) }).eq("id", card.id);
+  if (error) throw error;
+}
+
 /** Link temporário (10 min) para abrir o arquivo original. */
 export async function rateFileUrl(path: string): Promise<string> {
   const { data, error } = await db().storage.from(BUCKET).createSignedUrl(path, 600);

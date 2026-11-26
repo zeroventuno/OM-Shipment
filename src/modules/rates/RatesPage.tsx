@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { FileText, Loader2, Paperclip, Plus, Trash2 } from "lucide-react";
+import { FileText, Loader2, Paperclip, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,7 +11,7 @@ import { Field, useCountries } from "@/modules/customers/fields";
 import { formatMoney } from "@/modules/requests/api";
 import { PageHeader } from "@/modules/common/PageHeader";
 import { quoteCard, type Direction, type Parcel } from "./calc";
-import { RATES_KEY, addRateFiles, createRateCard, listRateCards, rateFileUrl, setRateStatus, type RateCard, type RateStatus } from "./api";
+import { RATES_KEY, addRateFiles, createRateCard, listRateCards, rateFileUrl, removeRateFile, setRateStatus, type RateCard, type RateStatus } from "./api";
 
 /*
  * Listini corrieri (Strumenti → /shipments/rates): os listini guardados e um
@@ -143,6 +143,7 @@ function CardList({ cards }: { cards: RateCard[] }) {
   const qc = useQueryClient();
   const status = useMutation({ mutationFn: ({ id, s }: { id: string; s: RateStatus }) => setRateStatus(id, s), onSuccess: () => qc.invalidateQueries({ queryKey: RATES_KEY }) });
   const attach = useMutation({ mutationFn: ({ card, files }: { card: RateCard; files: File[] }) => addRateFiles(card, files), onSuccess: () => qc.invalidateQueries({ queryKey: RATES_KEY }) });
+  const remove = useMutation({ mutationFn: ({ card, path }: { card: RateCard; path: string }) => removeRateFile(card, path), onSuccess: () => qc.invalidateQueries({ queryKey: RATES_KEY }) });
   const open = async (path: string) => { window.open(await rateFileUrl(path), "_blank", "noopener"); };
   const day = (d: string | null) => (d ? new Date(`${d.slice(0, 10)}T12:00:00`).toLocaleDateString(i18n.language) : "—");
 
@@ -171,9 +172,16 @@ function CardList({ cards }: { cards: RateCard[] }) {
             {c.notes && <p className="text-xs text-muted-foreground">{c.notes}</p>}
             <div className="flex flex-wrap items-center gap-2">
               {c.files.map((f) => (
-                <button key={f.path} type="button" onClick={() => open(f.path)} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs hover:border-foreground">
-                  <FileText className="h-3.5 w-3.5" />{f.name}
-                </button>
+                <span key={f.path} className="inline-flex items-center rounded-full border border-border text-xs">
+                  <button type="button" onClick={() => open(f.path)} className="inline-flex items-center gap-1.5 py-1 pl-3 pr-1.5 hover:underline">
+                    <FileText className="h-3.5 w-3.5" />{f.name}
+                  </button>
+                  <button type="button" aria-label={t("rt.removeFile", { name: f.name })} title={t("rt.removeFile", { name: f.name })} disabled={remove.isPending}
+                    onClick={() => { if (window.confirm(t("rt.confirmRemove", { name: f.name }))) remove.mutate({ card: c, path: f.path }); }}
+                    className="mr-1 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-destructive">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </span>
               ))}
               <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1 text-xs text-muted-foreground hover:border-foreground">
                 {attach.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Paperclip className="h-3.5 w-3.5" />}{t("rt.attach")}
@@ -184,7 +192,7 @@ function CardList({ cards }: { cards: RateCard[] }) {
           </article>
         ))}
       </div>
-      {(status.isError || attach.isError) && <p role="alert" className="text-sm text-destructive">{((status.error ?? attach.error) as Error).message}</p>}
+      {(status.isError || attach.isError || remove.isError) && <p role="alert" className="text-sm text-destructive">{((status.error ?? attach.error ?? remove.error) as Error).message}</p>}
     </section>
   );
 }
