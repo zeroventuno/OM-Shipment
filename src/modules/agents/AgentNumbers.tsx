@@ -26,7 +26,13 @@ export function AgentNumbers({ me, om }: { me: AgentStats; om: OmCounts }) {
   const lang = i18n.language || "it";
   const typeLabel = useTypeLabel();
   const s = me.shipments;
-  const omType = new Map(om.by_type.map((r) => [r.type, r.n]));
+  // todos os tipos da OM, os do agente primeiro
+  const mine = new Map(s.by_type.map((r) => [r.type, r]));
+  const rows = [...new Set([...s.by_type.map((r) => r.type), ...om.by_type.map((r) => r.type)])]
+    .map((type) => ({ type, n: mine.get(type)?.n ?? 0, profit: mine.get(type)?.profit ?? 0, total: om.by_type.find((r) => r.type === type)?.n ?? mine.get(type)?.n ?? 0 }))
+    .filter((r) => r.total > 0)
+    .sort((a, b) => b.n - a.n || b.total - a.total);
+  const maxTotal = Math.max(1, ...rows.map((r) => r.total));
   const statusList = (m: Record<string, number>, labels: Record<string, string>) =>
     Object.entries(m).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${labels[k] ? t(labels[k]) : k || "—"} ${n}`).join(" · ");
 
@@ -42,41 +48,30 @@ export function AgentNumbers({ me, om }: { me: AgentStats; om: OmCounts }) {
       <div className="rounded-lg border border-border bg-card">
         <h3 className="px-4 pt-4 text-xs font-bold uppercase tracking-[0.12em]">{t("ag.byType")}</h3>
         {s.n === 0 ? <p className="px-4 py-4 text-sm text-muted-foreground">{t("ag.none")}</p> : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
-                <tr className="border-b border-border">
-                  <th className="px-4 py-2 font-semibold">{t("ag.type")}</th>
-                  <th className="px-2 py-2 text-right font-semibold sm:px-3">{t("ag.mine")}</th>
-                  <th className="px-4 py-2 text-right font-semibold sm:px-3">{t("ag.om")}</th>
-                  <th className="hidden px-3 py-2 font-semibold sm:table-cell">{t("ag.share")}</th>
-                  <th className="hidden px-4 py-2 text-right font-semibold sm:table-cell">{t("ag.balance")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {s.by_type.map((r) => {
-                  const total = omType.get(r.type) ?? 0;
-                  const share = total ? r.n / total : 0;
-                  return (
-                    <tr key={r.type} className="border-b border-border last:border-0">
-                      <td className="px-4 py-2.5 font-medium">
-                        {typeLabel(r.type)}
-                        <span className={cn("block text-xs font-normal tabular-nums sm:hidden", (r.profit ?? 0) < 0 ? "text-destructive" : "text-muted-foreground")}>{formatMoney(r.profit ?? 0, lang)}</span>
-                      </td>
-                      <td className="px-2 py-2.5 text-right tabular-nums font-semibold sm:px-3">{r.n}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground sm:px-3">{total}</td>
-                      <td className="hidden px-3 py-2.5 sm:table-cell">
-                        <span className="flex items-center gap-2">
-                          <span className="h-1.5 w-24 overflow-hidden rounded-full bg-muted"><span className="block h-full bg-primary" style={{ width: `${Math.max(share * 100, 2)}%` }} /></span>
-                          <span className="text-xs tabular-nums text-muted-foreground">{pctText(r.n, total, lang)}</span>
-                        </span>
-                      </td>
-                      <td className={cn("hidden px-4 py-2.5 text-right tabular-nums sm:table-cell", (r.profit ?? 0) < 0 && "text-destructive")}>{formatMoney(r.profit ?? 0, lang)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="flex flex-col gap-3 px-4 pb-4 pt-3">
+            <div className="flex flex-wrap gap-4 text-xs text-muted-foreground" aria-hidden="true">
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-primary" />{t("ag.mine")}</span>
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-muted" />{t("ag.omTotal")}</span>
+            </div>
+            <ul className="flex flex-col gap-3">
+              {rows.map((r) => {
+                const label = `${typeLabel(r.type)}: ${t("ag.barOf", { n: r.n, total: r.total, pct: pctText(r.n, r.total, lang) })}`;
+                return (
+                  <li key={r.type} className="flex flex-col gap-1" title={`${label} · ${t("ag.balance")} ${formatMoney(r.profit, lang)}`}>
+                    <div className="flex items-baseline justify-between gap-3 text-sm">
+                      <span className="min-w-0 truncate font-medium">{typeLabel(r.type)}</span>
+                      <span className="shrink-0 tabular-nums"><strong>{r.n}</strong><span className="text-muted-foreground"> / {r.total} · {pctText(r.n, r.total, lang)}</span></span>
+                    </div>
+                    {/* OM atrás, o agente na frente, na mesma escala */}
+                    <div role="img" aria-label={label} className="relative h-3 overflow-hidden rounded-full">
+                      <span className="absolute inset-y-0 left-0 rounded-full bg-muted" style={{ width: `${(r.total / maxTotal) * 100}%` }} />
+                      {r.n > 0 && <span className="absolute inset-y-0 left-0 rounded-full bg-primary ring-2 ring-card" style={{ width: `max(6px, ${(r.n / maxTotal) * 100}%)` }} />}
+                    </div>
+                    {r.n > 0 && <span className={cn("text-xs tabular-nums", r.profit < 0 ? "text-destructive" : "text-muted-foreground")}>{t("ag.balance")}: {formatMoney(r.profit, lang)}</span>}
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         )}
       </div>
