@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LIVE } from "@/lib/live";
 import { AgentNumbers, Tile } from "@/modules/agents/AgentNumbers";
@@ -20,7 +20,7 @@ const AHEAD_DAYS = 60;
 
 type Row = { id: string; start: string; end: string; time?: string; label: string; title: string; detail: string; status?: LeaveStatus };
 
-export function HubAgenda({ token, d, onOpenFerie, onOpenAgents }: { token: string; d: FormData; onOpenFerie: () => void; onOpenAgents?: () => void }) {
+export function HubAgenda({ token, d, onOpenFerie }: { token: string; d: FormData; onOpenFerie: () => void }) {
   const { t, i18n } = useTranslation();
   const duration = useDuration();
   const today = todayRome();
@@ -59,17 +59,6 @@ export function HubAgenda({ token, d, onOpenFerie, onOpenAgents }: { token: stri
 
   return (
     <div className="flex flex-col gap-6">
-      {/* o dono vê, logo em cima, o atalho para o painel de todos os agentes */}
-      {onOpenAgents && (
-        <button type="button" onClick={onOpenAgents}
-          className="flex items-center justify-between gap-4 rounded-lg bg-primary px-5 py-4 text-left text-primary-foreground hover:opacity-90">
-          <span>
-            <span className="block text-xs font-bold uppercase tracking-[0.12em]">{t("ag.page.title")}</span>
-            <span className="block text-sm text-white/80">{t("ag.page.intro")}</span>
-          </span>
-          <ChevronRight className="h-5 w-5 shrink-0" aria-hidden="true" />
-        </button>
-      )}
       <Section title={t("ag.agenda.next")}>
         {rows.length === 0 ? <p className="text-sm text-muted-foreground">{t("ag.agenda.none")}</p> : (
           <ul className="flex flex-col divide-y divide-border">
