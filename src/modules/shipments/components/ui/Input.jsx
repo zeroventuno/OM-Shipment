@@ -5,7 +5,7 @@ const Input = React.forwardRef(({ className, type, label, error, ...props }, ref
     return (
         <div className="w-full">
             {label && (
-                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-muted-foreground mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em]">
+                <label className="peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-muted-foreground mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em]">
                     {label}
                 </label>
             )}

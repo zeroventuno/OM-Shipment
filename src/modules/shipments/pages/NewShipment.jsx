@@ -34,6 +34,10 @@ const ALL_CARRIERS = ['TNT', 'Fedex', 'DHL', 'BRT', 'SDA', 'UPS'];
 const ORDER_TYPES = ['Bicycle', 'Frame Kit', 'Components', 'Warranty', 'Clothing/Accessories', 'Gift', 'Rental', 'Other'];
 
 /** B2C quando o número de ordem é do e-commerce (EC… ou 600xx…); senão B2B. Mesma regra do banco. */
+// Um estilo só para rótulos e campos do formulário (o mesmo do Input e do CustomerSearch)
+const LBL = 'text-muted-foreground mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em]';
+const CTRL = 'flex h-11 w-full rounded-md border border-input bg-card px-3 py-2 text-sm placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2';
+
 const channelGuess = (orderId) => (/^\s*EC/i.test(orderId || '') || /^\s*#?600\d{2,}/.test(orderId || '') ? 'B2C' : 'B2B');
 
 export default function NewShipment() {
@@ -641,36 +645,31 @@ export default function NewShipment() {
                                     </div>
                                 )}
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Input
-                                    label={formData.linkType === 'order' ? t('Order Number') : t('Reference')}
-                                    placeholder="Ex: ORD-2024-001"
-                                    value={formData.orderId}
-                                    onChange={(e) => setFormData({ ...formData, orderId: e.target.value })}
-                                />
+                            {/* Ordine e cliente */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5 pt-1">
+                                <p className="md:col-span-2 text-xs font-bold uppercase tracking-[0.12em]">{t('Order and customer')}</p>
                                 <div>
-                                    <span className="block text-sm font-medium text-gray-700 mb-1">{t('Channel')}</span>
-                                    <div role="radiogroup" aria-label={t('Channel')} className="grid grid-cols-2 gap-2">
-                                        {['B2B', 'B2C'].map((c) => {
-                                            const on = (formData.channel || channelGuess(formData.orderId)) === c;
-                                            return (
-                                                <button key={c} type="button" role="radio" aria-checked={on}
-                                                    onClick={() => setFormData((f) => ({ ...f, channel: c }))}
-                                                    className={`h-10 rounded-md border text-sm font-semibold ${on ? 'border-primary bg-primary text-primary-foreground' : 'border-gray-300 bg-white hover:border-gray-500'}`}>
-                                                    {c}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                    {!formData.channel && <p className="mt-1 text-xs text-muted-foreground">{t('Channel from order number')}</p>}
+                                    <Input
+                                        label={formData.linkType === 'order' ? t('Order Number') : t('Reference')}
+                                        placeholder="Ex: 7800"
+                                        value={formData.orderId}
+                                        onChange={(e) => setFormData({ ...formData, orderId: e.target.value })}
+                                    />
+                                    {/* B2C = e-commerce; desmarcado é B2B. EC… ou 600… marcam sozinhos */}
+                                    <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm">
+                                        <input
+                                            type="checkbox"
+                                            checked={(formData.channel || channelGuess(formData.orderId)) === 'B2C'}
+                                            onChange={(e) => setFormData((f) => ({ ...f, channel: e.target.checked ? 'B2C' : 'B2B' }))}
+                                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                        />
+                                        <span>{t('B2C order')}</span>
+                                    </label>
+                                    {!formData.channel && channelGuess(formData.orderId) === 'B2C' && <p className="mt-1 text-xs text-muted-foreground">{t('Channel from order number')}</p>}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('Order Type')}</label>
-                                    <select
-                                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-                                        value={formData.orderType}
-                                        onChange={(e) => setFormData({ ...formData, orderType: e.target.value })}
-                                    >
+                                    <label className={LBL}>{t('Order Type')}</label>
+                                    <select className={CTRL} value={formData.orderType} onChange={(e) => setFormData({ ...formData, orderType: e.target.value })}>
                                         <option value="">{t('Select...')}</option>
                                         {ORDER_TYPES.map(type => (
                                             <option key={type} value={type}>{t(type)}</option>
@@ -689,25 +688,25 @@ export default function NewShipment() {
                                     )}
                                 />
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('Quantity (Bicycles/Frames)')}</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        max="20"
-                                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-                                        value={formData.quantity}
-                                        onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
+                                    <Input
+                                        label={t('Sales agent')}
+                                        placeholder={t('Agent name')}
+                                        value={formData.agent}
+                                        onChange={(e) => setFormData({ ...formData, agent: e.target.value })}
+                                        list="agents"
                                     />
+                                    <datalist id="agents">
+                                        {agents.map((a) => <option key={a} value={a} />)}
+                                    </datalist>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                            {/* Spedizione */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5 border-t border-border pt-5">
+                                <p className="md:col-span-2 text-xs font-bold uppercase tracking-[0.12em]">{t('Shipping details')}</p>
                                 <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">{formData.isPickup ? t('imp.pickupCountry') : t('Destination Country')}</label>
-                                    <select
-                                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                        value={formData.destinationCountry}
-                                        onChange={(e) => setFormData({ ...formData, destinationCountry: e.target.value })}
-                                    >
+                                    <label className={LBL}>{formData.isPickup ? t('imp.pickupCountry') : t('Destination Country')}</label>
+                                    <select className={CTRL} value={formData.destinationCountry} onChange={(e) => setFormData({ ...formData, destinationCountry: e.target.value })}>
                                         <option value="">{t('Select Country')}</option>
                                         {localizedCountries.map(country => (
                                             <option key={country.code} value={country.value}>{country.label}</option>
@@ -720,40 +719,27 @@ export default function NewShipment() {
                                         </div>
                                     )}
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">{`${t('Customer Payment')} (€)`}</label>
+                                <div>
+                                    <label className={LBL}>{`${t('Customer Payment')} (€)`}</label>
                                     <input
                                         type="number"
                                         placeholder="0.00"
-                                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        className={CTRL}
                                         value={formData.customerPayment}
                                         onChange={(e) => setFormData({ ...formData, customerPayment: e.target.value })}
                                     />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Input
-                                    label={`${t('Tracking Code')} (Opcional)`}
-                                    placeholder={t('Tracking Code')}
-                                    value={formData.trackingCode}
-                                    onChange={(e) => setFormData({ ...formData, trackingCode: e.target.value })}
-                                />
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('Shipment/Pickup')}</label>
-                                    <label className="flex items-center h-10 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors">
+                                    <label className="mt-2 flex cursor-pointer items-start gap-2 text-sm">
                                         <input
                                             type="checkbox"
                                             checked={formData.customerCostPickup}
                                             onChange={(e) => setFormData({ ...formData, customerCostPickup: e.target.checked })}
-                                            className="mr-2 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                            className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-primary focus:ring-primary"
                                         />
-                                        <span className="text-sm text-gray-700 truncate">{t('Customer Cost/Pickup')}</span>
+                                        <span>{t('Customer Cost/Pickup')}</span>
                                     </label>
                                 </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-2">{t('Service')}</span>
+                                <div>
+                                    <span className={LBL}>{t('Service')}</span>
                                     <div role="radiogroup" aria-label={t('Service')} className="flex gap-2">
                                         {[['standard', t('Standard')], ['express', t('Express')]].map(([value, label]) => (
                                             <button
@@ -770,20 +756,25 @@ export default function NewShipment() {
                                     </div>
                                 </div>
                                 <div>
-                                    <Input
-                                        label={t('Sales agent')}
-                                        placeholder={t('Agent name')}
-                                        value={formData.agent}
-                                        onChange={(e) => setFormData({ ...formData, agent: e.target.value })}
-                                        list="agents"
+                                    <label className={LBL}>{t('Quantity (Bicycles/Frames)')}</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="20"
+                                        className={CTRL}
+                                        value={formData.quantity}
+                                        onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
                                     />
-                                    <datalist id="agents">
-                                        {agents.map((a) => <option key={a} value={a} />)}
-                                    </datalist>
                                 </div>
+                                <Input
+                                    label={t('Tracking Code (optional)')}
+                                    placeholder={t('Tracking Code')}
+                                    value={formData.trackingCode}
+                                    onChange={(e) => setFormData({ ...formData, trackingCode: e.target.value })}
+                                />
                             </div>
-                            <div className="space-y-2">
-                                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t('pl.boxes')}</span>
+                            <div className="space-y-2 border-t border-border pt-5">
+                                <span className={LBL}>{t('pl.boxes')}</span>
                                 <BoxesEditor
                                     value={formData.parcels}
                                     presets={boxPresets}
@@ -791,14 +782,14 @@ export default function NewShipment() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700">{t('Photos')}</label>
+                                <span className={LBL}>{t('Photos')}</span>
                                 <PhotoUpload
                                     photos={formData.photoUrls || []}
                                     onPhotosChange={(urls) => setFormData({ ...formData, photoUrls: urls })}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700">{t('Proof of delivery')}</label>
+                                <span className={LBL}>{t('Proof of delivery')}</span>
                                 <PodUpload
                                     files={formData.podFiles || []}
                                     onFilesChange={(paths) => setFormData({ ...formData, podFiles: paths })}
