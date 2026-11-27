@@ -235,12 +235,12 @@ export default function CustomerDetailPage() {
                   </div>
                   <div className="flex shrink-0">
                     <IconBtn label={t("Copy address")} onClick={() => copy(text)}><Copy /></IconBtn>
-                    {c && !sameAddress(a, c) && (
-                      <IconBtn label={t("qk.useAsBilling")} onClick={() => window.confirm(`${t("qk.useAsBilling")}?`) && useAsBilling.mutate(a)}><Receipt /></IconBtn>
-                    )}
-                    {!a.is_default && (
-                      <IconBtn label={t("Make default")} onClick={() => addressSave.mutate({ ...stripAddress(a), makeDefault: true })}><Star /></IconBtn>
-                    )}
+                    {c && (sameAddress(a, c)
+                      ? <IconBtn active label={t("qk.billingBadge")}><Receipt /></IconBtn>
+                      : <IconBtn toggle label={t("qk.useAsBilling")} onClick={() => window.confirm(`${t("qk.useAsBilling")}?`) && useAsBilling.mutate(a)}><Receipt /></IconBtn>)}
+                    {a.is_default
+                      ? <IconBtn active label={t("Default")}><Star className="fill-current" /></IconBtn>
+                      : <IconBtn toggle label={t("Make default")} onClick={() => addressSave.mutate({ ...stripAddress(a), makeDefault: true })}><Star /></IconBtn>}
                     <IconBtn label={t("Edit")} onClick={() => setAddressDraft({ ...stripAddress(a) })}><Pencil /></IconBtn>
                     <IconBtn label={t("Delete")} onClick={() => window.confirm(t("Delete this address?")) && addressDelete.mutate(a.id)}><Trash2 /></IconBtn>
                   </div>
@@ -356,10 +356,17 @@ const stripAddress = (a: CustomerAddress): AddressInput & { id: string } => ({
   postal_code: a.postal_code ?? "", city: a.city, region: a.region ?? "", country: a.country, contact_name: a.contact_name ?? "", phone: a.phone ?? "",
 });
 
-function IconBtn({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
+/*
+ * Botão redondo de ícone. `toggle`: marca que dá para ligar (fica clara);
+ * `active`: a marca já vale para este endereço (fica acesa e não clica).
+ */
+function IconBtn({ label, onClick, children, toggle, active }: { label: string; onClick?: () => void; children: React.ReactNode; toggle?: boolean; active?: boolean }) {
   return (
-    <button type="button" onClick={onClick} aria-label={label} title={label}
-      className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-secondary [&_svg]:h-3.5 [&_svg]:w-3.5">
+    <button type="button" onClick={active ? undefined : onClick} aria-label={label} title={label} aria-pressed={toggle || active ? !!active : undefined}
+      className={cn("h-8 w-8 rounded-full flex items-center justify-center [&_svg]:h-3.5 [&_svg]:w-3.5",
+        active ? "bg-foreground text-background cursor-default"
+          : toggle ? "text-muted-foreground/50 hover:bg-secondary hover:text-foreground"
+          : "hover:bg-secondary")}>
       {children}
     </button>
   );
