@@ -22,6 +22,11 @@ export interface Service {
   /** qual zonário do listino o serviço usa (padrão: "default") */
   zoning?: string;
   steps: Step[]; perKg: PerKg[]; extra?: Extra[];
+  /** divisor volumétrico do serviço, se for diferente do listino (0 = sem volumétrico) */
+  volumetricDivisor?: number;
+  roundTo?: number;
+  /** limites do serviço (ex.: BRT @Smart Europe monocollo/multicollo) */
+  minParcels?: number; maxParcels?: number; maxParcelKg?: number; maxParcelM3?: number;
 }
 
 export interface RateCardData {
@@ -58,7 +63,7 @@ const round2 = (x: number) => Math.round(x * 100) / 100;
 /** Peso cobrado do envio: soma, colo por colo, do maior entre real e volumétrico. */
 export function chargeableWeight(parcels: Parcel[], divisor: number, roundTo = 0.5): number {
   const total = parcels.reduce((sum, p) => {
-    const vol = p.length && p.width && p.height ? (p.length * p.width * p.height) / divisor : 0;
+    const vol = divisor && p.length && p.width && p.height ? (p.length * p.width * p.height) / divisor : 0;
     return sum + Math.max(p.weight || 0, vol) * (p.qty || 1);
   }, 0);
   return total > 0 ? ceilTo(total, roundTo) : 0;
@@ -116,13 +121,16 @@ export function priceFor(svc: Service, zone: string, weight: number): { price: n
   const tier = [...tiers].reverse().find((t) => w >= t.from) ?? tiers[0];
   const rate = tier.prices[zone];
   if (rate == null) return null;
-  return { price: round2(rate * w), perKg: true, chargeable: w };
+  // preço por kg (ou por quintal) nunca abaixo da última faixa (BRT: "oltre a q.le")
+  const floor = last?.prices[zone] ?? 0;
+  return { price: round2(Math.max(rate * w, floor)), perKg: true, chargeable: w };
 }
 
 /** Todas as opções de um listino para um envio, da mais barata à mais cara. */
 export function quoteCard(card: RateCardData, country: string, direction: Direction, parcels: Parcel[]): Quote[] {
   const weight = chargeableWeight(parcels, card.volumetricDivisor || 5000, card.roundTo || 0.5);
   if (!weight) return [];
+  const count = parcels.reduce((n, p) => n + (p.qty || 1), 0);
   // o Gestionale guarda o Reino Unido como UK; os listini usam o ISO (GB)
   const iso = country.toUpperCase() === "UK" ? "GB" : country.toUpperCase();
   if (card.presets?.length) return direction === "export" ? quotePresets(card, iso, parcels) : [];
@@ -131,10 +139,26 @@ export function quoteCard(card: RateCardData, country: string, direction: Direct
     if (svc.direction !== direction) continue;
     const zone = card.zoning[svc.zoning ?? "default"]?.[direction]?.[iso];
     if (!zone || !(svc.zones ?? []).includes(zone)) continue;
-    const p = priceFor(svc, zone, weight);
+    if (!fits(svc, parcels, count)) continue;
+    const w = svc.volumetricDivisor != null || svc.roundTo != null
+      ? chargeableWeight(parcels, svc.volumetricDivisor ?? (card.volumetricDivisor || 5000), svc.roundTo ?? (card.roundTo || 0.5))
+      : weight;
+    if (!w) continue;
+    const p = priceFor(svc, zone, w);
     if (p) out.push({ service: svc.code, serviceName: svc.name, zone, chargeable: p.chargeable, price: p.price, perKg: p.perKg });
   }
   return out.sort((a, b) => a.price - b.price);
+}
+
+/** O envio cabe nos limites do serviço (número de colli, peso e volume de cada um)? */
+function fits(svc: Service, parcels: Parcel[], count: number): boolean {
+  if (svc.minParcels && count < svc.minParcels) return false;
+  if (svc.maxParcels && count > svc.maxParcels) return false;
+  return parcels.every((p) => {
+    if (svc.maxParcelKg && (p.weight || 0) > svc.maxParcelKg + 1e-9) return false;
+    if (svc.maxParcelM3 && p.length && p.width && p.height && (p.length * p.width * p.height) / 1e6 > svc.maxParcelM3 + 1e-9) return false;
+    return true;
+  });
 }
 
 /** Listino a pacchi tipo: cada colo vira o menor pacote padrão que o comporta. */

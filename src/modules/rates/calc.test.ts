@@ -80,3 +80,31 @@ describe("listino a pacchi tipo (My Parcel)", () => {
     expect(quoteCard(card, "DE", "import", [{ weight: 1 }])).toEqual([]);
   });
 });
+
+describe("regras por serviço (BRT)", () => {
+  const smart: Service = {
+    code: "SE1", name: "Smart 1 collo", region: "europe", direction: "export", zones: ["A"], zoning: "s",
+    volumetricDivisor: 0, roundTo: 1, maxParcels: 1, maxParcelKg: 31.5, maxParcelM3: 0.25, perKg: [],
+    steps: [{ upTo: 10, prices: { A: 11.95 } }, { upTo: 31.5, prices: { A: 22.05 } }],
+  };
+  const road: Service = {
+    code: "EX", name: "Euroexpress", region: "europe", direction: "export", zones: ["DE"], zoning: "e",
+    volumetricDivisor: 4000, roundTo: 1,
+    steps: [{ upTo: 75, prices: { DE: 60.6 } }, { upTo: 100, prices: { DE: 75.7 } }],
+    perKg: [{ from: 101, to: null, prices: { DE: 0.672 } }],
+  };
+  const card: RateCardData = {
+    carrier: "BRT", currency: "EUR", validFrom: null, volumetricDivisor: 4000, roundTo: 1,
+    zoning: { s: { export: { DE: "A" } }, e: { export: { DE: "DE" } } }, services: [smart, road],
+  };
+  it("limites de colli, peso e volume; divisor do próprio serviço", () => {
+    // scatola bici 0,288 m³: fora do Smart; na estrada 120×30×80 ÷ 4000 = 72 kg
+    expect(quoteCard(card, "DE", "export", [{ weight: 25, length: 120, width: 30, height: 80 }]).map((q) => [q.service, q.chargeable, q.price])).toEqual([["EX", 72, 60.6]]);
+    expect(quoteCard(card, "DE", "export", [{ weight: 5, length: 40, width: 30, height: 20 }])[0]).toMatchObject({ service: "SE1", price: 11.95 });
+    expect(quoteCard(card, "DE", "export", [{ weight: 5, qty: 2 }]).map((q) => q.service)).toEqual(["EX"]);
+  });
+  it("a quintale: nunca abaixo da última faixa", () => {
+    expect(priceFor(road, "DE", 101)?.price).toBe(75.7);
+    expect(priceFor(road, "DE", 150)?.price).toBe(100.8);
+  });
+});
