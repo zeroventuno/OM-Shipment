@@ -123,7 +123,9 @@ function Compare({ cards }: { cards: RateCard[] }) {
                       {q.card.carrier}
                       {q.card.status === "evaluation" && <span className="ml-2 rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{t("rt.st.evaluation")}</span>}
                     </td>
-                    <td className="px-3 py-2.5">{q.serviceName} <span className="text-muted-foreground">({q.service})</span></td>
+                    <td className="px-3 py-2.5">{q.serviceName} {q.preset
+                      ? <span className="text-muted-foreground">· {t("rt.estimate", { preset: q.preset })}</span>
+                      : <span className="text-muted-foreground">({q.service})</span>}</td>
                     <td className="px-3 py-2.5 tabular-nums">{q.zone}</td>
                     <td className="px-3 py-2.5 text-right tabular-nums">{String(q.chargeable).replace(".", ",")} kg</td>
                     <td className="px-4 py-2.5 text-right tabular-nums">{formatMoney(q.price, i18n.language)}</td>
@@ -166,7 +168,9 @@ function CardList({ cards }: { cards: RateCard[] }) {
             </div>
             <p className="text-sm">
               {c.tariff
-                ? t("rt.summary", { services: new Set(c.tariff.services.map((s) => s.code)).size, countries: Object.keys(c.tariff.zoning).reduce((m, k) => Math.max(m, Object.keys(c.tariff!.zoning[k].export ?? {}).length), 0) })
+                ? c.tariff.presets?.length
+                  ? t("rt.summaryPresets", { presets: c.tariff.presets.length, countries: new Set(c.tariff.presets.flatMap((p) => Object.keys(p.prices))).size })
+                  : t("rt.summary", { services: new Set(c.tariff.services.map((s) => s.code)).size, countries: Object.keys(c.tariff.zoning).reduce((m, k) => Math.max(m, Object.keys(c.tariff!.zoning[k].export ?? {}).length), 0) })
                 : <span className="font-semibold">{t("rt.toConvert")}</span>}
             </p>
             {c.notes && <p className="text-xs text-muted-foreground">{c.notes}</p>}

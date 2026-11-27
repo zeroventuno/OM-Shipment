@@ -59,3 +59,24 @@ describe("listini: conta do preço", () => {
     expect(quoteCard(card, "BR", "export", [{ weight: 2 }])).toEqual([]);
   });
 });
+
+describe("listino a pacchi tipo (My Parcel)", () => {
+  const card: RateCardData = {
+    carrier: "My Parcel", currency: "EUR", validFrom: null, volumetricDivisor: 5000, roundTo: 0.5, zoning: {}, services: [],
+    presets: [
+      { key: "bici", label: "Bici", weight: 10, length: 120, width: 35, height: 80, prices: { DE: { price: 99.05, service: "DHL Economy" } } },
+      { key: "ruote", label: "Ruote", weight: 4, length: 69, width: 30, height: 71, prices: { DE: { price: 29.89, service: "UPS Standard" } } },
+      { key: "piccoli", label: "Articoli piccoli", weight: 1, length: 25, width: 20, height: 10, prices: { DE: { price: 12.62, service: "DHL Economy" } } },
+    ],
+  };
+  it("usa o menor pacote tipo que comporta cada colo e soma", () => {
+    expect(quoteCard(card, "DE", "export", [{ weight: 0.8 }])[0]).toMatchObject({ price: 12.62, preset: "Articoli piccoli" });
+    expect(quoteCard(card, "DE", "export", [{ weight: 25, length: 120, width: 30, height: 80 }])[0]).toMatchObject({ price: 99.05, preset: "Bici" });
+    expect(quoteCard(card, "DE", "export", [{ weight: 1, qty: 2 }, { weight: 20 }])[0]).toMatchObject({ price: 55.13 });
+  });
+  it("sem preço para o país, peso acima do maior pacote ou import: nada", () => {
+    expect(quoteCard(card, "FR", "export", [{ weight: 1 }])).toEqual([]);
+    expect(quoteCard(card, "DE", "export", [{ weight: 90 }])).toEqual([]);
+    expect(quoteCard(card, "DE", "import", [{ weight: 1 }])).toEqual([]);
+  });
+});

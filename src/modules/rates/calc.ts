@@ -34,11 +34,23 @@ export interface RateCardData {
   /** zonário: nome → direção → país (ISO) → zona */
   zoning: Record<string, Partial<Record<Direction, Record<string, string>>>>;
   services: Service[];
+  /**
+   * Listino "a pacchi tipo" (ex.: simulações da My Parcel): preço fechado por
+   * país para alguns pacotes padrão. Cada colo usa o menor pacote tipo que o
+   * comporta (pelo peso tassato); o resultado é uma estimativa.
+   */
+  presets?: Preset[];
+}
+
+export interface Preset {
+  key: string; label: string; weight: number; length: number; width: number; height: number;
+  /** país (ISO) → preço e serviço usado */
+  prices: Record<string, { price: number; service: string }>;
 }
 
 export interface Parcel { weight: number; length?: number; width?: number; height?: number; qty?: number }
 
-export interface Quote { service: string; serviceName: string; zone: string; chargeable: number; price: number; perKg: boolean }
+export interface Quote { service: string; serviceName: string; zone: string; chargeable: number; price: number; perKg: boolean; /** pacco tipo usado (listino a pacchi tipo) */ preset?: string }
 
 const ceilTo = (x: number, step: number) => Math.ceil(x / step - 1e-9) * step;
 const round2 = (x: number) => Math.round(x * 100) / 100;
@@ -113,6 +125,7 @@ export function quoteCard(card: RateCardData, country: string, direction: Direct
   if (!weight) return [];
   // o Gestionale guarda o Reino Unido como UK; os listini usam o ISO (GB)
   const iso = country.toUpperCase() === "UK" ? "GB" : country.toUpperCase();
+  if (card.presets?.length) return direction === "export" ? quotePresets(card, iso, parcels) : [];
   const out: Quote[] = [];
   for (const svc of card.services) {
     if (svc.direction !== direction) continue;
@@ -122,4 +135,26 @@ export function quoteCard(card: RateCardData, country: string, direction: Direct
     if (p) out.push({ service: svc.code, serviceName: svc.name, zone, chargeable: p.chargeable, price: p.price, perKg: p.perKg });
   }
   return out.sort((a, b) => a.price - b.price);
+}
+
+/** Listino a pacchi tipo: cada colo vira o menor pacote padrão que o comporta. */
+function quotePresets(card: RateCardData, iso: string, parcels: Parcel[]): Quote[] {
+  const div = card.volumetricDivisor || 5000;
+  const sized = (card.presets ?? []).map((p) => ({ p, w: chargeableWeight([p], div, card.roundTo || 0.5) })).sort((a, b) => a.w - b.w);
+  let price = 0, chargeable = 0;
+  const used: Preset[] = [];
+  for (const parcel of parcels) {
+    const w = chargeableWeight([{ ...parcel, qty: 1 }], div, card.roundTo || 0.5);
+    if (!w) continue;
+    const fit = sized.find((x) => x.w >= w - 1e-9 && x.p.prices[iso]);
+    if (!fit) return [];
+    const qty = parcel.qty || 1;
+    price += fit.p.prices[iso].price * qty;
+    chargeable += w * qty;
+    for (let i = 0; i < qty; i++) used.push(fit.p);
+  }
+  if (!used.length) return [];
+  const services = [...new Set(used.map((p) => p.prices[iso].service))].join(" + ");
+  const labels = [...new Set(used.map((p) => p.label))].join(" + ");
+  return [{ service: "", serviceName: services, zone: "—", chargeable, price: round2(price), perKg: false, preset: labels }];
 }
