@@ -24,6 +24,7 @@ import { getPickupRequest, pickupAddress } from '@/modules/pickups/api';
 import { QuickTicketDialog, QuickWarrantyDialog } from '@/modules/quick/QuickCaseDialogs';
 import { QuickCustomerDialog } from '@/modules/quick/QuickCustomerDialog';
 import { InvoiceCustomerCheck } from '../components/shipments/InvoiceCustomerCheck';
+import { RateSuggestions } from '@/modules/rates/RateSuggestions';
 import { parseInvoiceText, orderTypeFromHs } from '../services/invoiceParser';
 import { pdfLines } from '../services/pdfText';
 
@@ -856,6 +857,8 @@ export default function NewShipment() {
 
                 {/* Right Column: Summary */}
                 <div className="space-y-6">
+                    {/* quem sai mais barato pelos listini, com país e colli já preenchidos */}
+                    <RateSuggestions country={formData.destinationCountry} boxes={formData.parcels} pickup={formData.isPickup} />
                     <Card className="bg-primary text-white border-none ">
                         <CardHeader>
                             <CardTitle className="text-white flex items-center">

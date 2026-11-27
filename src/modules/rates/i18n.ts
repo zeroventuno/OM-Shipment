@@ -47,6 +47,11 @@ const it = {
   "rt.files": "File (PDF, Excel)",
   "rt.notes": "Note",
   "rt.needName": "Indica corriere e nome del listino.",
+  "rt.sug.title": "Stima dai listini",
+  "rt.sug.all": "Tutti i listini",
+  "rt.sug.needCountry": "Scegli il paese per vedere chi costa meno.",
+  "rt.sug.needBoxes": "Aggiungi i colli (peso e misure) per vedere chi costa meno.",
+  "rt.sug.note": "Prezzi base dei listini, senza carburante: servono a scegliere il portale prima dei preventivi.",
 };
 
 const pt: typeof it = {
@@ -96,6 +101,11 @@ const pt: typeof it = {
   "rt.files": "Arquivos (PDF, Excel)",
   "rt.notes": "Notas",
   "rt.needName": "Informe a transportadora e o nome da tabela.",
+  "rt.sug.title": "Estimativa pelas tabelas",
+  "rt.sug.all": "Todas as tabelas",
+  "rt.sug.needCountry": "Escolha o país para ver quem sai mais barato.",
+  "rt.sug.needBoxes": "Adicione os volumes (peso e medidas) para ver quem sai mais barato.",
+  "rt.sug.note": "Preços base das tabelas, sem combustível: servem para escolher o portal antes dos orçamentos.",
 };
 
 export const ratesResources = { it, pt };
